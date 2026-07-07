@@ -1,22 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Desert Strike Web</title>
+    <title>Desert Strike - Commercial Edition</title>
     <link rel="stylesheet" href="./style.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <!-- 폰트 로드 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="game-container">
       <canvas id="gameCanvas" width="1280" height="720"></canvas>
       
-      <!-- UI Overlay -->
+      <!-- UI Layer -->
       <div id="ui-layer">
+        
         <!-- Top HUD -->
         <div class="hud-top">
           <div class="base-health left">
-            <span class="label">PLAYER BASE</span>
+            <span class="label">아군 본진 (PLAYER BASE)</span>
             <div class="health-bar-container">
               <div id="player-health-bar" class="health-bar fill"></div>
             </div>
@@ -24,12 +28,12 @@
           </div>
           
           <div class="wave-timer">
-            <span class="label">NEXT WAVE</span>
+            <span class="label">다음 웨이브 (NEXT WAVE)</span>
             <span id="timer-text" class="time">15.0</span>
           </div>
           
           <div class="base-health right">
-            <span class="label">ENEMY BASE</span>
+            <span class="label">적군 본진 (ENEMY BASE)</span>
             <div class="health-bar-container">
               <div id="enemy-health-bar" class="health-bar fill"></div>
             </div>
@@ -37,63 +41,71 @@
           </div>
         </div>
 
-        <!-- Economy HUD -->
+        <!-- Economy HUD (Left Side) -->
         <div class="hud-economy">
           <div class="resource-box">
-            <span class="label">MINERALS</span>
-            <span id="minerals-text" class="value">50</span>
+            <span class="label">미네랄 (MINERALS)</span>
+            <div class="value-row">
+              <div class="mineral-icon"></div>
+              <span id="minerals-text" class="value">150</span>
+            </div>
           </div>
-          <div class="resource-box">
-            <span class="label">INCOME</span>
-            <span id="income-text" class="value">+10 / wave</span>
+          <div class="resource-box income-box">
+            <span class="label">인컴 (INCOME)</span>
+            <span id="income-text" class="value">+50 / wave</span>
           </div>
         </div>
 
-        <!-- Building Menu -->
-        <div class="build-menu">
-          <div class="menu-title">CONSTRUCT UNITS</div>
-          <div class="build-buttons">
-            <button class="build-btn" data-type="melee" data-cost="50">
-              <div class="icon melee-icon"></div>
-              <div class="info">
-                <span class="name">Melee Unit</span>
-                <span class="cost">50 M</span>
-              </div>
-            </button>
-            <button class="build-btn" data-type="ranged" data-cost="100">
-              <div class="icon ranged-icon"></div>
-              <div class="info">
-                <span class="name">Ranged Unit</span>
-                <span class="cost">100 M</span>
-              </div>
-            </button>
-            <button class="build-btn" data-type="tank" data-cost="200">
-              <div class="icon tank-icon"></div>
-              <div class="info">
-                <span class="name">Heavy Tank</span>
-                <span class="cost">200 M</span>
-              </div>
-            </button>
-          </div>
-        </div>
-        
-        <!-- Economy Menu -->
-        <div class="economy-menu">
-          <div class="menu-title">ECONOMY (BOOM)</div>
-          <button class="build-btn income-btn" data-type="income" data-cost="150">
-            <div class="icon income-icon"></div>
-            <div class="info">
-              <span class="name">Upgrade Gas (+10 Income)</span>
-              <span class="cost">150 M</span>
+        <!-- Bottom Controls -->
+        <div class="bottom-controls">
+          <!-- Building Menu -->
+          <div class="panel build-menu">
+            <div class="menu-title">유닛 생산 (CONSTRUCT UNITS)</div>
+            <div class="build-buttons">
+              <button class="build-btn" data-type="melee" data-cost="50">
+                <div class="icon melee-icon"></div>
+                <div class="info">
+                  <span class="name">근접 유닛 (질럿)</span>
+                  <span class="cost"><div class="mineral-icon small"></div> 50</span>
+                </div>
+              </button>
+              <button class="build-btn" data-type="ranged" data-cost="100">
+                <div class="icon ranged-icon"></div>
+                <div class="info">
+                  <span class="name">원거리 유닛 (마린)</span>
+                  <span class="cost"><div class="mineral-icon small"></div> 100</span>
+                </div>
+              </button>
+              <button class="build-btn" data-type="tank" data-cost="200">
+                <div class="icon tank-icon"></div>
+                <div class="info">
+                  <span class="name">헤비 탱크 (골리앗)</span>
+                  <span class="cost"><div class="mineral-icon small"></div> 200</span>
+                </div>
+              </button>
             </div>
-          </button>
+          </div>
+          
+          <!-- Economy Menu -->
+          <div class="panel economy-menu">
+            <div class="menu-title">경제 (ECONOMY BOOM)</div>
+            <div class="build-buttons">
+              <button class="build-btn income-btn" data-type="income" data-cost="150">
+                <div class="icon income-icon"></div>
+                <div class="info">
+                  <span class="name">가스 채취기 (+10 인컴)</span>
+                  <span class="cost"><div class="mineral-icon small"></div> 150</span>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       
       <!-- Game Over Screen -->
       <div id="game-over-screen" class="hidden">
-        <h1 id="game-over-title">VICTORY</h1>
-        <button id="restart-btn">PLAY AGAIN</button>
+        <h1 id="game-over-title">승리!</h1>
+        <button id="restart-btn">다시 플레이</button>
       </div>
     </div>
     <script type="module" src="./main.js"></script>

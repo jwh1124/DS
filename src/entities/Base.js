@@ -1,22 +1,57 @@
-const BASE_SPRITE = [
-  "        kkkkkkkk        ",
-  "      kkcccccccckk      ",
-  "    kkcccccccccckkwk    ",
-  "   kcccccccccccccckkwk  ",
-  "  kcccccccccccccccckkkw ",
-  " kccckkcccccccccckkcckk ",
-  " kcckwwkcccccccckwwkcck ",
-  "kccckwwkcccccccckwwkccck",
-  "kcccckkcccccccccckkcccck",
-  "kcccccccccccccccccccccck",
-  " kccccckkkkkkkkkkccccck ",
-  " kcccccckwwkkwkccccccck ",
-  "  kccccckwwkkwkcccccck  ",
-  "   kcccckkkkkkkccccck   ",
-  "    kcccccccccccccck    ",
-  "     kkcccccccccckk     ",
-  "       kkkkkkkkkk       "
+const BASE_SPRITE_PLAYER = [
+  "------------------------",
+  "---------kkkkkk---------",
+  "-------kkcccccckk-------",
+  "------kcccccccccck------",
+  "-----kcccccccccccck-----",
+  "-----kckwkkcccckkck-----",
+  "----kcckwkkcccckkwcck---",
+  "---kccccccccccccccccck--",
+  "---kccccccccccccccccck--",
+  "--kcccgccccccccccgcccck-",
+  "--kcccggccccccccggcccck-",
+  "-kccccggccckkcccggccccck",
+  "-kccccccccckkcccccccccck",
+  "kkkcccccccccccccccccckkk",
+  "kggkcccccccccccccccckggk",
+  "kggkccccckkkkkkccccckggk",
+  "kggkcccckwwwwwwkcccckggk",
+  "kggkcccckwwwwwwkcccckggk",
+  "kggkccgckwwwwwwkcggckggk",
+  "kggkccggkkkkkkkkcggckggk",
+  "-kggkccccccccccccckggk--",
+  "-kggkccccccccccccckggk--",
+  "--kkkkkkkkkkkkkkkkkkk---",
+  "------------------------"
 ];
+
+const BASE_SPRITE_ENEMY = [
+  "------------------------",
+  "---------kkkkkk---------",
+  "-------kkrrrrrrkk-------",
+  "------krrrrrrrrrrk------",
+  "-----krrrrrrrrrrrrk-----",
+  "-----krkykkrrrrkkyk-----",
+  "----krrkykkrrrrkkyrrk---",
+  "---krrrrrrrrrrrrrrrrrk--",
+  "---krrrrrrrrrrrrrrrrrk--",
+  "--krrrdrrrrrrrrrrdrrrrk-",
+  "--krrrddrrrrrrrrddrrrrk-",
+  "-krrrrddrrrkkrrrddrrrrrk",
+  "-krrrrrrrrrkkrrrrrrrrrrk",
+  "kkkrrrrrrrrrrrrrrrrrrkkk",
+  "kddkrrrrrrrrrrrrrrrrkddk",
+  "kddkrrrrrkkkkkkrrrrrkddk",
+  "kddkrrrrkyyyyyykrrcrkddk",
+  "kddkrrrrkyyyyyykrrcrkddk",
+  "kddkrrdckyyyyyykcrrckddk",
+  "kddkrrddkkkkkkkkcrrckddk",
+  "-kddkrrrrrrrrrrrrrkddk--",
+  "-kddkrrrrrrrrrrrrrkddk--",
+  "--kkkkkkkkkkkkkkkkkkk---",
+  "------------------------"
+];
+
 
 export class Base {
   constructor(game, x, y, team, maxHp) {
@@ -26,7 +61,7 @@ export class Base {
     this.team = team;
     this.maxHp = maxHp;
     this.hp = maxHp;
-    this.radius = 40; 
+    this.radius = 60; 
     this.isAlive = true;
   }
 
@@ -51,20 +86,24 @@ export class Base {
     ctx.save();
     ctx.translate(this.x, this.y);
     
-    // Draw pixel art base
-    const pixelSize = 5;
-    const w = BASE_SPRITE[0].length * pixelSize;
-    const h = BASE_SPRITE.length * pixelSize;
+    const sprite = this.team === 'player' ? BASE_SPRITE_PLAYER : BASE_SPRITE_ENEMY;
+    const pixelSize = 6;
+    const w = sprite[0].length * pixelSize;
+    const h = sprite.length * pixelSize;
     
     ctx.translate(-w/2, -h/2); // Center
     
-    for (let r = 0; r < BASE_SPRITE.length; r++) {
-      for (let c = 0; c < BASE_SPRITE[r].length; c++) {
-        const char = BASE_SPRITE[r][c];
-        if (char !== ' ') {
-          if (char === 'k') ctx.fillStyle = '#111'; // Outline
-          else if (char === 'c') ctx.fillStyle = this.team === 'player' ? '#0ff' : '#ff3333'; // Main color
-          else if (char === 'w') ctx.fillStyle = '#fff'; // Highlight/Windows
+    for (let r = 0; r < sprite.length; r++) {
+      for (let c = 0; c < sprite[r].length; c++) {
+        const char = sprite[r][c];
+        if (char !== '-') {
+          if (char === 'k') ctx.fillStyle = '#111';
+          else if (char === 'c') ctx.fillStyle = '#00e5ff'; // Player main
+          else if (char === 'g') ctx.fillStyle = '#0083b0'; // Player dark
+          else if (char === 'w') ctx.fillStyle = '#fff';    // Player glass/light
+          else if (char === 'r') ctx.fillStyle = '#e74c3c'; // Enemy main
+          else if (char === 'd') ctx.fillStyle = '#b00000'; // Enemy dark
+          else if (char === 'y') ctx.fillStyle = '#f1c40f'; // Enemy light/yellow
           
           ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
         }
