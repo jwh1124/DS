@@ -1,6 +1,14 @@
 export class AudioEngine {
   constructor() {
     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Pre-compute explosion noise buffer to prevent main thread freezing
+    const bufferSize = this.audioCtx.sampleRate * 0.5; // 0.5 seconds
+    this.noiseBuffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+    const data = this.noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1; // White noise
+    }
   }
   
   // Retro square wave shoot sound
@@ -26,17 +34,8 @@ export class AudioEngine {
   // Deep explosion noise
   playExplosion() {
     if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
-    
-    const bufferSize = this.audioCtx.sampleRate * 0.5; // 0.5 seconds
-    const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1; // White noise
-    }
-    
     const noise = this.audioCtx.createBufferSource();
-    noise.buffer = buffer;
+    noise.buffer = this.noiseBuffer;
     
     // Filter noise to sound like a deep boom
     const filter = this.audioCtx.createBiquadFilter();
