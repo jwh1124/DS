@@ -54,6 +54,9 @@
             <span class="label">인컴 (INCOME)</span>
             <span id="income-text" class="value">+50 / wave</span>
           </div>
+          <div class="hero-instruction" style="margin-top:20px; font-size:12px; color:#f1c40f; text-shadow:0 0 5px #000; font-weight:bold;">
+            [A] / [D] 키로 영웅 이동 (오라 발생)
+          </div>
         </div>
 
         <!-- Bottom Controls -->
@@ -88,13 +91,20 @@
           
           <!-- Economy Menu -->
           <div class="panel economy-menu">
-            <div class="menu-title">경제 (ECONOMY BOOM)</div>
+            <div class="menu-title">경제 & 시대발전 (TECH)</div>
             <div class="build-buttons">
               <button class="build-btn income-btn" data-type="income" data-cost="150">
                 <div class="icon income-icon"></div>
                 <div class="info">
-                  <span class="name">가스 채취기 (+10 인컴)</span>
+                  <span class="name">가스 채취기 (+10)</span>
                   <span class="cost"><div class="mineral-icon small"></div> 150</span>
+                </div>
+              </button>
+              <button class="build-btn tech-btn" data-type="tech" data-cost="800">
+                <div class="icon tech-icon"></div>
+                <div class="info">
+                  <span class="name">시대 발전 (Tech)</span>
+                  <span class="cost"><div class="mineral-icon small"></div> 800</span>
                 </div>
               </button>
             </div>

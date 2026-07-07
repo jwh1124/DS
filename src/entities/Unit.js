@@ -148,6 +148,7 @@ export class Unit {
     this.state = 'moving';
     this.target = null;
     this.attackCooldown = 0;
+    this.hasAura = false;
     
     this.dir = team === 'player' ? 1 : -1;
   }
@@ -206,6 +207,10 @@ export class Unit {
       this.attackCooldown -= dt;
     }
     
+    // Apply Aura Buffs
+    const currentSpeed = this.hasAura ? this.speed * 1.5 : this.speed;
+    const currentAttackSpeed = this.hasAura ? this.attackSpeed * 0.7 : this.attackSpeed;
+    
     const { target, distance } = this.findTarget();
     this.target = target;
     
@@ -214,15 +219,15 @@ export class Unit {
         this.state = 'attacking';
         if (this.attackCooldown <= 0) {
           this.performAttack(target);
-          this.attackCooldown = this.attackSpeed;
+          this.attackCooldown = currentAttackSpeed;
         }
       } else {
         this.state = 'moving';
-        this.moveTowards(target.x, target.y, dt);
+        this.moveTowards(target.x, target.y, dt, currentSpeed);
       }
     } else {
       this.state = 'moving';
-      this.x += this.speed * this.dir * dt;
+      this.x += currentSpeed * this.dir * dt;
     }
     
     // Engine trails when moving
@@ -233,26 +238,30 @@ export class Unit {
         this.game, this.x - this.dir * (this.radius - 5), engineY, this.color, 0.3, 30, trailAngle, 3
       ));
     }
+    
+    // Reset aura for next frame
+    this.hasAura = false;
   }
   
   performAttack(target) {
+    const currentDamage = this.hasAura ? this.damage * 1.5 : this.damage;
     if (this.type === 'ranged') {
       this.game.entityManager.addEntity(new Projectile(
-        this.game, this.x + (this.dir * 15), this.y - 5, target, this.damage, this.color, this.team
+        this.game, this.x + (this.dir * 15), this.y - 5, target, currentDamage, this.color, this.team
       ));
       // Muzzle flash
       this.game.entityManager.addEntity(new Particle(
         this.game, this.x + (this.dir * 20), this.y - 5, '#fff', 0.1, 0, 0, 8
       ));
     } else {
-      target.takeDamage(this.damage);
+      target.takeDamage(currentDamage);
       this.game.entityManager.addEntity(new Particle(
         this.game, target.x, target.y, '#fff', 0.15, 0, 0, 12
       ));
     }
   }
 
-  moveTowards(tx, ty, dt) {
+  moveTowards(tx, ty, dt, currentSpeed) {
     const dx = tx - this.x;
     const dy = ty - this.y;
     const mag = Math.sqrt(dx*dx + dy*dy);
@@ -276,8 +285,8 @@ export class Unit {
       }
     }
     
-    const moveX = (dx / mag) * this.speed * dt;
-    const moveY = (dy / mag) * this.speed * dt;
+    const moveX = (dx / mag) * currentSpeed * dt;
+    const moveY = (dy / mag) * currentSpeed * dt;
     
     this.x += moveX + (pushX * 5 * dt);
     this.y += moveY + (pushY * 5 * dt);
@@ -292,6 +301,20 @@ export class Unit {
     
     ctx.save();
     ctx.translate(this.x, this.y);
+    
+    // Draw Aura Glow
+    if (this.hasAura) {
+      ctx.beginPath();
+      ctx.arc(0, 0, this.radius + 5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(241, 196, 15, 0.4)';
+      ctx.fill();
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#f1c40f';
+      ctx.strokeStyle = '#f1c40f';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
     
     // Face direction
     if (this.dir === -1) {

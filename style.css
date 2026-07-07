@@ -266,6 +266,12 @@ body {
   box-shadow: 0 5px 15px rgba(46, 204, 113, 0.2);
 }
 
+.build-btn.tech-btn:hover:not(:disabled) {
+  background: rgba(230, 126, 34, 0.15);
+  border-color: #e67e22;
+  box-shadow: 0 5px 15px rgba(230, 126, 34, 0.3);
+}
+
 .build-btn.ultimate-btn:hover:not(:disabled) {
   background: rgba(241, 196, 15, 0.15);
   border-color: #f1c40f;
@@ -293,6 +299,7 @@ body {
 .ranged-icon { background: linear-gradient(135deg, #2980b9, #6dd5ed); border: 2px solid #00e5ff; }
 .tank-icon { background: linear-gradient(135deg, #1f1c2c, #928dab); border: 2px solid #00e5ff; }
 .income-icon { background: linear-gradient(135deg, #11998e, #38ef7d); border: 2px solid #2ecc71; border-radius: 50% !important;}
+.tech-icon { background: linear-gradient(135deg, #d35400, #f39c12); border: 2px solid #e67e22; }
 .ultimate-icon { background: linear-gradient(135deg, #8e44ad, #f1c40f); border: 2px solid #f1c40f; box-shadow: 0 0 10px #f1c40f; }
 
 .build-btn .info {
@@ -317,6 +324,8 @@ body {
   gap: 4px;
 }
 .income-btn .cost { color: #2ecc71; }
+.tech-btn .cost { color: #e67e22; }
+.tech-btn .name { color: #f39c12; }
 .ultimate-btn .cost { color: #f1c40f; }
 .ultimate-btn .name { color: #f1c40f; }
 

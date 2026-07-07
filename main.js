@@ -5,6 +5,7 @@ import { HUD } from './src/ui/HUD.js';
 import { Base } from './src/entities/Base.js';
 import { Economy } from './src/engine/Economy.js';
 import { Particle } from './src/entities/Particle.js';
+import { Hero } from './src/entities/Hero.js';
 
 class Game {
   constructor() {
@@ -26,6 +27,10 @@ class Game {
     this.enemyBase = new Base(this, this.canvas.width - 100, this.canvas.height / 2, 'enemy', 5000);
     this.entityManager.addEntity(this.playerBase);
     this.entityManager.addEntity(this.enemyBase);
+    
+    // Paladog element: The Hero
+    this.hero = new Hero(this, 200, this.canvas.height / 2, 'player');
+    this.entityManager.addEntity(this.hero);
     
     // Load background
     this.bgImage = new Image();
@@ -110,7 +115,17 @@ class Game {
               ));
             }
           }
+        } else if (type === 'tech') {
+          if (this.economy.spendMinerals(cost)) {
+            this.playerBase.upgradeTech();
+          }
         } else if (type === 'ultimate') {
+          // If Hero is dead, cannot use ultimate
+          if (!this.hero.isAlive) {
+            alert("영웅(사령관)이 전사하여 궁극기를 사용할 수 없습니다!");
+            this.economy.minerals += cost; // refund
+            return;
+          }
           if (this.economy.spendMinerals(cost)) {
             this.triggerOrbitalStrike();
           }
@@ -129,6 +144,16 @@ class Game {
     
     document.getElementById('restart-btn').addEventListener('click', () => {
       location.reload();
+    });
+    
+    // Hero Movement Controls (A/D keys)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.hero.moveLeft = true;
+      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.hero.moveRight = true;
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.hero.moveLeft = false;
+      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.hero.moveRight = false;
     });
   }
   
