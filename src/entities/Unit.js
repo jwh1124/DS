@@ -153,6 +153,25 @@ export class Unit {
     this.scale = 1;
     
     this.dir = team === 'player' ? 1 : -1;
+    
+    // Scale stats based on Tech Level (Player) or Wave Count (Enemy)
+    if (this.team === 'player' && this.game.playerBase) {
+      const techMultiplier = this.game.playerBase.techLevel;
+      if (techMultiplier > 1) {
+        this.maxHp *= techMultiplier;
+        this.hp = this.maxHp;
+        this.damage *= techMultiplier;
+        this.scale += (techMultiplier - 1) * 0.2; // Slightly bigger per tech level
+      }
+    } else if (this.team === 'enemy' && this.game.waveSystem) {
+      const enemyTechLevel = 1 + Math.floor(this.game.waveSystem.aiWaveCount / 5);
+      if (enemyTechLevel > 1) {
+        this.maxHp *= enemyTechLevel;
+        this.hp = this.maxHp;
+        this.damage *= enemyTechLevel;
+        this.scale += (enemyTechLevel - 1) * 0.2;
+      }
+    }
   }
   
   makeBoss() {

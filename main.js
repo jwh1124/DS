@@ -147,6 +147,12 @@ class Game {
         } else if (type === 'tech') {
           if (this.economy.spendMinerals(cost)) {
             this.playerBase.upgradeTech();
+            
+            // Increase cost dynamically for next tech
+            const nextCost = cost * 2;
+            btn.dataset.cost = nextCost;
+            btn.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> ${nextCost}`;
+            btn.querySelector('.name').innerHTML = `시대 발전 (Lv.${this.playerBase.techLevel + 1})`;
           }
         } else if (type === 'ultimate') {
           if (this.economy.spendMinerals(cost)) {

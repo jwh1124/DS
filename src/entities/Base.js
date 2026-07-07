@@ -68,16 +68,16 @@ export class Base {
     this.techLevel = 1;
     this.turretCooldown = 0;
     this.turretAttackSpeed = 1.0;
-    this.turretDamage = 30;
-    this.turretRange = 350;
+    this.turretDamage = 50;
+    this.turretRange = 1000;
   }
   
   upgradeTech() {
     this.techLevel++;
-    this.maxHp += 2000;
-    this.hp += 2000;
-    this.turretAttackSpeed *= 0.8;
-    this.turretDamage += 20;
+    this.maxHp += 5000;
+    this.hp += 5000;
+    this.turretAttackSpeed *= 0.7;
+    this.turretDamage += 100;
     this.game.entityManager.addEntity(new FloatingText(this.game, `TECH UPGRADED`, this.x, this.y - 100, '#2ecc71'));
   }
 
