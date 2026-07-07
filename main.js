@@ -40,8 +40,27 @@ class Game {
     
     this.gameSpeed = 1;
     
+    // Parallax Dust
+    this.dustParticles = Array.from({length: 100}, () => ({
+      x: Math.random() * WORLD_WIDTH,
+      y: Math.random() * this.canvas.height,
+      speed: Math.random() * 0.5 + 0.1,
+      size: Math.random() * 2 + 1
+    }));
+    
     this.setupInput();
-    this.start();
+    
+    // UI Setup
+    document.getElementById('ui-layer').style.display = 'none';
+    document.getElementById('start-btn').addEventListener('click', () => {
+      document.getElementById('title-screen').style.opacity = '0';
+      setTimeout(() => {
+        document.getElementById('title-screen').style.display = 'none';
+        document.getElementById('ui-layer').style.display = 'block';
+        this.start();
+        this.audio.startBGM();
+      }, 1000);
+    });
   }
   
   start() {
@@ -111,6 +130,18 @@ class Game {
       this.drawFallbackBackground();
     }
     
+    // Draw Parallax Dust
+    this.ctx.fillStyle = 'rgba(255, 230, 150, 0.3)';
+    this.dustParticles.forEach(p => {
+      // Dust moves slowly left, camera movement adds parallax
+      p.x -= p.speed;
+      if (p.x < 0) p.x = WORLD_WIDTH;
+      
+      this.ctx.beginPath();
+      this.ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+      this.ctx.fill();
+    });
+    
     // Draw ground line
     this.ctx.fillStyle = '#221100';
     this.ctx.fillRect(0, this.canvas.height - 150, WORLD_WIDTH, 150);
@@ -128,7 +159,44 @@ class Game {
   }
   
   setupInput() {
+    const tooltip = document.getElementById('tooltip');
+    const ttTitle = document.getElementById('tooltip-title');
+    const ttDesc = document.getElementById('tooltip-desc');
+    const ttHp = document.getElementById('tt-hp');
+    const ttDmg = document.getElementById('tt-dmg');
+    const ttRange = document.getElementById('tt-range');
+
+    const unitStats = {
+      melee: { title: '질럿 (근접)', desc: '체력이 높고 저렴한 최전방 방패 역할.', hp: 120, dmg: 10, range: '근접' },
+      ranged: { title: '마린 (원거리)', desc: '사거리가 길지만 체력이 약한 딜러.', hp: 60, dmg: 15, range: '원거리' },
+      tank: { title: '골리앗 (헤비 탱크)', desc: '단단한 장갑과 강력한 한방 공격력.', hp: 300, dmg: 40, range: '중거리' },
+      income: { title: '가스 채취기', desc: '매 웨이브마다 추가 미네랄을 +10 획득.', hp: '-', dmg: '-', range: '-' },
+      tech: { title: '시대 발전', desc: '본진 타워 개방 및 유닛 최대체력/공격력 티어 업그레이드.', hp: '-', dmg: '-', range: '-' },
+      ultimate: { title: '궤도 폭격', desc: '화면 내 모든 적에게 500 고정 피해 및 본진 타격.', hp: '-', dmg: '500', range: '전체' }
+    };
+
     document.querySelectorAll('.build-btn').forEach(btn => {
+      // Tooltip Hover Logic
+      btn.addEventListener('mouseenter', (e) => {
+        const type = btn.dataset.type;
+        const stats = unitStats[type];
+        if (stats) {
+          ttTitle.textContent = stats.title;
+          ttDesc.textContent = stats.desc;
+          ttHp.textContent = stats.hp;
+          ttDmg.textContent = stats.dmg;
+          ttRange.textContent = stats.range;
+          
+          const rect = btn.getBoundingClientRect();
+          tooltip.style.left = (rect.left + rect.width/2) + 'px';
+          tooltip.style.top = rect.top + 'px';
+          tooltip.classList.remove('hidden');
+        }
+      });
+      btn.addEventListener('mouseleave', () => {
+        tooltip.classList.add('hidden');
+      });
+
       btn.addEventListener('click', (e) => {
         const type = btn.dataset.type;
         const cost = parseInt(btn.dataset.cost);

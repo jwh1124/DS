@@ -9,6 +9,41 @@ export class AudioEngine {
     for (let i = 0; i < bufferSize; i++) {
       data[i] = Math.random() * 2 - 1; // White noise
     }
+    
+    this.bgmPlaying = false;
+    this.bgmInterval = null;
+  }
+  
+  startBGM() {
+    if (this.bgmPlaying) return;
+    this.bgmPlaying = true;
+    if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+    
+    const notes = [220, 220, 330, 330, 293.66, 293.66, 330, 220]; // A3, E4, D4, etc.
+    let noteIndex = 0;
+    
+    this.bgmInterval = setInterval(() => {
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(notes[noteIndex], this.audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.05, this.audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.25);
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+      osc.start();
+      osc.stop(this.audioCtx.currentTime + 0.25);
+      
+      noteIndex = (noteIndex + 1) % notes.length;
+    }, 250);
+  }
+  
+  stopBGM() {
+    this.bgmPlaying = false;
+    if (this.bgmInterval) {
+      clearInterval(this.bgmInterval);
+      this.bgmInterval = null;
+    }
   }
   
   // Retro square wave shoot sound

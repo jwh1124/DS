@@ -14,6 +14,27 @@
     <div id="game-container">
       <canvas id="gameCanvas" width="1280" height="720"></canvas>
       
+      <!-- Title Screen -->
+      <div id="title-screen">
+        <div class="logo-container">
+          <h1 class="main-title">DESERT<br>STRIKE</h1>
+          <h2 class="sub-title">COMMERCIAL EDITION</h2>
+        </div>
+        <button id="start-btn" class="glow-btn">START GAME</button>
+        <div class="credits">Developed by Antigravity</div>
+      </div>
+      
+      <!-- Tooltip -->
+      <div id="tooltip" class="tooltip hidden">
+        <div id="tooltip-title" class="tt-title"></div>
+        <div id="tooltip-desc" class="tt-desc"></div>
+        <div class="tt-stats">
+          <div class="tt-stat"><span class="icon">♥</span><span id="tt-hp"></span></div>
+          <div class="tt-stat"><span class="icon">⚔</span><span id="tt-dmg"></span></div>
+          <div class="tt-stat"><span class="icon">⌖</span><span id="tt-range"></span></div>
+        </div>
+      </div>
+      
       <!-- Cheat Menu (Test Mode) -->
     <div id="cheat-menu" class="cheat-panel">
       <span class="cheat-title">TEST CHEATS:</span>
