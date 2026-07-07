@@ -221,6 +221,10 @@ export class Unit {
     for (const enemy of enemies) {
       const dx = enemy.x - this.x;
       const dy = enemy.y - this.y;
+      
+      // Fast AABB rejection
+      if (Math.abs(dx) > closestDist || Math.abs(dy) > closestDist) continue;
+      
       const dist = Math.sqrt(dx * dx + dy * dy);
       const actualDist = dist - this.radius - (enemy.radius || 0);
       
@@ -299,21 +303,32 @@ export class Unit {
     const dy = ty - this.y;
     const mag = Math.sqrt(dx*dx + dy*dy);
     
+    if (mag < 0.1) return; // Prevent division by zero (NaN)
+    
     const friends = this.game.entityManager.getEntitiesByTeam(this.team);
     let pushX = 0;
     let pushY = 0;
+    let checks = 0;
     
-    for (const f of friends) {
+    for (let i = friends.length - 1; i >= 0; i--) {
+      const f = friends[i];
       if (f !== this && f.radius) {
         const fdx = this.x - f.x;
         const fdy = this.y - f.y;
-        const fdist = Math.sqrt(fdx*fdx + fdy*fdy);
+        
         const minDist = this.radius + f.radius + 8; // spacing
+        
+        // Fast AABB check to avoid Math.sqrt and prevent lag
+        if (Math.abs(fdx) > minDist || Math.abs(fdy) > minDist) continue;
+        
+        const fdist = Math.sqrt(fdx*fdx + fdy*fdy);
         
         if (fdist < minDist && fdist > 0) {
           const overlap = minDist - fdist;
           pushX += (fdx / fdist) * overlap;
           pushY += (fdy / fdist) * overlap;
+          checks++;
+          if (checks > 5) break; // Limit separation checks to save CPU
         }
       }
     }
