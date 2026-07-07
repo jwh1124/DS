@@ -171,6 +171,11 @@ class Game {
             this.triggerOrbitalStrike();
           }
         } else {
+          if (this.waveSystem.spawners.player.length >= 50) {
+            // Cap player spawners to prevent extreme lag
+            // Optionally could add a visual floating text saying "MAX UNITS REACHED"
+            return;
+          }
           if (this.economy.spendMinerals(cost)) {
             this.waveSystem.addSpawner('player', type);
             for (let i = 0; i < 10; i++) {
