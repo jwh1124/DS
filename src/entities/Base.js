@@ -1,3 +1,7 @@
+import { FloatingText } from './FloatingText.js';
+import { Particle } from './Particle.js';
+import { Projectile } from './Projectile.js';
+
 const BASE_SPRITE_PLAYER = [
   "------------------------",
   "---------kkkkkk---------",
