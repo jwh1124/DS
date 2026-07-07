@@ -1,4 +1,5 @@
 import { Unit } from '../entities/Unit.js';
+import { Building } from '../entities/Building.js';
 
 export class WaveSystem {
   constructor(game) {
@@ -12,7 +13,6 @@ export class WaveSystem {
       enemy: []
     };
     
-    // AI Spawner simulation
     this.aiWaveCount = 0;
   }
 
@@ -25,8 +25,17 @@ export class WaveSystem {
     this.isActive = false;
   }
   
-  addSpawner(team, type) {
-    this.spawners[team].push(type);
+  addSpawner(team, type, x, y) {
+    const building = new Building(this.game, x, y, team, type);
+    this.spawners[team].push(building);
+    this.game.entityManager.addEntity(building);
+    return building;
+  }
+  
+  removeSpawner(building) {
+    const arr = this.spawners[building.team];
+    const idx = arr.indexOf(building);
+    if (idx !== -1) arr.splice(idx, 1);
   }
 
   update(dt) {
@@ -41,30 +50,34 @@ export class WaveSystem {
   }
 
   spawnWave() {
-    // Enemy AI: Randomly add spawners based on wave count to simulate an opponent
     this.aiWaveCount++;
+    
+    // AI Builder Logic
     if (this.aiWaveCount % 2 === 0) {
       const types = ['melee', 'ranged', 'tank'];
       const randomType = types[Math.floor(Math.random() * types.length)];
-      this.addSpawner('enemy', randomType);
+      // Enemy area bounds (rough right half)
+      const ex = this.game.canvas.width - 200 - Math.random() * 200;
+      const ey = 200 + Math.random() * 400;
+      this.addSpawner('enemy', randomType, ex, ey);
     }
     
     // Process player spawners
-    let playerSpawnY = this.game.canvas.height / 2 - 100;
-    this.spawners.player.forEach((type, index) => {
-      // Add small delay per unit for visual effect, for MVP just spawn them
-      const unit = new Unit(this.game, 200, playerSpawnY + (index % 5) * 40, 'player', type);
+    this.spawners.player.forEach((spawner) => {
+      spawner.triggerSpawn();
+      // Spawn unit near building
+      const unit = new Unit(this.game, spawner.x + 30, spawner.y, 'player', spawner.type);
       this.game.entityManager.addEntity(unit);
     });
 
     // Process enemy spawners
-    let enemySpawnY = this.game.canvas.height / 2 - 100;
-    this.spawners.enemy.forEach((type, index) => {
-      const unit = new Unit(this.game, this.game.canvas.width - 200, enemySpawnY + (index % 5) * 40, 'enemy', type);
+    this.spawners.enemy.forEach((spawner) => {
+      spawner.triggerSpawn();
+      const unit = new Unit(this.game, spawner.x - 30, spawner.y, 'enemy', spawner.type);
       this.game.entityManager.addEntity(unit);
     });
     
-    // Also trigger income
+    // Trigger income
     this.game.economy.triggerIncome();
   }
 }
