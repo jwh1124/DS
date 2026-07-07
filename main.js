@@ -145,14 +145,26 @@ class Game {
             }
           }
         } else if (type === 'tech') {
+          if (this.playerBase.techLevel >= 5) {
+            // Reached max level
+            return;
+          }
+          
           if (this.economy.spendMinerals(cost)) {
             this.playerBase.upgradeTech();
             
-            // Increase cost dynamically for next tech
-            const nextCost = cost * 2;
-            btn.dataset.cost = nextCost;
-            btn.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> ${nextCost}`;
-            btn.querySelector('.name').innerHTML = `시대 발전 (Lv.${this.playerBase.techLevel + 1})`;
+            if (this.playerBase.techLevel >= 5) {
+              btn.dataset.cost = Infinity;
+              btn.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> -`;
+              btn.querySelector('.name').innerHTML = `시대 발전 (MAX)`;
+              btn.style.opacity = 0.5;
+            } else {
+              // Increase cost dynamically for next tech
+              const nextCost = cost * 2;
+              btn.dataset.cost = nextCost;
+              btn.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> ${nextCost}`;
+              btn.querySelector('.name').innerHTML = `시대 발전 (Lv.${this.playerBase.techLevel + 1})`;
+            }
           }
         } else if (type === 'ultimate') {
           if (this.economy.spendMinerals(cost)) {

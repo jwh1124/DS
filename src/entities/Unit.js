@@ -149,27 +149,30 @@ export class Unit {
     this.target = null;
     this.attackCooldown = 0;
     this.hasAura = false;
-    this.isBoss = false; // set by WaveSystem later, but need a default
+    this.isBoss = false; 
     this.scale = 1;
+    this.tier = 1;
     
     this.dir = team === 'player' ? 1 : -1;
     
     // Scale stats based on Tech Level (Player) or Wave Count (Enemy)
     if (this.team === 'player' && this.game.playerBase) {
-      const techMultiplier = this.game.playerBase.techLevel;
-      if (techMultiplier > 1) {
-        this.maxHp *= techMultiplier;
+      const techLevel = Math.min(5, this.game.playerBase.techLevel);
+      if (techLevel > 1) {
+        this.maxHp *= techLevel;
         this.hp = this.maxHp;
-        this.damage *= techMultiplier;
-        this.scale += (techMultiplier - 1) * 0.2; // Slightly bigger per tech level
+        this.damage *= techLevel;
+        this.tier = Math.min(3, Math.ceil(techLevel / 2)); // Lv1=T1, Lv2-3=T2, Lv4-5=T3
+        this.scale = 1 + (this.tier - 1) * 0.4; // Max scale 1.8 at T3
       }
     } else if (this.team === 'enemy' && this.game.waveSystem) {
-      const enemyTechLevel = 1 + Math.floor(this.game.waveSystem.aiWaveCount / 5);
+      const enemyTechLevel = Math.min(5, 1 + Math.floor(this.game.waveSystem.aiWaveCount / 5));
       if (enemyTechLevel > 1) {
         this.maxHp *= enemyTechLevel;
         this.hp = this.maxHp;
         this.damage *= enemyTechLevel;
-        this.scale += (enemyTechLevel - 1) * 0.2;
+        this.tier = Math.min(3, Math.ceil(enemyTechLevel / 2));
+        this.scale = 1 + (this.tier - 1) * 0.4;
       }
     }
   }
@@ -386,11 +389,36 @@ export class Unit {
         if (char !== '-') {
           if (char === 'k') ctx.fillStyle = '#111'; // Outline
           else if (char === 'w') ctx.fillStyle = '#fff'; // White/Glass
-          else if (char === 'g') ctx.fillStyle = '#7f8c8d'; // Metal gray
-          else if (char === 'y') ctx.fillStyle = '#f1c40f'; // Yellow lights
-          else if (char === 'c') ctx.fillStyle = this.team === 'player' ? '#00e5ff' : '#ff3333'; // Main color
-          else if (char === 'd') ctx.fillStyle = this.team === 'player' ? '#0083b0' : '#b00000'; // Dark color
-          else if (char === 'r') ctx.fillStyle = '#e74c3c'; // Red for enemy
+          else if (char === 'g') {
+            // Metal gray
+            if (this.tier === 1) ctx.fillStyle = '#7f8c8d'; 
+            else if (this.tier === 2) ctx.fillStyle = '#bdc3c7'; // Silver Armor
+            else ctx.fillStyle = '#2c3e50'; // Dark Matter Armor
+          }
+          else if (char === 'y') {
+            // Yellow lights
+            if (this.tier === 1) ctx.fillStyle = '#f1c40f'; 
+            else if (this.tier === 2) ctx.fillStyle = '#e67e22'; // Orange Core
+            else ctx.fillStyle = '#00ff00'; // Neon Green Matrix
+          }
+          else if (char === 'c') {
+            // Main color Player
+            if (this.tier === 1) ctx.fillStyle = this.team === 'player' ? '#00e5ff' : '#ff3333'; 
+            else if (this.tier === 2) ctx.fillStyle = this.team === 'player' ? '#0984e3' : '#d63031'; // Royal Blue / Crimson
+            else ctx.fillStyle = this.team === 'player' ? '#6c5ce7' : '#8e44ad'; // Purple / Violet
+          }
+          else if (char === 'd') {
+            // Dark color Player/Enemy
+            if (this.tier === 1) ctx.fillStyle = this.team === 'player' ? '#0083b0' : '#b00000';
+            else if (this.tier === 2) ctx.fillStyle = this.team === 'player' ? '#005f73' : '#c0392b';
+            else ctx.fillStyle = this.team === 'player' ? '#4a69bd' : '#5f27cd';
+          }
+          else if (char === 'r') {
+            // Red for enemy
+            if (this.tier === 1) ctx.fillStyle = '#e74c3c';
+            else if (this.tier === 2) ctx.fillStyle = '#d63031';
+            else ctx.fillStyle = '#8e44ad';
+          }
           
           ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
         }

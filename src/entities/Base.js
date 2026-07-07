@@ -142,17 +142,39 @@ export class Base {
     
     ctx.translate(-w/2, -h/2); // Center
     
+    const tier = Math.min(3, Math.ceil(this.techLevel / 2));
+    
     for (let r = 0; r < sprite.length; r++) {
       for (let c = 0; c < sprite[r].length; c++) {
         const char = sprite[r][c];
         if (char !== '-') {
           if (char === 'k') ctx.fillStyle = '#111';
-          else if (char === 'c') ctx.fillStyle = this.techLevel > 1 ? (this.team === 'player' ? '#b8e994' : '#e55039') : (this.team === 'player' ? '#00e5ff' : '#e74c3c'); // Player main
-          else if (char === 'g') ctx.fillStyle = this.team === 'player' ? '#0083b0' : '#b00000'; // Player dark
-          else if (char === 'w') ctx.fillStyle = '#fff';    // Player glass/light
-          else if (char === 'r') ctx.fillStyle = this.techLevel > 1 ? '#eb2f06' : '#e74c3c'; // Enemy main
-          else if (char === 'd') ctx.fillStyle = '#b00000'; // Enemy dark
-          else if (char === 'y') ctx.fillStyle = '#f1c40f'; // Enemy light/yellow
+          else if (char === 'w') ctx.fillStyle = '#fff';
+          else if (char === 'c') {
+            if (tier === 1) ctx.fillStyle = this.team === 'player' ? '#00e5ff' : '#ff3333';
+            else if (tier === 2) ctx.fillStyle = this.team === 'player' ? '#0984e3' : '#d63031';
+            else ctx.fillStyle = this.team === 'player' ? '#6c5ce7' : '#8e44ad';
+          }
+          else if (char === 'g') { // Player dark
+            if (tier === 1) ctx.fillStyle = this.team === 'player' ? '#0083b0' : '#b00000';
+            else if (tier === 2) ctx.fillStyle = this.team === 'player' ? '#005f73' : '#c0392b';
+            else ctx.fillStyle = this.team === 'player' ? '#4a69bd' : '#5f27cd';
+          }
+          else if (char === 'r') {
+            if (tier === 1) ctx.fillStyle = '#e74c3c';
+            else if (tier === 2) ctx.fillStyle = '#d63031';
+            else ctx.fillStyle = '#8e44ad';
+          }
+          else if (char === 'd') { // Enemy dark
+            if (tier === 1) ctx.fillStyle = '#b00000';
+            else if (tier === 2) ctx.fillStyle = '#c0392b';
+            else ctx.fillStyle = '#5f27cd';
+          }
+          else if (char === 'y') {
+            if (tier === 1) ctx.fillStyle = '#f1c40f';
+            else if (tier === 2) ctx.fillStyle = '#e67e22';
+            else ctx.fillStyle = '#00ff00';
+          }
           
           ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
         }
