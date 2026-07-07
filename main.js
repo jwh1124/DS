@@ -104,18 +104,19 @@ class Game {
         if (type === 'income') {
           if (this.economy.spendMinerals(cost)) {
             this.economy.increaseIncome(10);
-            // Particle effect on base to show upgrade
             for (let i = 0; i < 15; i++) {
               this.entityManager.addEntity(new Particle(
                 this, this.playerBase.x, this.playerBase.y, '#2ecc71', 1.0, 50, Math.random() * Math.PI * 2, 4
               ));
             }
           }
+        } else if (type === 'ultimate') {
+          if (this.economy.spendMinerals(cost)) {
+            this.triggerOrbitalStrike();
+          }
         } else {
-          // Add directly to spawn queue (rollback SimCity)
           if (this.economy.spendMinerals(cost)) {
             this.waveSystem.addSpawner('player', type);
-            // Visual feedback
             for (let i = 0; i < 10; i++) {
               this.entityManager.addEntity(new Particle(
                 this, this.playerBase.x, this.playerBase.y, '#0ff', 0.5, 40, Math.random() * Math.PI * 2, 3
@@ -129,6 +130,38 @@ class Game {
     document.getElementById('restart-btn').addEventListener('click', () => {
       location.reload();
     });
+  }
+  
+  triggerOrbitalStrike() {
+    // Visual screen flash/shake
+    this.canvas.style.transform = "translate(10px, 10px)";
+    setTimeout(() => this.canvas.style.transform = "translate(-10px, -10px)", 50);
+    setTimeout(() => this.canvas.style.transform = "translate(10px, -10px)", 100);
+    setTimeout(() => this.canvas.style.transform = "translate(-10px, 10px)", 150);
+    setTimeout(() => this.canvas.style.transform = "none", 200);
+
+    // Damage all enemy units
+    const enemies = this.entityManager.getEntitiesByTeam('enemy');
+    enemies.forEach(enemy => {
+      // Create massive beam particles above them
+      for (let i = 0; i < 20; i++) {
+        this.entityManager.addEntity(new Particle(
+          this, enemy.x + (Math.random()-0.5)*40, enemy.y - 100 - Math.random()*200, '#f1c40f', 0.8, 300, Math.PI/2, 6
+        ));
+      }
+      // Deal massive damage
+      enemy.takeDamage(500); 
+    });
+    
+    // Also damage enemy base slightly
+    if (this.enemyBase && this.enemyBase.isAlive) {
+      this.enemyBase.takeDamage(100);
+      for (let i = 0; i < 50; i++) {
+        this.entityManager.addEntity(new Particle(
+          this, this.enemyBase.x + (Math.random()-0.5)*100, this.enemyBase.y - Math.random()*300, '#f1c40f', 1.0, 400, Math.PI/2, 8
+        ));
+      }
+    }
   }
 }
 

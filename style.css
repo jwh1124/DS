@@ -207,7 +207,7 @@ body {
   gap: 30px;
 }
 
-.panel.build-menu, .panel.economy-menu {
+.panel.build-menu, .panel.economy-menu, .panel.special-menu {
   padding: 15px 20px;
   display: flex;
   flex-direction: column;
@@ -226,6 +226,10 @@ body {
 .economy-menu .menu-title {
   color: #2ecc71;
   border-bottom: 1px solid rgba(46, 204, 113, 0.2);
+}
+.special-menu .menu-title {
+  color: #f1c40f;
+  border-bottom: 1px solid rgba(241, 196, 15, 0.2);
 }
 
 .build-buttons {
@@ -262,6 +266,12 @@ body {
   box-shadow: 0 5px 15px rgba(46, 204, 113, 0.2);
 }
 
+.build-btn.ultimate-btn:hover:not(:disabled) {
+  background: rgba(241, 196, 15, 0.15);
+  border-color: #f1c40f;
+  box-shadow: 0 5px 15px rgba(241, 196, 15, 0.3);
+}
+
 .build-btn:active:not(:disabled) {
   transform: translateY(0);
 }
@@ -283,6 +293,7 @@ body {
 .ranged-icon { background: linear-gradient(135deg, #2980b9, #6dd5ed); border: 2px solid #00e5ff; }
 .tank-icon { background: linear-gradient(135deg, #1f1c2c, #928dab); border: 2px solid #00e5ff; }
 .income-icon { background: linear-gradient(135deg, #11998e, #38ef7d); border: 2px solid #2ecc71; border-radius: 50% !important;}
+.ultimate-icon { background: linear-gradient(135deg, #8e44ad, #f1c40f); border: 2px solid #f1c40f; box-shadow: 0 0 10px #f1c40f; }
 
 .build-btn .info {
   display: flex;
@@ -306,6 +317,8 @@ body {
   gap: 4px;
 }
 .income-btn .cost { color: #2ecc71; }
+.ultimate-btn .cost { color: #f1c40f; }
+.ultimate-btn .name { color: #f1c40f; }
 
 /* Game Over */
 #game-over-screen {
