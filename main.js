@@ -5,7 +5,6 @@ import { HUD } from './src/ui/HUD.js';
 import { Base } from './src/entities/Base.js';
 import { Economy } from './src/engine/Economy.js';
 import { Particle } from './src/entities/Particle.js';
-import { Hero } from './src/entities/Hero.js';
 import { AudioEngine } from './src/engine/AudioEngine.js';
 
 export const WORLD_WIDTH = 3000;
@@ -31,14 +30,13 @@ class Game {
     this.entityManager.addEntity(this.playerBase);
     this.entityManager.addEntity(this.enemyBase);
     
-    // Paladog element: The Hero
-    this.hero = new Hero(this, 250, this.canvas.height / 2, 'player');
-    this.entityManager.addEntity(this.hero);
-    
     this.bgImage = new Image();
     this.bgImage.src = '/bg.png';
     
     this.cameraX = 0;
+    this.cameraSpeed = 600; // pixels per second
+    this.moveCameraLeft = false;
+    this.moveCameraRight = false;
     
     this.setupInput();
     this.start();
@@ -79,16 +77,17 @@ class Game {
     this.entityManager.update(dt);
     this.hud.update();
     
-    // Update Camera
-    if (this.hero.isAlive) {
-      let targetX = this.hero.x - this.canvas.width / 2;
-      // Clamp camera
-      if (targetX < 0) targetX = 0;
-      if (targetX > WORLD_WIDTH - this.canvas.width) targetX = WORLD_WIDTH - this.canvas.width;
-      
-      // Smooth camera follow
-      this.cameraX += (targetX - this.cameraX) * 5 * dt;
+    // Free Camera Movement
+    if (this.moveCameraLeft) {
+      this.cameraX -= this.cameraSpeed * dt;
     }
+    if (this.moveCameraRight) {
+      this.cameraX += this.cameraSpeed * dt;
+    }
+    
+    // Clamp camera
+    if (this.cameraX < 0) this.cameraX = 0;
+    if (this.cameraX > WORLD_WIDTH - this.canvas.width) this.cameraX = WORLD_WIDTH - this.canvas.width;
   }
   
   draw() {
@@ -145,10 +144,6 @@ class Game {
             this.playerBase.upgradeTech();
           }
         } else if (type === 'ultimate') {
-          if (!this.hero.isAlive) {
-            alert("사령관이 전사하여 궤도 폭격을 쓸 수 없습니다!");
-            return;
-          }
           if (this.economy.spendMinerals(cost)) {
             this.triggerOrbitalStrike();
           }
@@ -169,18 +164,14 @@ class Game {
       location.reload();
     });
     
-    // Hero Controls
+    // Free Camera Controls
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.hero.moveLeft = true;
-      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.hero.moveRight = true;
-      if (e.key === ' ') {
-        e.preventDefault();
-        this.hero.castHeal();
-      }
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.moveCameraLeft = true;
+      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.moveCameraRight = true;
     });
     window.addEventListener('keyup', (e) => {
-      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.hero.moveLeft = false;
-      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.hero.moveRight = false;
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.moveCameraLeft = false;
+      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.moveCameraRight = false;
     });
   }
   

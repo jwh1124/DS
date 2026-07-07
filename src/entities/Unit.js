@@ -175,14 +175,8 @@ export class Unit {
       this.isAlive = false;
       this.explode();
       
-      // Grant EXP to hero if enemy dies
-      if (this.team === 'enemy' && this.game.hero && this.game.hero.isAlive) {
-        let expVal = 10;
-        if (this.type === 'ranged') expVal = 20;
-        if (this.type === 'tank') expVal = 50;
-        if (this.isBoss) expVal = 500;
-        this.game.hero.gainExp(expVal);
-      }
+      // Grant EXP to player if enemy dies (can just increase score, or do nothing)
+      // We removed the Hero, so no more Hero EXP
     }
   }
 
