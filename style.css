@@ -176,7 +176,7 @@ body {
 .build-menu {
   position: absolute;
   bottom: 20px;
-  left: 50%;
+  left: 30%;
   transform: translateX(-50%);
   background: rgba(10, 15, 30, 0.8);
   backdrop-filter: blur(10px);
@@ -186,7 +186,23 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  pointer-events: auto; /* Enable clicks */
+  pointer-events: auto;
+}
+
+.economy-menu {
+  position: absolute;
+  bottom: 20px;
+  right: 30%;
+  transform: translateX(50%);
+  background: rgba(10, 15, 30, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(46, 204, 113, 0.4);
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
 }
 
 .menu-title {

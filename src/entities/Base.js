@@ -1,3 +1,23 @@
+const BASE_SPRITE = [
+  "        kkkkkkkk        ",
+  "      kkcccccccckk      ",
+  "    kkcccccccccckkwk    ",
+  "   kcccccccccccccckkwk  ",
+  "  kcccccccccccccccckkkw ",
+  " kccckkcccccccccckkcckk ",
+  " kcckwwkcccccccckwwkcck ",
+  "kccckwwkcccccccckwwkccck",
+  "kcccckkcccccccccckkcccck",
+  "kcccccccccccccccccccccck",
+  " kccccckkkkkkkkkkccccck ",
+  " kcccccckwwkkwkccccccck ",
+  "  kccccckwwkkwkcccccck  ",
+  "   kcccckkkkkkkccccck   ",
+  "    kcccccccccccccck    ",
+  "     kkcccccccccckk     ",
+  "       kkkkkkkkkk       "
+];
+
 export class Base {
   constructor(game, x, y, team, maxHp) {
     this.game = game;
@@ -6,7 +26,7 @@ export class Base {
     this.team = team;
     this.maxHp = maxHp;
     this.hp = maxHp;
-    this.radius = 60; // For collision/targeting
+    this.radius = 40; 
     this.isAlive = true;
   }
 
@@ -17,15 +37,12 @@ export class Base {
     if (this.hp <= 0) {
       this.hp = 0;
       this.isAlive = false;
-      
-      // Game Over logic
       const winner = this.team === 'player' ? 'enemy' : 'player';
       this.game.stop(winner);
     }
   }
 
   update(dt) {
-    // Base doesn't do much on its own
   }
 
   draw(ctx) {
@@ -34,26 +51,25 @@ export class Base {
     ctx.save();
     ctx.translate(this.x, this.y);
     
-    // Draw Base structure
-    ctx.beginPath();
-    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = this.team === 'player' ? 'rgba(0, 180, 219, 0.2)' : 'rgba(255, 51, 51, 0.2)';
-    ctx.fill();
+    // Draw pixel art base
+    const pixelSize = 5;
+    const w = BASE_SPRITE[0].length * pixelSize;
+    const h = BASE_SPRITE.length * pixelSize;
     
-    ctx.beginPath();
-    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = this.team === 'player' ? '#0ff' : '#ff3333';
-    ctx.stroke();
+    ctx.translate(-w/2, -h/2); // Center
     
-    // Inner core
-    ctx.beginPath();
-    ctx.arc(0, 0, 20, 0, Math.PI * 2);
-    ctx.fillStyle = this.team === 'player' ? '#0ff' : '#ff3333';
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = ctx.fillStyle;
-    ctx.fill();
-    
+    for (let r = 0; r < BASE_SPRITE.length; r++) {
+      for (let c = 0; c < BASE_SPRITE[r].length; c++) {
+        const char = BASE_SPRITE[r][c];
+        if (char !== ' ') {
+          if (char === 'k') ctx.fillStyle = '#111'; // Outline
+          else if (char === 'c') ctx.fillStyle = this.team === 'player' ? '#0ff' : '#ff3333'; // Main color
+          else if (char === 'w') ctx.fillStyle = '#fff'; // Highlight/Windows
+          
+          ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
+        }
+      }
+    }
     ctx.restore();
   }
 }

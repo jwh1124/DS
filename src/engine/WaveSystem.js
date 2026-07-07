@@ -1,5 +1,4 @@
 import { Unit } from '../entities/Unit.js';
-import { Building } from '../entities/Building.js';
 
 export class WaveSystem {
   constructor(game) {
@@ -25,17 +24,9 @@ export class WaveSystem {
     this.isActive = false;
   }
   
-  addSpawner(team, type, x, y) {
-    const building = new Building(this.game, x, y, team, type);
-    this.spawners[team].push(building);
-    this.game.entityManager.addEntity(building);
-    return building;
-  }
-  
-  removeSpawner(building) {
-    const arr = this.spawners[building.team];
-    const idx = arr.indexOf(building);
-    if (idx !== -1) arr.splice(idx, 1);
+  // Directly add a unit type to the spawn queue
+  addSpawner(team, type) {
+    this.spawners[team].push(type);
   }
 
   update(dt) {
@@ -56,24 +47,23 @@ export class WaveSystem {
     if (this.aiWaveCount % 2 === 0) {
       const types = ['melee', 'ranged', 'tank'];
       const randomType = types[Math.floor(Math.random() * types.length)];
-      // Enemy area bounds (rough right half)
-      const ex = this.game.canvas.width - 200 - Math.random() * 200;
-      const ey = 200 + Math.random() * 400;
-      this.addSpawner('enemy', randomType, ex, ey);
+      this.addSpawner('enemy', randomType);
     }
     
-    // Process player spawners
-    this.spawners.player.forEach((spawner) => {
-      spawner.triggerSpawn();
-      // Spawn unit near building
-      const unit = new Unit(this.game, spawner.x + 30, spawner.y, 'player', spawner.type);
+    // Spawn player units near player base
+    const pBaseY = this.game.canvas.height / 2;
+    this.spawners.player.forEach((type, idx) => {
+      // Stagger them slightly
+      const yOffset = (idx % 5 - 2) * 20;
+      const unit = new Unit(this.game, 150, pBaseY + yOffset, 'player', type);
       this.game.entityManager.addEntity(unit);
     });
 
-    // Process enemy spawners
-    this.spawners.enemy.forEach((spawner) => {
-      spawner.triggerSpawn();
-      const unit = new Unit(this.game, spawner.x - 30, spawner.y, 'enemy', spawner.type);
+    // Spawn enemy units near enemy base
+    const eBaseY = this.game.canvas.height / 2;
+    this.spawners.enemy.forEach((type, idx) => {
+      const yOffset = (idx % 5 - 2) * 20;
+      const unit = new Unit(this.game, this.game.canvas.width - 150, eBaseY + yOffset, 'enemy', type);
       this.game.entityManager.addEntity(unit);
     });
     

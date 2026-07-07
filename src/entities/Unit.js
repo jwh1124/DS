@@ -8,6 +8,60 @@ const UNIT_STATS = {
   tank: { hp: 500, damage: 10, range: 50, speed: 45, attackSpeed: 1.5, color: '#9b59b6' }
 };
 
+// Simple Pixel Art definitions using strings (c=color, w=white, k=black, -=transparent)
+const PIXEL_ART = {
+  player: {
+    melee: [
+      "---kk---",
+      "--kwck--",
+      "-kcck---",
+      "kkcckk--",
+      "-kcck---",
+      "--kk----"
+    ],
+    ranged: [
+      "---k----",
+      "--kwk---",
+      "-kccckk-",
+      "kcccccww",
+      "-kccckk-",
+      "--kwk---"
+    ],
+    tank: [
+      "-kkkk---",
+      "kcccckk-",
+      "kcccccww",
+      "kcccckk-",
+      "-kkkk---"
+    ]
+  },
+  enemy: {
+    melee: [
+      "---kk---",
+      "--kcww--",
+      "-kcck---",
+      "kkcckk--",
+      "-kcck---",
+      "--kk----"
+    ],
+    ranged: [
+      "---k----",
+      "--kwk---",
+      "kkccck--",
+      "wwccccck",
+      "kkccck--",
+      "--kwk---"
+    ],
+    tank: [
+      "---kkkk-",
+      "-kkcccck",
+      "wwccccck",
+      "-kkcccck",
+      "---kkkk-"
+    ]
+  }
+};
+
 export class Unit {
   constructor(game, x, y, team, type) {
     this.game = game;
@@ -25,7 +79,7 @@ export class Unit {
     this.attackSpeed = stats.attackSpeed;
     this.color = stats.color;
     
-    this.radius = 12;
+    this.radius = 16;
     this.isAlive = true;
     
     this.state = 'moving';
@@ -39,7 +93,6 @@ export class Unit {
     if (!this.isAlive) return;
     this.hp -= amount;
     
-    // Add floating text
     this.game.entityManager.addEntity(new FloatingText(this.game, `-${amount}`, this.x, this.y - 20, '#ff3333'));
     
     if (this.hp <= 0) {
@@ -50,7 +103,6 @@ export class Unit {
   }
 
   explode() {
-    // Explosion particles
     for (let i = 0; i < 15; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = Math.random() * 80 + 20;
@@ -108,7 +160,6 @@ export class Unit {
       this.x += this.speed * this.dir * dt;
     }
     
-    // Engine trails when moving
     if (this.state === 'moving' && Math.random() > 0.7) {
       const trailAngle = this.dir === 1 ? Math.PI : 0;
       this.game.entityManager.addEntity(new Particle(
@@ -119,14 +170,11 @@ export class Unit {
   
   performAttack(target) {
     if (this.type === 'ranged') {
-      // Fire projectile
       this.game.entityManager.addEntity(new Projectile(
         this.game, this.x, this.y, target, this.damage, this.color, this.team
       ));
     } else {
-      // Melee attack hit instantly
       target.takeDamage(this.damage);
-      // Small hit flash
       this.game.entityManager.addEntity(new Particle(
         this.game, target.x, target.y, '#fff', 0.1, 0, 0, 10
       ));
@@ -147,7 +195,7 @@ export class Unit {
         const fdx = this.x - f.x;
         const fdy = this.y - f.y;
         const fdist = Math.sqrt(fdx*fdx + fdy*fdy);
-        const minDist = this.radius + f.radius + 5; // spacing
+        const minDist = this.radius + f.radius + 5;
         
         if (fdist < minDist && fdist > 0) {
           const overlap = minDist - fdist;
@@ -173,62 +221,35 @@ export class Unit {
     ctx.save();
     ctx.translate(this.x, this.y);
     
-    // Rotate to face enemy base
-    const angle = this.team === 'player' ? 0 : Math.PI;
-    ctx.rotate(angle);
+    // Draw pixel art
+    const sprite = PIXEL_ART[this.team][this.type];
+    const pixelSize = 4;
+    const w = sprite[0].length * pixelSize;
+    const h = sprite.length * pixelSize;
     
-    // Sci-fi unit drawing
-    ctx.beginPath();
-    if (this.type === 'melee') {
-      // Fighter shape
-      ctx.moveTo(15, 0);
-      ctx.lineTo(-10, 12);
-      ctx.lineTo(-5, 0);
-      ctx.lineTo(-10, -12);
-    } else if (this.type === 'ranged') {
-      // Cruiser shape
-      ctx.moveTo(12, 0);
-      ctx.lineTo(-8, 10);
-      ctx.lineTo(-12, 6);
-      ctx.lineTo(-8, 0);
-      ctx.lineTo(-12, -6);
-      ctx.lineTo(-8, -10);
-    } else {
-      // Tank/Dreadnought shape
-      ctx.rect(-12, -10, 24, 20);
-      ctx.moveTo(0, -5);
-      ctx.lineTo(15, -5);
-      ctx.lineTo(15, 5);
-      ctx.lineTo(0, 5);
+    ctx.translate(-w/2, -h/2); // Center
+    
+    for (let r = 0; r < sprite.length; r++) {
+      for (let c = 0; c < sprite[r].length; c++) {
+        const char = sprite[r][c];
+        if (char !== '-') {
+          if (char === 'k') ctx.fillStyle = '#111'; // Outline
+          else if (char === 'c') ctx.fillStyle = this.team === 'player' ? '#0ff' : '#ff3333'; // Main color
+          else if (char === 'w') ctx.fillStyle = '#fff'; // Highlight/Eye/Gun
+          
+          ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
+        }
+      }
     }
-    
-    ctx.fillStyle = 'rgba(20, 20, 30, 0.9)';
-    ctx.strokeStyle = this.color;
-    ctx.lineWidth = 2;
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = this.color;
-    
-    ctx.fill();
-    ctx.stroke();
-    
-    // Add team ring
-    ctx.beginPath();
-    ctx.arc(0, 0, this.radius + 5, 0, Math.PI * 2);
-    ctx.strokeStyle = this.team === 'player' ? 'rgba(0, 255, 255, 0.3)' : 'rgba(255, 51, 51, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.shadowBlur = 0;
-    ctx.stroke();
-    
     ctx.restore();
     
-    // Draw Health bar above
+    // Health bar
     const hpPercent = this.hp / this.maxHp;
     ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
     ctx.fillRect(this.x - 15, this.y - this.radius - 12, 30, 4);
     ctx.fillStyle = 'rgba(0, 255, 0, 0.8)';
     ctx.fillRect(this.x - 15, this.y - this.radius - 12, 30 * hpPercent, 4);
     
-    // Draw attack beam for melee
     if (this.state === 'attacking' && this.target && this.type !== 'ranged' && this.attackCooldown > this.attackSpeed - 0.1) {
       ctx.beginPath();
       ctx.moveTo(this.x, this.y);
