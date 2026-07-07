@@ -47,8 +47,10 @@ export class WaveSystem {
     
     const types = ['melee', 'ranged', 'tank'];
     
-    // AI Builder Logic (scales with time)
-    const numEnemies = Math.min(1 + Math.floor(this.aiWaveCount / 3), 10);
+    // AI Builder Logic (scales linearly with time, not exponentially)
+    this.spawners.enemy = []; // Clear previous spawners to prevent infinite scaling freeze!
+    
+    const numEnemies = Math.min(1 + Math.floor(this.aiWaveCount * 1.5), 30); // Cap at 30 units max per wave
     for(let i = 0; i < numEnemies; i++) {
       const randomType = types[Math.floor(Math.random() * types.length)];
       this.addSpawner('enemy', randomType);

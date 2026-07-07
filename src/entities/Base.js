@@ -119,11 +119,9 @@ export class Base {
             
             // Visual laser line drawn in Base draw loop via a temporary effect,
             // or we just shoot a projectile. Let's shoot a projectile to make it easy.
-            import('./Projectile.js').then(({ Projectile }) => {
-              this.game.entityManager.addEntity(new Projectile(
-                this.game, this.x + (this.team === 'player' ? 50 : -50), this.y - 50, enemy, this.turretDamage, '#2ecc71', this.team
-              ));
-            });
+            this.game.entityManager.addEntity(new Projectile(
+              this.game, this.x + (this.team === 'player' ? 50 : -50), this.y - 50, enemy, this.turretDamage, '#2ecc71', this.team
+            ));
             break; // Fire once per cooldown
           }
         }
