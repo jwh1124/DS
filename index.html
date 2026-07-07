@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Desert Strike Web</title>
+    <link rel="stylesheet" href="./style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="game-container">
+      <canvas id="gameCanvas" width="1280" height="720"></canvas>
+      
+      <!-- UI Overlay -->
+      <div id="ui-layer">
+        <!-- Top HUD -->
+        <div class="hud-top">
+          <div class="base-health left">
+            <span class="label">PLAYER BASE</span>
+            <div class="health-bar-container">
+              <div id="player-health-bar" class="health-bar fill"></div>
+            </div>
+            <span id="player-health-text" class="health-text">5000 / 5000</span>
+          </div>
+          
+          <div class="wave-timer">
+            <span class="label">NEXT WAVE</span>
+            <span id="timer-text" class="time">15.0</span>
+          </div>
+          
+          <div class="base-health right">
+            <span class="label">ENEMY BASE</span>
+            <div class="health-bar-container">
+              <div id="enemy-health-bar" class="health-bar fill"></div>
+            </div>
+            <span id="enemy-health-text" class="health-text">5000 / 5000</span>
+          </div>
+        </div>
+
+        <!-- Economy HUD -->
+        <div class="hud-economy">
+          <div class="resource-box">
+            <span class="label">MINERALS</span>
+            <span id="minerals-text" class="value">50</span>
+          </div>
+          <div class="resource-box">
+            <span class="label">INCOME</span>
+            <span id="income-text" class="value">+10 / wave</span>
+          </div>
+        </div>
+
+        <!-- Building Menu -->
+        <div class="build-menu">
+          <div class="menu-title">CONSTRUCT SPAWNERS</div>
+          <div class="build-buttons">
+            <button class="build-btn" data-type="melee" data-cost="50">
+              <div class="icon melee-icon"></div>
+              <div class="info">
+                <span class="name">Melee (Zealot)</span>
+                <span class="cost">50 M</span>
+              </div>
+            </button>
+            <button class="build-btn" data-type="ranged" data-cost="100">
+              <div class="icon ranged-icon"></div>
+              <div class="info">
+                <span class="name">Ranged (Marine)</span>
+                <span class="cost">100 M</span>
+              </div>
+            </button>
+            <button class="build-btn" data-type="tank" data-cost="200">
+              <div class="icon tank-icon"></div>
+              <div class="info">
+                <span class="name">Tank (Goliath)</span>
+                <span class="cost">200 M</span>
+              </div>
+            </button>
+            <button class="build-btn income-btn" data-type="income" data-cost="150">
+              <div class="icon income-icon"></div>
+              <div class="info">
+                <span class="name">Gas Extractor</span>
+                <span class="cost">150 M</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Game Over Screen -->
+      <div id="game-over-screen" class="hidden">
+        <h1 id="game-over-title">VICTORY</h1>
+        <button id="restart-btn">PLAY AGAIN</button>
+      </div>
+    </div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
