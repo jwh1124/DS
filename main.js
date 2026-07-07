@@ -7,7 +7,7 @@ import { Economy } from './src/engine/Economy.js';
 import { Particle } from './src/entities/Particle.js';
 import { AudioEngine } from './src/engine/AudioEngine.js';
 
-export const WORLD_WIDTH = 3000;
+export const WORLD_WIDTH = 2000;
 
 class Game {
   constructor() {
@@ -37,6 +37,8 @@ class Game {
     this.cameraSpeed = 600; // pixels per second
     this.moveCameraLeft = false;
     this.moveCameraRight = false;
+    
+    this.gameSpeed = 1;
     
     this.setupInput();
     this.start();
@@ -72,12 +74,15 @@ class Game {
   
   update(dt) {
     if (!this.isRunning) return;
-    this.waveSystem.update(dt);
-    this.economy.update(dt);
-    this.entityManager.update(dt);
+    
+    const scaledDt = dt * this.gameSpeed;
+    
+    this.waveSystem.update(scaledDt);
+    this.economy.update(scaledDt);
+    this.entityManager.update(scaledDt);
     this.hud.update();
     
-    // Free Camera Movement
+    // Free Camera Movement (uses real dt for smooth movement)
     if (this.moveCameraLeft) {
       this.cameraX -= this.cameraSpeed * dt;
     }
@@ -162,6 +167,23 @@ class Game {
     
     document.getElementById('restart-btn').addEventListener('click', () => {
       location.reload();
+    });
+    
+    // Cheat Controls
+    document.querySelectorAll('.cheat-btn[data-speed]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.cheat-btn[data-speed]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.gameSpeed = parseFloat(btn.dataset.speed);
+      });
+    });
+    
+    // Initial active state for 1x speed
+    document.querySelector('.cheat-btn[data-speed="1"]').classList.add('active');
+    
+    document.getElementById('cheat-money-btn').addEventListener('click', () => {
+      this.economy.minerals += 10000;
+      this.audio.playMagic();
     });
     
     // Free Camera Controls
