@@ -6,16 +6,19 @@ import { Base } from './src/entities/Base.js';
 import { Economy } from './src/engine/Economy.js';
 import { Particle } from './src/entities/Particle.js';
 import { Hero } from './src/entities/Hero.js';
+import { AudioEngine } from './src/engine/AudioEngine.js';
+
+export const WORLD_WIDTH = 3000;
 
 class Game {
   constructor() {
     this.canvas = document.getElementById('gameCanvas');
     this.ctx = this.canvas.getContext('2d');
-    
-    // Disable anti-aliasing for pixel art
     this.ctx.imageSmoothingEnabled = false;
     
     this.isRunning = false;
+    
+    this.audio = new AudioEngine();
     
     this.entityManager = new EntityManager(this);
     this.economy = new Economy(this);
@@ -23,18 +26,19 @@ class Game {
     this.hud = new HUD(this);
     this.loop = new GameLoop(this.update.bind(this), this.draw.bind(this));
     
-    this.playerBase = new Base(this, 100, this.canvas.height / 2, 'player', 5000);
-    this.enemyBase = new Base(this, this.canvas.width - 100, this.canvas.height / 2, 'enemy', 5000);
+    this.playerBase = new Base(this, 150, this.canvas.height / 2, 'player', 5000);
+    this.enemyBase = new Base(this, WORLD_WIDTH - 150, this.canvas.height / 2, 'enemy', 5000);
     this.entityManager.addEntity(this.playerBase);
     this.entityManager.addEntity(this.enemyBase);
     
     // Paladog element: The Hero
-    this.hero = new Hero(this, 200, this.canvas.height / 2, 'player');
+    this.hero = new Hero(this, 250, this.canvas.height / 2, 'player');
     this.entityManager.addEntity(this.hero);
     
-    // Load background
     this.bgImage = new Image();
     this.bgImage.src = '/bg.png';
+    
+    this.cameraX = 0;
     
     this.setupInput();
     this.start();
@@ -59,7 +63,7 @@ class Game {
     
     if (winner === 'player') {
       title.textContent = 'VICTORY';
-      title.style.color = '#0ff';
+      title.style.color = '#00e5ff';
     } else {
       title.textContent = 'DEFEAT';
       title.style.color = '#ff3333';
@@ -74,30 +78,49 @@ class Game {
     this.economy.update(dt);
     this.entityManager.update(dt);
     this.hud.update();
+    
+    // Update Camera
+    if (this.hero.isAlive) {
+      let targetX = this.hero.x - this.canvas.width / 2;
+      // Clamp camera
+      if (targetX < 0) targetX = 0;
+      if (targetX > WORLD_WIDTH - this.canvas.width) targetX = WORLD_WIDTH - this.canvas.width;
+      
+      // Smooth camera follow
+      this.cameraX += (targetX - this.cameraX) * 5 * dt;
+    }
   }
   
   draw() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // Draw background
+    this.ctx.save();
+    // Apply Camera Translation
+    this.ctx.translate(-Math.floor(this.cameraX), 0);
+    
+    // Draw background (parallax or tiled)
     if (this.bgImage.complete) {
-      this.ctx.drawImage(this.bgImage, 0, 0, this.canvas.width, this.canvas.height);
+      // Tile background twice to cover 3000px roughly
+      this.ctx.drawImage(this.bgImage, 0, 0, 1500, this.canvas.height);
+      this.ctx.drawImage(this.bgImage, 1500, 0, 1500, this.canvas.height);
     } else {
       this.drawFallbackBackground();
     }
     
+    // Draw ground line
+    this.ctx.fillStyle = '#221100';
+    this.ctx.fillRect(0, this.canvas.height - 150, WORLD_WIDTH, 150);
+    this.ctx.fillStyle = '#ff8800';
+    this.ctx.fillRect(0, this.canvas.height - 150, WORLD_WIDTH, 5);
+    
     this.entityManager.draw(this.ctx);
+    
+    this.ctx.restore();
   }
   
   drawFallbackBackground() {
-    this.ctx.fillStyle = '#2c1e16'; // Desert dark brown
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.fillStyle = 'rgba(255, 150, 0, 0.05)';
-    for (let i = 0; i < 100; i++) {
-      const x = (Math.sin(i * 123) * 10000 + performance.now() * 0.01) % this.canvas.width;
-      const y = Math.cos(i * 321) * this.canvas.height;
-      this.ctx.fillRect(Math.abs(x), Math.abs(y), 4, 4);
-    }
+    this.ctx.fillStyle = '#2c1e16';
+    this.ctx.fillRect(0, 0, WORLD_WIDTH, this.canvas.height);
   }
   
   setupInput() {
@@ -105,6 +128,8 @@ class Game {
       btn.addEventListener('click', (e) => {
         const type = btn.dataset.type;
         const cost = parseInt(btn.dataset.cost);
+        
+        this.audio.playClick();
         
         if (type === 'income') {
           if (this.economy.spendMinerals(cost)) {
@@ -120,10 +145,8 @@ class Game {
             this.playerBase.upgradeTech();
           }
         } else if (type === 'ultimate') {
-          // If Hero is dead, cannot use ultimate
           if (!this.hero.isAlive) {
-            alert("영웅(사령관)이 전사하여 궁극기를 사용할 수 없습니다!");
-            this.economy.minerals += cost; // refund
+            alert("사령관이 전사하여 궤도 폭격을 쓸 수 없습니다!");
             return;
           }
           if (this.economy.spendMinerals(cost)) {
@@ -134,7 +157,7 @@ class Game {
             this.waveSystem.addSpawner('player', type);
             for (let i = 0; i < 10; i++) {
               this.entityManager.addEntity(new Particle(
-                this, this.playerBase.x, this.playerBase.y, '#0ff', 0.5, 40, Math.random() * Math.PI * 2, 3
+                this, this.playerBase.x, this.playerBase.y, '#00e5ff', 0.5, 40, Math.random() * Math.PI * 2, 3
               ));
             }
           }
@@ -146,10 +169,14 @@ class Game {
       location.reload();
     });
     
-    // Hero Movement Controls (A/D keys)
+    // Hero Controls
     window.addEventListener('keydown', (e) => {
       if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.hero.moveLeft = true;
       if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.hero.moveRight = true;
+      if (e.key === ' ') {
+        e.preventDefault();
+        this.hero.castHeal();
+      }
     });
     window.addEventListener('keyup', (e) => {
       if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.hero.moveLeft = false;
@@ -158,27 +185,24 @@ class Game {
   }
   
   triggerOrbitalStrike() {
-    // Visual screen flash/shake
-    this.canvas.style.transform = "translate(10px, 10px)";
-    setTimeout(() => this.canvas.style.transform = "translate(-10px, -10px)", 50);
-    setTimeout(() => this.canvas.style.transform = "translate(10px, -10px)", 100);
-    setTimeout(() => this.canvas.style.transform = "translate(-10px, 10px)", 150);
+    this.audio.playExplosion();
+    
+    this.canvas.style.transform = "translate(15px, 15px)";
+    setTimeout(() => this.canvas.style.transform = "translate(-15px, -15px)", 50);
+    setTimeout(() => this.canvas.style.transform = "translate(15px, -15px)", 100);
+    setTimeout(() => this.canvas.style.transform = "translate(-15px, 15px)", 150);
     setTimeout(() => this.canvas.style.transform = "none", 200);
 
-    // Damage all enemy units
     const enemies = this.entityManager.getEntitiesByTeam('enemy');
     enemies.forEach(enemy => {
-      // Create massive beam particles above them
       for (let i = 0; i < 20; i++) {
         this.entityManager.addEntity(new Particle(
           this, enemy.x + (Math.random()-0.5)*40, enemy.y - 100 - Math.random()*200, '#f1c40f', 0.8, 300, Math.PI/2, 6
         ));
       }
-      // Deal massive damage
       enemy.takeDamage(500); 
     });
     
-    // Also damage enemy base slightly
     if (this.enemyBase && this.enemyBase.isAlive) {
       this.enemyBase.takeDamage(100);
       for (let i = 0; i < 50; i++) {

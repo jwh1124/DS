@@ -1,4 +1,6 @@
 import { Unit } from '../entities/Unit.js';
+import { FloatingText } from '../entities/FloatingText.js';
+import { WORLD_WIDTH } from '../../main.js';
 
 export class WaveSystem {
   constructor(game) {
@@ -43,11 +45,21 @@ export class WaveSystem {
   spawnWave() {
     this.aiWaveCount++;
     
-    // AI Builder Logic
-    if (this.aiWaveCount % 2 === 0) {
-      const types = ['melee', 'ranged', 'tank'];
+    const types = ['melee', 'ranged', 'tank'];
+    
+    // AI Builder Logic (scales with time)
+    const numEnemies = Math.min(1 + Math.floor(this.aiWaveCount / 3), 10);
+    for(let i = 0; i < numEnemies; i++) {
       const randomType = types[Math.floor(Math.random() * types.length)];
       this.addSpawner('enemy', randomType);
+    }
+    
+    // Boss wave
+    let isBossWave = false;
+    if (this.aiWaveCount > 0 && this.aiWaveCount % 5 === 0) {
+      isBossWave = true;
+      this.addSpawner('enemy', 'tank'); // The boss
+      this.game.entityManager.addEntity(new FloatingText(this.game, `WARNING: BOSS WAVE!`, WORLD_WIDTH/2, 200, '#ff3333'));
     }
     
     // Spawn player units near player base
@@ -63,7 +75,13 @@ export class WaveSystem {
     const eBaseY = this.game.canvas.height / 2;
     this.spawners.enemy.forEach((type, idx) => {
       const yOffset = (idx % 5 - 2) * 20;
-      const unit = new Unit(this.game, this.game.canvas.width - 150, eBaseY + yOffset, 'enemy', type);
+      const unit = new Unit(this.game, WORLD_WIDTH - 200, eBaseY + yOffset, 'enemy', type);
+      
+      // If it's a boss wave, make the last unit the boss
+      if (isBossWave && idx === this.spawners.enemy.length - 1) {
+        unit.makeBoss();
+      }
+      
       this.game.entityManager.addEntity(unit);
     });
     

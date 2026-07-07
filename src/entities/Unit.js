@@ -149,20 +149,40 @@ export class Unit {
     this.target = null;
     this.attackCooldown = 0;
     this.hasAura = false;
+    this.isBoss = false; // set by WaveSystem later, but need a default
+    this.scale = 1;
     
     this.dir = team === 'player' ? 1 : -1;
+  }
+  
+  makeBoss() {
+    this.isBoss = true;
+    this.scale = 2.5;
+    this.maxHp *= 10;
+    this.hp = this.maxHp;
+    this.damage *= 3;
+    this.radius *= 2.5;
   }
 
   takeDamage(amount) {
     if (!this.isAlive) return;
     this.hp -= amount;
     
-    this.game.entityManager.addEntity(new FloatingText(this.game, `-${amount}`, this.x, this.y - 30, '#ff3333'));
+    this.game.entityManager.addEntity(new FloatingText(this.game, `-${Math.floor(amount)}`, this.x, this.y - 30, '#ff3333'));
     
     if (this.hp <= 0) {
       this.hp = 0;
       this.isAlive = false;
       this.explode();
+      
+      // Grant EXP to hero if enemy dies
+      if (this.team === 'enemy' && this.game.hero && this.game.hero.isAlive) {
+        let expVal = 10;
+        if (this.type === 'ranged') expVal = 20;
+        if (this.type === 'tank') expVal = 50;
+        if (this.isBoss) expVal = 500;
+        this.game.hero.gainExp(expVal);
+      }
     }
   }
 
@@ -247,11 +267,11 @@ export class Unit {
     const currentDamage = this.hasAura ? this.damage * 1.5 : this.damage;
     if (this.type === 'ranged') {
       this.game.entityManager.addEntity(new Projectile(
-        this.game, this.x + (this.dir * 15), this.y - 5, target, currentDamage, this.color, this.team
+        this.game, this.x + (this.dir * 15 * this.scale), this.y - 5 * this.scale, target, currentDamage, this.color, this.team
       ));
       // Muzzle flash
       this.game.entityManager.addEntity(new Particle(
-        this.game, this.x + (this.dir * 20), this.y - 5, '#fff', 0.1, 0, 0, 8
+        this.game, this.x + (this.dir * 20 * this.scale), this.y - 5 * this.scale, '#fff', 0.1, 0, 0, 8
       ));
     } else {
       target.takeDamage(currentDamage);
@@ -320,6 +340,9 @@ export class Unit {
     if (this.dir === -1) {
       ctx.scale(-1, 1);
     }
+    
+    // Boss scale
+    ctx.scale(this.scale, this.scale);
     
     // Draw pixel art
     const sprite = PIXEL_ART[this.team][this.type];
