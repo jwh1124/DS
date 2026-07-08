@@ -166,7 +166,13 @@ export class Unit {
         this.scale = 1 + (this.tier - 1) * 0.4; // Max scale 1.8 at T3
       }
     } else if (this.team === 'enemy' && this.game.waveSystem) {
+      const difficultyMultiplier = this.game.difficulty || 1.0;
       const enemyTechLevel = Math.min(5, 1 + Math.floor(this.game.waveSystem.aiWaveCount / 5));
+      
+      this.maxHp *= difficultyMultiplier;
+      this.hp = this.maxHp;
+      this.damage *= difficultyMultiplier;
+      
       if (enemyTechLevel > 1) {
         this.maxHp *= enemyTechLevel;
         this.hp = this.maxHp;

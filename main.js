@@ -39,6 +39,7 @@ class Game {
     this.moveCameraRight = false;
     
     this.gameSpeed = 1;
+    this.difficulty = 1.0; // Default Normal
     
     // Parallax Dust
     this.dustParticles = Array.from({length: 100}, () => ({
@@ -52,6 +53,15 @@ class Game {
     
     // UI Setup
     document.getElementById('ui-layer').style.display = 'none';
+    
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.difficulty = parseFloat(btn.dataset.diff);
+      });
+    });
+    
     document.getElementById('start-btn').addEventListener('click', () => {
       document.getElementById('title-screen').style.opacity = '0';
       setTimeout(() => {

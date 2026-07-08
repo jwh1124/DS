@@ -50,7 +50,9 @@ export class WaveSystem {
     // AI Builder Logic (scales linearly with time, not exponentially)
     this.spawners.enemy = []; // Clear previous spawners to prevent infinite scaling freeze!
     
-    const numEnemies = Math.min(1 + Math.floor(this.aiWaveCount * 1.5), 30); // Cap at 30 units max per wave
+    const difficultyMultiplier = this.game.difficulty || 1.0;
+    const maxEnemies = Math.floor(30 * difficultyMultiplier);
+    const numEnemies = Math.min(1 + Math.floor(this.aiWaveCount * 1.5 * difficultyMultiplier), maxEnemies); // Cap at max
     for(let i = 0; i < numEnemies; i++) {
       const randomType = types[Math.floor(Math.random() * types.length)];
       this.addSpawner('enemy', randomType);
