@@ -3,9 +3,9 @@ import { Projectile } from './Projectile.js';
 import { FloatingText } from './FloatingText.js';
 
 const UNIT_STATS = {
-  melee: { hp: 200, damage: 15, range: 45, speed: 85, attackSpeed: 1.0, color: '#00e5ff' }, // Player: Cyan, Enemy: Red
-  ranged: { hp: 80, damage: 25, range: 250, speed: 70, attackSpeed: 1.2, color: '#3498db' },
-  tank: { hp: 500, damage: 10, range: 60, speed: 40, attackSpeed: 1.5, color: '#9b59b6' }
+  melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#00e5ff' }, // Player: Cyan, Enemy: Red
+  ranged: { hp: 60, damage: 35, range: 250, speed: 70, attackSpeed: 1.2, color: '#3498db' },
+  tank: { hp: 300, damage: 60, range: 60, speed: 40, attackSpeed: 1.5, color: '#9b59b6' }
 };
 
 // 16x16 Pixel Art Matrices

@@ -177,9 +177,9 @@ class Game {
     const ttRange = document.getElementById('tt-range');
 
     const unitStats = {
-      melee: { title: '질럿 (근접)', desc: '체력이 높고 저렴한 최전방 방패 역할.', hp: 120, dmg: 10, range: '근접' },
-      ranged: { title: '마린 (원거리)', desc: '사거리가 길지만 체력이 약한 딜러.', hp: 60, dmg: 15, range: '원거리' },
-      tank: { title: '골리앗 (헤비 탱크)', desc: '단단한 장갑과 강력한 한방 공격력.', hp: 300, dmg: 40, range: '중거리' },
+      melee: { title: '질럿 (근접)', desc: '체력이 높고 저렴한 최전방 방패 역할.', hp: 120, dmg: 25, range: '근접' },
+      ranged: { title: '마린 (원거리)', desc: '사거리가 길지만 체력이 약한 딜러.', hp: 60, dmg: 35, range: '원거리' },
+      tank: { title: '골리앗 (헤비 탱크)', desc: '단단한 장갑과 강력한 한방 공격력.', hp: 300, dmg: 60, range: '중거리' },
       income: { title: '가스 채취기', desc: '매 웨이브마다 추가 미네랄을 +10 획득.', hp: '-', dmg: '-', range: '-' },
       tech: { title: '시대 발전', desc: '본진 타워 개방 및 유닛 최대체력/공격력 티어 업그레이드.', hp: '-', dmg: '-', range: '-' },
       ultimate: { title: '궤도 폭격', desc: '화면 내 모든 적에게 500 고정 피해 및 본진 타격.', hp: '-', dmg: '500', range: '전체' }
