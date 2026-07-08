@@ -31,7 +31,7 @@ class Game {
     this.entityManager.addEntity(this.enemyBase);
     
     this.bgImage = new Image();
-    this.bgImage.src = '/bg.png';
+    this.bgImage.src = import.meta.env.BASE_URL + 'bg.png';
     
     this.cameraX = 0;
     this.cameraSpeed = 600; // pixels per second
@@ -122,7 +122,7 @@ class Game {
     this.ctx.translate(-Math.floor(this.cameraX), 0);
     
     // Draw background (parallax or tiled)
-    if (this.bgImage.complete) {
+    if (this.bgImage.complete && this.bgImage.naturalWidth > 0) {
       // Tile background twice to cover 3000px roughly
       this.ctx.drawImage(this.bgImage, 0, 0, 1500, this.canvas.height);
       this.ctx.drawImage(this.bgImage, 1500, 0, 1500, this.canvas.height);
