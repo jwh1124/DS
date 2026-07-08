@@ -81,10 +81,10 @@ class Game {
     const title = document.getElementById('game-over-title');
     
     if (winner === 'player') {
-      title.textContent = 'VICTORY';
+      title.textContent = '승리!';
       title.style.color = '#00e5ff';
     } else {
-      title.textContent = 'DEFEAT';
+      title.textContent = '패배...';
       title.style.color = '#ff3333';
     }
     

@@ -1,22 +1,22 @@
-# Desert Strike - Commercial Edition
+# 데저트 스트라이크 - 상용화 에디션 (Desert Strike - Commercial Edition)
 
-Welcome to Desert Strike - Commercial Edition! This is a web-based strategy defense game where you build units, upgrade your technology, and destroy the enemy base.
+데저트 스트라이크 상용화 에디션에 오신 것을 환영합니다! 이 게임은 웹 기반 전략 디펜스 게임으로 유닛을 생산하고, 기술을 발전시키며 적의 본진을 파괴하는 것이 목표입니다.
 
-## 🎮 Play the Game Now!
-**Play directly in your browser:** [https://jwh1124.github.io/DS/](https://jwh1124.github.io/DS/)
+## 🎮 지금 바로 플레이하세요!
+**웹 브라우저에서 바로 플레이:** [https://jwh1124.github.io/DS/](https://jwh1124.github.io/DS/)
 
-## 🚀 Features
-- **Commercial UI/UX**: Enjoy a fully polished Title Screen, BGM, and UI tooltips.
-- **Dynamic Tier Upgrades**: Upgrade your technology up to Level 5. Your base and units will visually evolve with new armor and neon glows (Silver/Gold, Dark Matter/Matrix Green).
-- **Parallax Background**: Immersive parallax dust storms that move with the camera.
-- **Retro Audio Engine**: Custom Web Audio API generated 8-bit retro sound effects and Synth Wave BGM.
-- **Orbital Strike**: Call down devastating orbital strikes to clear the map.
+## 🚀 주요 기능
+- **상용급 UI/UX**: 완성도 높은 타이틀 화면, BGM, UI 툴팁을 즐겨보세요.
+- **다이내믹 티어 업그레이드**: 테크 레벨을 5까지 올릴 수 있습니다. 레벨업 시 본진과 유닛이 새로운 장갑과 네온 발광 효과(실버/골드, 다크매터/매트릭스 그린)로 화려하게 진화합니다.
+- **패럴랙스 배경**: 카메라 이동에 따라 부유하는 입체적인 모래먼지 환경이 연출됩니다.
+- **레트로 오디오 엔진**: Web Audio API로 자체 합성된 8비트 레트로 사운드 이펙트와 신스 웨이브(Synth Wave) BGM.
+- **궤도 폭격 (궁극기)**: 막강한 궤도 폭격을 호출해 전장의 모든 적을 쓸어버리세요.
 
-## 🛠️ Local Development
-If you'd like to run the project locally:
-1. Clone the repository
-2. Run `npm install`
-3. Run `npm run dev`
-4. Open your browser to `http://localhost:5173/`
+## 🛠️ 로컬 개발 환경 구축
+직접 프로젝트를 로컬에서 실행해 보고 싶다면:
+1. 리포지토리 클론 (Clone)
+2. `npm install` 실행
+3. `npm run dev` 실행
+4. 브라우저에서 `http://localhost:5173/` 접속
 
-Enjoy the game!
+즐겁게 플레이해 주세요!
