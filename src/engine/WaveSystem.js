@@ -19,7 +19,7 @@ export class WaveSystem {
     this.aiMinerals = 250;
     this.aiIncome = 60;
     this.aiUltimateCooldown = 0;
-    this.lastActionLog = '[스마트 AI]: 5종 종합 유닛 전술 준비 완료';
+    this.lastActionLog = '[스마트 AI]: 양팀 50마리 공정 스폰 통제 가동';
   }
 
   start() {
@@ -38,7 +38,12 @@ export class WaveSystem {
   }
   
   addSpawner(team, type) {
-    this.spawners[team].push(type);
+    // Strict 50-unit spawner cap for BOTH teams!
+    if (this.spawners[team].length < 50) {
+      this.spawners[team].push(type);
+      return true;
+    }
+    return false;
   }
 
   update(dt) {
@@ -65,7 +70,7 @@ export class WaveSystem {
     const unitCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
     const unitNames = { melee: '질럿', ranged: '마린', medic: '메딕(힐러)', sniper: '스나이퍼', tank: '골리앗' };
     
-    // AI Tactical Orbital Strike Check (Targets ONLY battlefield units, NOT Base!)
+    // AI Tactical Orbital Strike Check
     const playerUnits = this.game.entityManager.getEntitiesByTeam('player').filter(e => e.radius && e.type);
     if (playerUnits.length >= 8 && this.aiUltimateCooldown <= 0 && this.aiMinerals >= 300) {
       this.triggerAiOrbitalStrike();
@@ -80,7 +85,7 @@ export class WaveSystem {
         this.lastActionLog = `[스마트 AI 업그레이드]: AI 시대 발전 (Lv.${this.game.enemyBase.techLevel}) 완료! (-800💎)`;
       }
       
-      // Smart Counter-Pick AI Logic (across 5 unit classes)
+      // Smart Counter-Pick AI Logic (Strict 50 Spawner Cap for Enemy AI!)
       const pMelee = this.spawners.player.filter(t => t === 'melee').length;
       const pRanged = this.spawners.player.filter(t => t === 'ranged').length;
       const pSniper = this.spawners.player.filter(t => t === 'sniper').length;
@@ -88,13 +93,13 @@ export class WaveSystem {
       
       let preferredUnit = 'melee';
       if (pTank > 2) {
-        preferredUnit = 'sniper'; // Snipers destroy heavy tanks!
+        preferredUnit = 'sniper';
       } else if (pMelee >= pRanged && pMelee >= pTank) {
-        preferredUnit = 'ranged'; // Marines counter Zealots
+        preferredUnit = 'ranged';
       } else if (pRanged >= pMelee && pRanged >= pTank) {
-        preferredUnit = 'tank';   // Goliaths counter Marines
+        preferredUnit = 'tank';
       } else if (this.spawners.enemy.length > 5 && !this.spawners.enemy.includes('medic')) {
-        preferredUnit = 'medic';  // Add medic support if army is growing
+        preferredUnit = 'medic';
       } else {
         preferredUnit = 'melee';
       }
@@ -103,7 +108,8 @@ export class WaveSystem {
       let lastBoughtType = '';
       let attempts = 0;
       
-      while (this.aiMinerals >= 50 && attempts < 6) {
+      // Strictly stop AI buying if enemy spawners reach 50!
+      while (this.aiMinerals >= 50 && attempts < 6 && this.spawners.enemy.length < 50) {
         attempts++;
         
         let chosen = preferredUnit;
@@ -114,13 +120,19 @@ export class WaveSystem {
           chosen = affordable[Math.floor(Math.random() * affordable.length)];
         }
         
-        this.addSpawner('enemy', chosen);
-        this.aiMinerals -= unitCosts[chosen];
-        purchasedCount++;
-        lastBoughtType = chosen;
+        const success = this.addSpawner('enemy', chosen);
+        if (success) {
+          this.aiMinerals -= unitCosts[chosen];
+          purchasedCount++;
+          lastBoughtType = chosen;
+        } else {
+          break; // Hit 50 cap
+        }
       }
       
-      if (purchasedCount > 0) {
+      if (this.spawners.enemy.length >= 50) {
+        this.lastActionLog = `[AI 최대 한도]: 적군 영구 스폰라인 50/50 풀 가동 중!`;
+      } else if (purchasedCount > 0) {
         this.lastActionLog = `[AI 카운터 저격]: ${unitNames[lastBoughtType]} 추가 (-${unitCosts[lastBoughtType]}💎, 잔여 ${Math.floor(this.aiMinerals)}💎)`;
       } else if (!this.lastActionLog.includes('시대 발전') && !this.lastActionLog.includes('궤도 폭격')) {
         this.lastActionLog = `[AI 자원 저축]: 구매 없음 (잔여 ${Math.floor(this.aiMinerals)}💎, 인컴 +${this.aiIncome}💎)`;
@@ -193,7 +205,5 @@ export class WaveSystem {
       ));
       p.takeDamage(150, true);
     });
-    
-    // NOTE: Base damage REMOVED as requested! Orbital strike affects units ONLY!
   }
 }

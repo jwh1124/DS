@@ -125,8 +125,8 @@ class Game {
       this.ultimateCooldown = Math.max(0, this.ultimateCooldown - scaledDt);
     }
     
-    // Auto-Spend Feature (Up to 150 units cap)
-    if (this.autoSpend && this.economy.minerals >= 50 && this.waveSystem.spawners.player.length < 150) {
+    // Auto-Spend Feature (Strictly capped at 50 units symmetrically!)
+    if (this.autoSpend && this.economy.minerals >= 50 && this.waveSystem.spawners.player.length < 50) {
       const pTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank'];
       const pCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
       const affordable = pTypes.filter(t => pCosts[t] <= this.economy.minerals);
@@ -173,7 +173,7 @@ class Game {
     if (qSniper) qSniper.textContent = `x${pSniper}`;
     if (qTank) qTank.textContent = `x${pTank}`;
     
-    // Update Debug Monitor UI with Spawner Cap Status
+    // Update Debug Monitor UI with Strict 50/50 Symmetrical Cap Status
     const enemySpawners = this.waveSystem.spawners.enemy;
     const aiMelee = enemySpawners.filter(t => t === 'melee').length;
     const aiRanged = enemySpawners.filter(t => t === 'ranged').length;
@@ -189,8 +189,8 @@ class Game {
     
     if (dbgAiMinerals) dbgAiMinerals.textContent = `${Math.floor(this.waveSystem.aiMinerals)} 💎`;
     if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 💎`;
-    if (dbgAiUnits) dbgAiUnits.textContent = `질럿${aiMelee} 마린${aiRanged} 메딕${aiMedic} 스나${aiSniper} 골리앗${aiTank} (${enemySpawners.length}/150)`;
-    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `질럿${pMelee} 마린${pRanged} 메딕${pMedic} 스나${pSniper} 골리앗${pTank} (${playerSpawners.length}/150)`;
+    if (dbgAiUnits) dbgAiUnits.textContent = `질럿${aiMelee} 마린${aiRanged} 메딕${aiMedic} 스나${aiSniper} 골리앗${aiTank} (${enemySpawners.length}/50 MAX)`;
+    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `질럿${pMelee} 마린${pRanged} 메딕${pMedic} 스나${pSniper} 골리앗${pTank} (${playerSpawners.length}/50 MAX)`;
     if (dbgLastAction && this.waveSystem.lastActionLog) dbgLastAction.textContent = this.waveSystem.lastActionLog;
     
     if (this.moveCameraLeft) {
@@ -302,20 +302,22 @@ class Game {
         this.triggerOrbitalStrike();
       }
     } else {
-      // Expanded Spawner Cap from 50 to 150 with explicit warning feedback!
-      if (this.waveSystem.spawners.player.length >= 150) {
+      // STRICT 50-UNIT SPAWNER CAP SYMMETRICALLY FOR BOTH TEAMS!
+      if (this.waveSystem.spawners.player.length >= 50) {
         this.entityManager.addEntity(new FloatingText(
-          this, `⚠️ 스폰 라인 최대 한도 (150/150)!`, this.playerBase.x, this.playerBase.y - 120, '#ff0055', true
+          this, `⚠️ 스폰 라인 최대 한도 (50/50 MAX)!`, this.playerBase.x, this.playerBase.y - 120, '#ff0055', true
         ));
         return;
       }
       
       if (this.economy.spendMinerals(cost)) {
-        this.waveSystem.addSpawner('player', type);
-        for (let i = 0; i < 12; i++) {
-          this.entityManager.addEntity(new Particle(
-            this, this.playerBase.x, this.playerBase.y, '#00e5ff', 0.5, 50, Math.random() * Math.PI * 2, 3, 'spark'
-          ));
+        const added = this.waveSystem.addSpawner('player', type);
+        if (added) {
+          for (let i = 0; i < 12; i++) {
+            this.entityManager.addEntity(new Particle(
+              this, this.playerBase.x, this.playerBase.y, '#00e5ff', 0.5, 50, Math.random() * Math.PI * 2, 3, 'spark'
+            ));
+          }
         }
       }
     }
