@@ -7,6 +7,7 @@ import { Base } from './src/entities/Base.js';
 import { Economy } from './src/engine/Economy.js';
 import { Particle } from './src/entities/Particle.js';
 import { AudioEngine } from './src/engine/AudioEngine.js';
+import { FloatingText } from './src/entities/FloatingText.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -124,8 +125,8 @@ class Game {
       this.ultimateCooldown = Math.max(0, this.ultimateCooldown - scaledDt);
     }
     
-    // Auto-Spend Feature
-    if (this.autoSpend && this.economy.minerals >= 50) {
+    // Auto-Spend Feature (Up to 150 units cap)
+    if (this.autoSpend && this.economy.minerals >= 50 && this.waveSystem.spawners.player.length < 150) {
       const pTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank'];
       const pCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
       const affordable = pTypes.filter(t => pCosts[t] <= this.economy.minerals);
@@ -172,7 +173,7 @@ class Game {
     if (qSniper) qSniper.textContent = `x${pSniper}`;
     if (qTank) qTank.textContent = `x${pTank}`;
     
-    // Update Debug Monitor UI
+    // Update Debug Monitor UI with Spawner Cap Status
     const enemySpawners = this.waveSystem.spawners.enemy;
     const aiMelee = enemySpawners.filter(t => t === 'melee').length;
     const aiRanged = enemySpawners.filter(t => t === 'ranged').length;
@@ -188,8 +189,8 @@ class Game {
     
     if (dbgAiMinerals) dbgAiMinerals.textContent = `${Math.floor(this.waveSystem.aiMinerals)} 💎`;
     if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 💎`;
-    if (dbgAiUnits) dbgAiUnits.textContent = `질럿${aiMelee} 마린${aiRanged} 메딕${aiMedic} 스나${aiSniper} 골리앗${aiTank}`;
-    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `질럿${pMelee} 마린${pRanged} 메딕${pMedic} 스나${pSniper} 골리앗${pTank}`;
+    if (dbgAiUnits) dbgAiUnits.textContent = `질럿${aiMelee} 마린${aiRanged} 메딕${aiMedic} 스나${aiSniper} 골리앗${aiTank} (${enemySpawners.length}/150)`;
+    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `질럿${pMelee} 마린${pRanged} 메딕${pMedic} 스나${pSniper} 골리앗${pTank} (${playerSpawners.length}/150)`;
     if (dbgLastAction && this.waveSystem.lastActionLog) dbgLastAction.textContent = this.waveSystem.lastActionLog;
     
     if (this.moveCameraLeft) {
@@ -301,7 +302,13 @@ class Game {
         this.triggerOrbitalStrike();
       }
     } else {
-      if (this.waveSystem.spawners.player.length >= 50) return;
+      // Expanded Spawner Cap from 50 to 150 with explicit warning feedback!
+      if (this.waveSystem.spawners.player.length >= 150) {
+        this.entityManager.addEntity(new FloatingText(
+          this, `⚠️ 스폰 라인 최대 한도 (150/150)!`, this.playerBase.x, this.playerBase.y - 120, '#ff0055', true
+        ));
+        return;
+      }
       
       if (this.economy.spendMinerals(cost)) {
         this.waveSystem.addSpawner('player', type);
@@ -462,8 +469,6 @@ class Game {
       ));
       enemy.takeDamage(150, true);
     });
-    
-    // NOTE: Base damage REMOVED as requested! Orbital strike affects units ONLY!
   }
 }
 
