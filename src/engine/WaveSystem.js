@@ -15,11 +15,18 @@ export class WaveSystem {
     };
     
     this.aiWaveCount = 0;
+    this.aiMinerals = 250; // AI starts with equal minerals as player!
+    this.aiIncome = 60;    // AI income per wave
   }
 
   start() {
     this.isActive = true;
-    this.timeUntilWave = this.waveInterval;
+    this.timeUntilWave = 3; // Initial 3s countdown for quick first wave action!
+    
+    // Configure AI Economy based on difficulty
+    const diff = this.game.difficulty || 1.0;
+    this.aiMinerals = Math.floor(250 * diff);
+    this.aiIncome = Math.floor(60 * diff);
   }
 
   stop() {
@@ -44,21 +51,29 @@ export class WaveSystem {
   spawnWave() {
     this.aiWaveCount++;
     
-    const types = ['melee', 'ranged', 'tank'];
-    this.spawners.enemy = [];
+    // 1. AI Economy & Fair Purchase Logic
+    // AI receives wave income
+    this.aiMinerals += this.aiIncome;
     
-    const difficultyMultiplier = this.game.difficulty || 1.0;
-    const maxEnemies = Math.floor(18 * difficultyMultiplier);
-    // Smoother scaling formula so Normal difficulty is fun and manageable
-    const numEnemies = Math.min(1 + Math.floor(this.aiWaveCount * 0.9 * difficultyMultiplier), maxEnemies);
+    // AI buys units into its persistent spawner list using its mineral budget
+    const unitCosts = { melee: 50, ranged: 100, tank: 200 };
+    const unitTypes = ['melee', 'ranged', 'tank'];
     
-    for(let i = 0; i < numEnemies; i++) {
-      const randomType = types[Math.floor(Math.random() * types.length)];
-      this.addSpawner('enemy', randomType);
+    // AI tries to buy units as long as it has minerals
+    let attempts = 0;
+    while (this.aiMinerals >= 50 && attempts < 10) {
+      attempts++;
+      // Pick affordable unit
+      const affordable = unitTypes.filter(t => unitCosts[t] <= this.aiMinerals);
+      if (affordable.length === 0) break;
+      
+      const chosen = affordable[Math.floor(Math.random() * affordable.length)];
+      this.addSpawner('enemy', chosen);
+      this.aiMinerals -= unitCosts[chosen];
     }
     
+    // Boss wave check (Every 6 waves)
     let isBossWave = false;
-    // Boss wave every 6 waves
     if (this.aiWaveCount > 0 && this.aiWaveCount % 6 === 0) {
       isBossWave = true;
       this.addSpawner('enemy', 'tank');
@@ -72,21 +87,21 @@ export class WaveSystem {
       
       this.game.entityManager.addEntity(new FloatingText(this.game, `⚠️ 경고: 보스 출격! (Wave ${this.aiWaveCount}) ⚠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
     } else {
-      this.game.entityManager.addEntity(new FloatingText(this.game, `WAVE ${this.aiWaveCount} 돌격!`, WORLD_WIDTH/2, 220, '#00e5ff', false));
+      this.game.entityManager.addEntity(new FloatingText(this.game, `WAVE ${this.aiWaveCount} 출격!`, WORLD_WIDTH/2, 220, '#00e5ff', false));
     }
     
-    // Spawn player units
+    // 2. Spawn player units from persistent queue
     const pBaseY = this.game.canvas.height / 2;
     this.spawners.player.forEach((type, idx) => {
-      const yOffset = (idx % 5 - 2) * 20;
+      const yOffset = (idx % 5 - 2) * 22;
       const unit = new Unit(this.game, 150, pBaseY + yOffset, 'player', type);
       this.game.entityManager.addEntity(unit);
     });
 
-    // Spawn enemy units
+    // 3. Spawn enemy units from persistent queue
     const eBaseY = this.game.canvas.height / 2;
     this.spawners.enemy.forEach((type, idx) => {
-      const yOffset = (idx % 5 - 2) * 20;
+      const yOffset = (idx % 5 - 2) * 22;
       const unit = new Unit(this.game, WORLD_WIDTH - 200, eBaseY + yOffset, 'enemy', type);
       
       if (isBossWave && idx === this.spawners.enemy.length - 1) {
@@ -96,7 +111,7 @@ export class WaveSystem {
       this.game.entityManager.addEntity(unit);
     });
     
-    // Trigger income
+    // Trigger player income
     this.game.economy.triggerIncome();
     if (this.game.playerBase) {
       const incomeAmt = this.game.economy.income;

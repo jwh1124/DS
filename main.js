@@ -18,7 +18,7 @@ class Game {
     
     this.isRunning = false;
     this.screenShake = 0;
-    this.ultimateCooldown = 0; // Cooldown for Ultimate Ability
+    this.ultimateCooldown = 0;
     
     this.audio = new AudioEngine();
     
@@ -119,12 +119,10 @@ class Game {
       this.screenShake = Math.max(0, this.screenShake - dt * 25);
     }
     
-    // Ultimate Cooldown Update
     if (this.ultimateCooldown > 0) {
       this.ultimateCooldown = Math.max(0, this.ultimateCooldown - scaledDt);
     }
     
-    // Update Ultimate Button UI
     const ultBtn = document.querySelector('.build-btn[data-type="ultimate"]');
     if (ultBtn) {
       const nameSpan = ultBtn.querySelector('.name');
@@ -142,7 +140,6 @@ class Game {
     this.entityManager.update(scaledDt);
     this.hud.update();
     
-    // Update Build Queue Badges
     const playerSpawners = this.waveSystem.spawners.player;
     const meleeCount = playerSpawners.filter(t => t === 'melee').length;
     const rangedCount = playerSpawners.filter(t => t === 'ranged').length;
@@ -225,14 +222,14 @@ class Game {
     if (!this.isRunning) return;
     
     if (type === 'ultimate' && this.ultimateCooldown > 0) {
-      return; // On Cooldown
+      return;
     }
     
     this.audio.playClick();
     
     if (type === 'income') {
       if (this.economy.spendMinerals(cost)) {
-        this.economy.increaseIncome(10);
+        this.economy.increaseIncome(15); // +15 income gain per Gas Extractor
         for (let i = 0; i < 15; i++) {
           this.entityManager.addEntity(new Particle(
             this, this.playerBase.x, this.playerBase.y, '#2ecc71', 0.8, 60, Math.random() * Math.PI * 2, 4, 'spark'
@@ -261,7 +258,7 @@ class Game {
       }
     } else if (type === 'ultimate') {
       if (this.economy.spendMinerals(cost)) {
-        this.ultimateCooldown = 30; // 30 seconds cooldown
+        this.ultimateCooldown = 30;
         this.triggerOrbitalStrike();
       }
     } else {
@@ -290,7 +287,7 @@ class Game {
       melee: { title: '질럿 (근접) [단축키 1]', desc: '체력이 높고 저렴한 최전방 방패 역할.', hp: 120, dmg: 25, range: '근접' },
       ranged: { title: '마린 (원거리) [단축키 2]', desc: '사거리가 길지만 체력이 약한 딜러.', hp: 60, dmg: 35, range: '원거리' },
       tank: { title: '골리앗 (헤비탱크) [단축키 3]', desc: '단단한 장갑과 강력한 한방 공격력.', hp: 300, dmg: 60, range: '중거리' },
-      income: { title: '가스 채취기 [단축키 Q]', desc: '매 웨이브마다 추가 미네랄을 +10 획득.', hp: '-', dmg: '-', range: '-' },
+      income: { title: '가스 채취기 [단축키 Q]', desc: '매 웨이브마다 추가 미네랄을 +15 획득.', hp: '-', dmg: '-', range: '-' },
       tech: { title: '시대 발전 [단축키 W]', desc: '본진 타워 개방 및 유닛 스탯/비주얼 티어 업그레이드.', hp: '-', dmg: '-', range: '-' },
       ultimate: { title: '궤도 폭격 [단축키 E]', desc: '전장의 모든 적에게 150 피해 지원 사격 (쿨타임 30초).', hp: '-', dmg: '150', range: '전체' }
     };
@@ -327,7 +324,6 @@ class Game {
       location.reload();
     });
     
-    // Cheat Controls
     document.querySelectorAll('.cheat-btn[data-speed]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         document.querySelectorAll('.cheat-btn[data-speed]').forEach(b => b.classList.remove('active'));
@@ -404,11 +400,11 @@ class Game {
       this.entityManager.addEntity(new Particle(
         this, enemy.x, enemy.y, '#f1c40f', 0.4, 0, 0, 30, 'shockwave'
       ));
-      enemy.takeDamage(150, true); // Rebalanced damage: 150
+      enemy.takeDamage(150, true);
     });
     
     if (this.enemyBase && this.enemyBase.isAlive) {
-      this.enemyBase.takeDamage(25); // Rebalanced base damage: 25
+      this.enemyBase.takeDamage(25);
       for (let i = 0; i < 30; i++) {
         this.entityManager.addEntity(new Particle(
           this.game || this, this.enemyBase.x + (Math.random()-0.5)*100, this.enemyBase.y - Math.random()*250, '#f1c40f', 0.9, 350, Math.PI/2, 6, 'spark'
