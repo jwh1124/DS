@@ -19,7 +19,7 @@ export class WaveSystem {
     this.aiMinerals = 250;
     this.aiIncome = 60;
     this.aiUltimateCooldown = 0;
-    this.lastActionLog = '[전략적 스폰 환급]: 스폰 라인 80% 미네랄 환급 시스템 가동';
+    this.lastActionLog = '[교단]: 악마의 침공에 대비하라!';
   }
 
   start() {
@@ -30,7 +30,7 @@ export class WaveSystem {
     this.aiMinerals = Math.floor(250 * diff);
     this.aiIncome = Math.floor(60 * diff);
     this.aiUltimateCooldown = 20;
-    this.lastActionLog = `[스마트 AI]: 초기 자원 ${this.aiMinerals}💎 / 인컴 +${this.aiIncome}💎 세팅 완료`;
+    this.lastActionLog = `[지옥문]: 악마 군단 소환력 ${this.aiMinerals}🔥 / 증원 +${this.aiIncome}🔥`;
   }
 
   stop() {
@@ -76,7 +76,7 @@ export class WaveSystem {
     this.aiMinerals += this.aiIncome;
     
     const unitCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
-    const unitNames = { melee: '질럿', ranged: '마린', medic: '메딕(힐러)', sniper: '스나이퍼', tank: '골리앗' };
+    const unitNames = { melee: '임프', ranged: '서큐버스', medic: '리치', sniper: '밴시', tank: '발록' };
     
     // AI Tactical Orbital Strike Check
     const playerUnits = this.game.entityManager.getEntitiesByTeam('player').filter(e => e.radius && e.type);
@@ -84,13 +84,13 @@ export class WaveSystem {
       this.triggerAiOrbitalStrike();
       this.aiMinerals -= 300;
       this.aiUltimateCooldown = 35;
-      this.lastActionLog = `[AI 궤도 폭격 ☠️]: 플레이어 부대 타격! (-300💎, 쿨타임 35s)`;
+      this.lastActionLog = `[☠️ 악마의 저주]: 성직자 부대에 저주 폭격! (-300🔥, 쿨타임 35s)`;
     } else {
       // Smart AI Tech Upgrade Decision
       if (this.aiMinerals >= 800 && this.game.enemyBase && this.game.enemyBase.techLevel < 5) {
         this.game.enemyBase.upgradeTech();
         this.aiMinerals -= 800;
-        this.lastActionLog = `[스마트 AI 업그레이드]: AI 시대 발전 (Lv.${this.game.enemyBase.techLevel}) 완료! (-800💎)`;
+        this.lastActionLog = `[지옥 각성]: 악마 군단 강화 (Lv.${this.game.enemyBase.techLevel})! (-800🔥)`;
       }
       
       // Smart Counter-Pick AI Logic
@@ -138,11 +138,11 @@ export class WaveSystem {
       }
       
       if (this.spawners.enemy.length >= 50) {
-        this.lastActionLog = `[AI 최대 한도]: 적군 영구 스폰라인 50/50 풀 가동 중!`;
+        this.lastActionLog = `[지옥문 만원]: 악마 소환진 50/50 최대 가동!`;
       } else if (purchasedCount > 0) {
-        this.lastActionLog = `[AI 카운터 저격]: ${unitNames[lastBoughtType]} 추가 (-${unitCosts[lastBoughtType]}💎, 잔여 ${Math.floor(this.aiMinerals)}💎)`;
+        this.lastActionLog = `[악마 소환]: ${unitNames[lastBoughtType]} 강림! (-${unitCosts[lastBoughtType]}🔥, 잔여 ${Math.floor(this.aiMinerals)}🔥)`;
       } else if (!this.lastActionLog.includes('시대 발전') && !this.lastActionLog.includes('궤도 폭격')) {
-        this.lastActionLog = `[AI 자원 저축]: 구매 없음 (잔여 ${Math.floor(this.aiMinerals)}💎, 인컴 +${this.aiIncome}💎)`;
+        this.lastActionLog = `[악마 축적]: 소환 보류 (잔여 ${Math.floor(this.aiMinerals)}🔥, 증원 +${this.aiIncome}🔥)`;
       }
     }
     
@@ -161,9 +161,9 @@ export class WaveSystem {
         this.game.addScreenShake(8);
       }
       
-      this.game.entityManager.addEntity(new FloatingText(this.game, `⚠️ 경고: 이벤트 보스 출격! (Wave ${this.aiWaveCount}) ⚠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
+      this.game.entityManager.addEntity(new FloatingText(this.game, `☠️ 경고: 대악마 강림! (Wave ${this.aiWaveCount}) ☠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
     } else {
-      this.game.entityManager.addEntity(new FloatingText(this.game, `WAVE ${this.aiWaveCount} 출격!`, WORLD_WIDTH/2, 220, '#00e5ff', false));
+      this.game.entityManager.addEntity(new FloatingText(this.game, `WAVE ${this.aiWaveCount} — 악마 웨이브 강림!`, WORLD_WIDTH/2, 220, '#c878ff', false));
     }
     
     // Spawn player units
@@ -185,7 +185,7 @@ export class WaveSystem {
     this.game.economy.triggerIncome();
     if (this.game.playerBase) {
       const incomeAmt = this.game.economy.income;
-      this.game.entityManager.addEntity(new FloatingText(this.game, `+${incomeAmt} 💎`, this.game.playerBase.x, this.game.playerBase.y - 80, '#2ecc71', true));
+      this.game.entityManager.addEntity(new FloatingText(this.game, `+${incomeAmt} ✝️`, this.game.playerBase.x, this.game.playerBase.y - 80, '#f1c40f', true));
     }
   }
 
@@ -198,7 +198,7 @@ export class WaveSystem {
       this.game.addScreenShake(22);
     }
     
-    this.game.entityManager.addEntity(new FloatingText(this.game, `⚠️ 경고: AI 전술 궤도 폭격 발사! (-150 피해) ⚠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
+    this.game.entityManager.addEntity(new FloatingText(this.game, `☠️ 경고: 악마의 저주 폭풍 강림! (-150 피해) ☠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
 
     const players = this.game.entityManager.getEntitiesByTeam('player');
     players.forEach(p => {

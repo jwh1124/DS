@@ -3,11 +3,11 @@ import { Projectile } from './Projectile.js';
 import { FloatingText } from './FloatingText.js';
 
 const UNIT_STATS = {
-  melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#00e5ff' },
-  ranged: { hp: 60, damage: 35, range: 250, speed: 70, attackSpeed: 1.2, color: '#3498db' },
-  medic: { hp: 100, damage: 0, range: 180, speed: 65, attackSpeed: 1.5, color: '#2ecc71' },
-  sniper: { hp: 80, damage: 75, range: 450, speed: 55, attackSpeed: 2.0, color: '#e74c3c' },
-  tank: { hp: 300, damage: 60, range: 360, speed: 40, attackSpeed: 1.5, color: '#9b59b6' } // FIXED: Long Range Siege Cannon (360px)
+  melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#f1c40f' },   // Holy Gold (Monk)
+  ranged: { hp: 60, damage: 35, range: 250, speed: 70, attackSpeed: 1.2, color: '#dfe6e9' },   // Holy Silver (Exorcist)
+  medic: { hp: 100, damage: 0, range: 180, speed: 65, attackSpeed: 1.5, color: '#f1c40f' },    // Divine Gold (Priest)
+  sniper: { hp: 80, damage: 75, range: 450, speed: 55, attackSpeed: 2.0, color: '#e74c3c' },   // Flame Red (Inquisitor)
+  tank: { hp: 300, damage: 60, range: 360, speed: 40, attackSpeed: 1.5, color: '#f1c40f' }     // Angelic Gold (Archangel)
 };
 
 export class Unit {
@@ -25,7 +25,7 @@ export class Unit {
     this.range = stats.range;
     this.speed = stats.speed;
     this.attackSpeed = stats.attackSpeed;
-    this.color = team === 'player' ? (stats.color || '#00e5ff') : '#ff3333';
+    this.color = team === 'player' ? (stats.color || '#f1c40f') : '#8b00ff';
     
     this.radius = type === 'tank' ? 26 : 20;
     this.isAlive = true;
@@ -400,14 +400,14 @@ export class Unit {
     ctx.scale(this.scale, this.scale);
     
     const mainColor = this.team === 'player' ? 
-      (this.type === 'medic' ? '#2ecc71' : (this.type === 'sniper' ? '#e74c3c' : (this.tier === 1 ? '#00e5ff' : (this.tier === 2 ? '#0984e3' : '#6c5ce7')))) : 
-      (this.tier === 1 ? '#ff3333' : (this.tier === 2 ? '#d63031' : '#8e44ad'));
+      (this.type === 'medic' ? '#f1c40f' : (this.type === 'sniper' ? '#e74c3c' : (this.tier === 1 ? '#f1c40f' : (this.tier === 2 ? '#f39c12' : '#ffffff')))) : 
+      (this.tier === 1 ? '#8b00ff' : (this.tier === 2 ? '#6c3483' : '#ff0055'));
     
     const darkColor = this.team === 'player' ? 
-      (this.type === 'medic' ? '#27ae60' : (this.type === 'sniper' ? '#c0392b' : (this.tier === 1 ? '#0083b0' : (this.tier === 2 ? '#005f73' : '#4a69bd')))) : 
-      (this.tier === 1 ? '#b00000' : (this.tier === 2 ? '#c0392b' : '#5f27cd'));
+      (this.type === 'medic' ? '#d4a017' : (this.type === 'sniper' ? '#c0392b' : (this.tier === 1 ? '#b8860b' : (this.tier === 2 ? '#a0522d' : '#c0c0c0')))) : 
+      (this.tier === 1 ? '#4a0080' : (this.tier === 2 ? '#2c003e' : '#800040'));
     
-    const goldColor = this.tier === 1 ? '#f1c40f' : (this.tier === 2 ? '#e67e22' : '#00ff00');
+    const goldColor = this.tier === 1 ? '#f1c40f' : (this.tier === 2 ? '#e67e22' : '#ffffff');
     
     if (this.type === 'medic') {
       ctx.fillStyle = '#2c3e50';
@@ -587,7 +587,7 @@ export class Unit {
     ctx.fillStyle = 'rgba(231, 76, 60, 0.8)';
     ctx.fillRect(barX, barY, barW, barH);
     
-    ctx.fillStyle = this.team === 'player' ? '#00e5ff' : '#2ecc71';
+    ctx.fillStyle = this.team === 'player' ? '#f1c40f' : '#8b00ff';
     ctx.shadowBlur = 8;
     ctx.shadowColor = ctx.fillStyle;
     ctx.fillRect(barX, barY, barW * hpPercent, barH);

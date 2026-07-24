@@ -11,6 +11,10 @@ import { FloatingText } from './src/entities/FloatingText.js';
 
 export const WORLD_WIDTH = 2000;
 
+// Exorcism Theme: Unit Name Maps
+const PLAYER_UNIT_NAMES = { melee: '수도승', ranged: '엑소시스트', medic: '사제', sniper: '심판관', tank: '대천사' };
+const ENEMY_UNIT_NAMES = { melee: '임프', ranged: '서큐버스', medic: '리치', sniper: '밴시', tank: '발록' };
+
 class Game {
   constructor() {
     this.canvas = document.getElementById('gameCanvas');
@@ -47,6 +51,7 @@ class Game {
     this.gameSpeed = 1;
     this.difficulty = 1.0;
     
+    // Dark occult dust particles (ash/embers)
     this.dustParticles = Array.from({length: 120}, () => ({
       x: Math.random() * WORLD_WIDTH,
       y: Math.random() * (this.canvas.height - 150),
@@ -100,11 +105,11 @@ class Game {
     const title = document.getElementById('game-over-title');
     
     if (winner === 'player') {
-      title.textContent = 'VICTORY!';
-      title.style.color = '#00e5ff';
-      title.style.textShadow = '0 0 30px #00e5ff';
+      title.textContent = '✝️ 악마를 퇴마했습니다!';
+      title.style.color = '#f1c40f';
+      title.style.textShadow = '0 0 30px #f1c40f';
     } else {
-      title.textContent = 'DEFEAT...';
+      title.textContent = '☠️ 성당이 함락되었습니다...';
       title.style.color = '#ff3333';
       title.style.textShadow = '0 0 30px #ff3333';
     }
@@ -125,7 +130,7 @@ class Game {
       this.ultimateCooldown = Math.max(0, this.ultimateCooldown - scaledDt);
     }
     
-    // Auto-Spend Feature (Strictly capped at 50 units symmetrically!)
+    // Auto-Spend
     if (this.autoSpend && this.economy.minerals >= 50 && this.waveSystem.spawners.player.length < 50) {
       const pTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank'];
       const pCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
@@ -141,10 +146,10 @@ class Game {
       const nameSpan = ultBtn.querySelector('.name');
       if (this.ultimateCooldown > 0) {
         ultBtn.disabled = true;
-        if (nameSpan) nameSpan.textContent = `궤도 폭격 (${Math.ceil(this.ultimateCooldown)}s)`;
+        if (nameSpan) nameSpan.textContent = `⚡ 천벌 (${Math.ceil(this.ultimateCooldown)}s)`;
       } else {
         ultBtn.disabled = false;
-        if (nameSpan) nameSpan.textContent = `궤도 폭격 (부대 타격)`;
+        if (nameSpan) nameSpan.textContent = `⚡ 천벌 (부대 타격)`;
       }
     }
     
@@ -153,7 +158,7 @@ class Game {
     this.entityManager.update(scaledDt);
     this.hud.update();
     
-    // Update Build Queue Badges (5 Unit Classes)
+    // Update Build Queue Badges
     const playerSpawners = this.waveSystem.spawners.player;
     const pMelee = playerSpawners.filter(t => t === 'melee').length;
     const pRanged = playerSpawners.filter(t => t === 'ranged').length;
@@ -173,7 +178,7 @@ class Game {
     if (qSniper) qSniper.textContent = `x${pSniper}`;
     if (qTank) qTank.textContent = `x${pTank}`;
     
-    // Update Debug Monitor UI with Symmetrical Cap Status
+    // Update Debug Monitor - Exorcism Theme Names
     const enemySpawners = this.waveSystem.spawners.enemy;
     const aiMelee = enemySpawners.filter(t => t === 'melee').length;
     const aiRanged = enemySpawners.filter(t => t === 'ranged').length;
@@ -187,10 +192,10 @@ class Game {
     const dbgPlayerUnits = document.getElementById('debug-player-units');
     const dbgLastAction = document.getElementById('debug-last-action');
     
-    if (dbgAiMinerals) dbgAiMinerals.textContent = `${Math.floor(this.waveSystem.aiMinerals)} 💎`;
-    if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 💎`;
-    if (dbgAiUnits) dbgAiUnits.textContent = `질럿${aiMelee} 마린${aiRanged} 메딕${aiMedic} 스나${aiSniper} 골리앗${aiTank} (${enemySpawners.length}/50 MAX)`;
-    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `질럿${pMelee} 마린${pRanged} 메딕${pMedic} 스나${pSniper} 골리앗${pTank} (${playerSpawners.length}/50 MAX)`;
+    if (dbgAiMinerals) dbgAiMinerals.textContent = `${Math.floor(this.waveSystem.aiMinerals)} 🔥`;
+    if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 🔥`;
+    if (dbgAiUnits) dbgAiUnits.textContent = `임프${aiMelee} 서큐${aiRanged} 리치${aiMedic} 밴시${aiSniper} 발록${aiTank} (${enemySpawners.length}/50)`;
+    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `수도승${pMelee} 퇴마${pRanged} 사제${pMedic} 심판${pSniper} 천사${pTank} (${playerSpawners.length}/50)`;
     if (dbgLastAction && this.waveSystem.lastActionLog) dbgLastAction.textContent = this.waveSystem.lastActionLog;
     
     if (this.moveCameraLeft) {
@@ -225,22 +230,25 @@ class Game {
       this.drawFallbackBackground();
     }
     
+    // Occult ash/ember particles (reddish)
     this.dustParticles.forEach(p => {
       p.x -= p.speed;
       if (p.x < 0) p.x = WORLD_WIDTH;
       
-      this.ctx.fillStyle = `rgba(241, 196, 15, ${p.alpha})`;
+      const emberColor = Math.random() > 0.5 ? `rgba(255, 80, 40, ${p.alpha})` : `rgba(200, 120, 255, ${p.alpha * 0.6})`;
+      this.ctx.fillStyle = emberColor;
       this.ctx.beginPath();
       this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       this.ctx.fill();
     });
     
-    this.ctx.fillStyle = '#1a100a';
+    // Dark ground
+    this.ctx.fillStyle = '#0a0508';
     this.ctx.fillRect(0, this.canvas.height - 150, WORLD_WIDTH, 150);
     
     this.ctx.shadowBlur = 10;
-    this.ctx.shadowColor = '#ff8800';
-    this.ctx.fillStyle = '#ff8800';
+    this.ctx.shadowColor = '#8b0000';
+    this.ctx.fillStyle = '#8b0000';
     this.ctx.fillRect(0, this.canvas.height - 150, WORLD_WIDTH, 4);
     this.ctx.shadowBlur = 0;
     
@@ -254,7 +262,7 @@ class Game {
   }
   
   drawFallbackBackground() {
-    this.ctx.fillStyle = '#1c1510';
+    this.ctx.fillStyle = '#0a0508';
     this.ctx.fillRect(0, 0, WORLD_WIDTH, this.canvas.height);
   }
   
@@ -272,7 +280,7 @@ class Game {
         this.economy.increaseIncome(15);
         for (let i = 0; i < 15; i++) {
           this.entityManager.addEntity(new Particle(
-            this, this.playerBase.x, this.playerBase.y, '#2ecc71', 0.8, 60, Math.random() * Math.PI * 2, 4, 'spark'
+            this, this.playerBase.x, this.playerBase.y, '#f1c40f', 0.8, 60, Math.random() * Math.PI * 2, 4, 'spark'
           ));
         }
       }
@@ -286,13 +294,13 @@ class Game {
           if (this.playerBase.techLevel >= 5) {
             btnElement.dataset.cost = Infinity;
             btnElement.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> -`;
-            btnElement.querySelector('.name').innerHTML = `시대 발전 (MAX)`;
+            btnElement.querySelector('.name').innerHTML = `📖 성서 계시 (MAX)`;
             btnElement.style.opacity = 0.5;
           } else {
             const nextCost = cost * 2;
             btnElement.dataset.cost = nextCost;
             btnElement.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> ${nextCost}`;
-            btnElement.querySelector('.name').innerHTML = `시대 발전 (Lv.${this.playerBase.techLevel + 1})`;
+            btnElement.querySelector('.name').innerHTML = `📖 성서 계시 (Lv.${this.playerBase.techLevel + 1})`;
           }
         }
       }
@@ -302,10 +310,9 @@ class Game {
         this.triggerOrbitalStrike();
       }
     } else {
-      // 50-UNIT SPAWNER CAP
       if (this.waveSystem.spawners.player.length >= 50) {
         this.entityManager.addEntity(new FloatingText(
-          this, `⚠️ 스폰 라인 최대 한도 (50/50 MAX)!`, this.playerBase.x, this.playerBase.y - 120, '#ff0055', true
+          this, `⚠️ 교단 소환 한도 (50/50 MAX)!`, this.playerBase.x, this.playerBase.y - 120, '#ff0055', true
         ));
         return;
       }
@@ -315,7 +322,7 @@ class Game {
         if (added) {
           for (let i = 0; i < 12; i++) {
             this.entityManager.addEntity(new Particle(
-              this, this.playerBase.x, this.playerBase.y, '#00e5ff', 0.5, 50, Math.random() * Math.PI * 2, 3, 'spark'
+              this, this.playerBase.x, this.playerBase.y, '#f1c40f', 0.5, 50, Math.random() * Math.PI * 2, 3, 'spark'
             ));
           }
         }
@@ -323,33 +330,31 @@ class Game {
     }
   }
 
-  // 80% Mineral Refund Feature on Right-Click or Shift+Key!
   triggerRefundAction(type) {
     if (!this.isRunning) return;
     
     const unitCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
-    const unitNames = { melee: '질럿', ranged: '마린', medic: '메딕', sniper: '스나이퍼', tank: '골리앗' };
     
     if (!unitCosts[type]) return;
     
     const removed = this.waveSystem.removeSpawner('player', type);
     if (removed) {
-      const refundAmount = Math.floor(unitCosts[type] * 0.8); // 80% mineral refund
+      const refundAmount = Math.floor(unitCosts[type] * 0.8);
       this.economy.minerals += refundAmount;
       this.audio.playMagic();
       
       this.entityManager.addEntity(new FloatingText(
-        this, `♻️ ${unitNames[type]} 환급 (+${refundAmount} 💎)`, this.playerBase.x, this.playerBase.y - 100, '#2ecc71', true
+        this, `♻️ ${PLAYER_UNIT_NAMES[type]} 환속 (+${refundAmount} ✝️)`, this.playerBase.x, this.playerBase.y - 100, '#f1c40f', true
       ));
       
       for (let i = 0; i < 10; i++) {
         this.entityManager.addEntity(new Particle(
-          this, this.playerBase.x, this.playerBase.y, '#2ecc71', 0.5, 40, Math.random() * Math.PI * 2, 3, 'spark'
+          this, this.playerBase.x, this.playerBase.y, '#f1c40f', 0.5, 40, Math.random() * Math.PI * 2, 3, 'spark'
         ));
       }
     } else {
       this.entityManager.addEntity(new FloatingText(
-        this, `⚠️ 환급할 ${unitNames[type]} 없음!`, this.playerBase.x, this.playerBase.y - 100, '#ff0055', false
+        this, `⚠️ 환속할 ${PLAYER_UNIT_NAMES[type]} 없음!`, this.playerBase.x, this.playerBase.y - 100, '#ff0055', false
       ));
     }
   }
@@ -363,14 +368,14 @@ class Game {
     const ttRange = document.getElementById('tt-range');
 
     const unitStats = {
-      melee: { title: '질럿 (근접) [좌클릭: 구매 | 우클릭: ♻️환급+40💎]', desc: '체력이 높고 저렴한 최전방 방패 역할.', hp: 120, dmg: 25, range: '근접' },
-      ranged: { title: '마린 (원거리) [좌클릭: 구매 | 우클릭: ♻️환급+80💎]', desc: '사거리가 길지만 체력이 약한 딜러.', hp: 60, dmg: 35, range: '원거리' },
-      medic: { title: '메딕 (치유서포터) [좌클릭: 구매 | 우클릭: ♻️환급+96💎]', desc: '아군 부대의 체력을 지속 회복시키는 생명줄.', hp: 100, dmg: '치유+30', range: '중거리' },
-      sniper: { title: '스나이퍼 (초원거리) [좌클릭: 구매 | 우클릭: ♻️환급+120💎]', desc: '초원거리에서 중장갑 탱크를 한방에 관통하는 암살자.', hp: 80, dmg: 75, range: '초원거리' },
-      tank: { title: '골리앗 (헤비탱크) [좌클릭: 구매 | 우클릭: ♻️환급+160💎]', desc: '75px 광역 포격 데미지로 뭉친 유닛을 클리어.', hp: 300, dmg: '60(AOE)', range: '중거리' },
-      income: { title: '가스 채취기 [단축키 Q]', desc: '매 웨이브마다 추가 미네랄을 +15 획득.', hp: '-', dmg: '-', range: '-' },
-      tech: { title: '시대 발전 [단축키 W]', desc: '본진 타워 개방 및 유닛 스탯/비주얼 티어 업그레이드.', hp: '-', dmg: '-', range: '-' },
-      ultimate: { title: '궤도 폭격 [단축키 E]', desc: '전장의 모든 적 부대에게 150 피해 지원 사격 (본진 피해 없음).', hp: '-', dmg: '150(부대)', range: '전체' }
+      melee: { title: '🙏 수도승 (근접) [1] | 우클릭: 환속+40✝️', desc: '성수 주먹으로 악마를 때려잡는 최전방 전위.', hp: 120, dmg: 25, range: '근접' },
+      ranged: { title: '✝️ 엑소시스트 (원거리) [2] | 우클릭: 환속+80✝️', desc: '성수탄을 발사하여 원거리에서 악마를 퇴마.', hp: 60, dmg: 35, range: '원거리' },
+      medic: { title: '⛪ 사제 (치유) [3] | 우클릭: 환속+96✝️', desc: '신성한 기도로 부상당한 아군의 상처를 치유.', hp: 100, dmg: '치유+30', range: '중거리' },
+      sniper: { title: '🔥 이단심판관 (저격) [4] | 우클릭: 환속+120✝️', desc: '은탄환으로 초장거리에서 악마를 처형하는 심판자.', hp: 80, dmg: 75, range: '초장거리' },
+      tank: { title: '👼 대천사 (광역심판) [5] | 우클릭: 환속+160✝️', desc: '신성한 불꽃으로 광역 심판을 내리는 천상의 존재.', hp: 300, dmg: '60(AOE)', range: '장거리' },
+      income: { title: '🕯️ 제단 봉헌 [Q]', desc: '매 웨이브마다 추가 신앙심을 +15 획득.', hp: '-', dmg: '-', range: '-' },
+      tech: { title: '📖 성서 계시 [W]', desc: '성당 방어탑 개방 및 성직자 능력 각성.', hp: '-', dmg: '-', range: '-' },
+      ultimate: { title: '⚡ 천벌 [E]', desc: '전장의 모든 악마에게 150 신성 피해를 가하는 천상의 심판.', hp: '-', dmg: '150(부대)', range: '전체' }
     };
 
     document.querySelectorAll('.build-btn').forEach(btn => {
@@ -394,14 +399,12 @@ class Game {
         tooltip.classList.add('hidden');
       });
 
-      // Left Click = Buy Unit
       btn.addEventListener('click', (e) => {
         const type = btn.dataset.type;
         const cost = parseInt(btn.dataset.cost);
         this.triggerAction(type, cost, btn);
       });
 
-      // Right Click = Refund Unit (80% Mineral Return!)
       btn.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         const type = btn.dataset.type;
@@ -447,7 +450,7 @@ class Game {
     if (autoSpendBtn) {
       autoSpendBtn.addEventListener('click', () => {
         this.autoSpend = !this.autoSpend;
-        autoSpendBtn.textContent = this.autoSpend ? '🤖 자동 생산: 켬' : '🤖 자동 생산: 끔';
+        autoSpendBtn.textContent = this.autoSpend ? '🤖 자동 소환: 켬' : '🤖 자동 소환: 끔';
         if (this.autoSpend) {
           autoSpendBtn.classList.add('active');
         } else {
@@ -464,7 +467,6 @@ class Game {
       
       const key = e.key.toLowerCase();
       
-      // Shift + 1~5 = Keyboard Shortcut Refund!
       if (e.shiftKey) {
         if (key === '!' || key === '1') this.triggerRefundAction('melee');
         else if (key === '@' || key === '2') this.triggerRefundAction('ranged');
@@ -510,6 +512,8 @@ class Game {
   triggerOrbitalStrike() {
     this.audio.playExplosion();
     this.addScreenShake(20);
+
+    this.entityManager.addEntity(new FloatingText(this, `⚡ 천벌이 내려옵니다! ⚡`, WORLD_WIDTH/2, 180, '#f1c40f', true));
 
     const enemies = this.entityManager.getEntitiesByTeam('enemy');
     enemies.forEach(enemy => {

@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Desert Strike - Commercial Ultimate Edition</title>
+    <title>EXORCISM: 신성한 전쟁 - Holy War</title>
+    <meta name="description" content="악마 군단 vs 성직자 교단. 오컬트 실시간 전략 디펜스 게임.">
     <link rel="stylesheet" href="./style.css" />
-    <!-- 폰트 로드 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
@@ -18,19 +18,19 @@
       <!-- Title Screen -->
       <div id="title-screen">
         <div class="logo-container">
-          <h1 class="main-title">데저트<br>스트라이크</h1>
-          <h2 class="sub-title">COMMERCIAL ULTIMATE EDITION</h2>
+          <h1 class="main-title">✝️ EXORCISM ☠️</h1>
+          <h2 class="sub-title">신성한 전쟁 — HOLY WAR</h2>
         </div>
         
         <!-- 난이도 선택 -->
         <div id="difficulty-selector" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-          <button class="diff-btn" data-diff="0.7">쉬움 (EASY)</button>
-          <button class="diff-btn active" data-diff="1.0">보통 (NORMAL)</button>
-          <button class="diff-btn" data-diff="1.25">어려움 (HARD)</button>
-          <button class="diff-btn insane-btn" data-diff="1.5">🔥 지옥 (INSANE)</button>
+          <button class="diff-btn" data-diff="0.7">🕊️ 은총 (EASY)</button>
+          <button class="diff-btn active" data-diff="1.0">✝️ 시련 (NORMAL)</button>
+          <button class="diff-btn" data-diff="1.25">🔥 연옥 (HARD)</button>
+          <button class="diff-btn insane-btn" data-diff="1.5">☠️ 지옥 (INFERNO)</button>
         </div>
         
-        <button id="start-btn" class="glow-btn">게임 시작</button>
+        <button id="start-btn" class="glow-btn">⛪ 엑소시즘 개시</button>
         <div class="credits">개발: Antigravity</div>
       </div>
       
@@ -51,9 +51,9 @@
         <button class="cheat-btn" data-speed="1">1x</button>
         <button class="cheat-btn" data-speed="2">2x</button>
         <button class="cheat-btn" data-speed="3">3x</button>
-        <button class="cheat-btn" id="cheat-money-btn">💰 미네랄 +10000</button>
+        <button class="cheat-btn" id="cheat-money-btn">💰 신앙심 +10000</button>
         <button class="cheat-btn" id="audio-toggle-btn">🔊 사운드 켬</button>
-        <button class="cheat-btn" id="auto-spend-btn">🤖 자동 생산: 끔</button>
+        <button class="cheat-btn" id="auto-spend-btn">🤖 자동 소환: 끔</button>
       </div>
 
       <!-- UI Layer -->
@@ -62,7 +62,7 @@
         <!-- Top HUD -->
         <div class="hud-top">
           <div class="base-health left">
-            <span class="label">아군 본진</span>
+            <span class="label">⛪ 성당</span>
             <div class="health-bar-container">
               <div id="player-health-bar" class="health-bar fill"></div>
             </div>
@@ -70,12 +70,12 @@
           </div>
           
           <div class="wave-timer">
-            <span class="label">다음 웨이브</span>
+            <span class="label">다음 악마 웨이브</span>
             <span id="timer-text" class="time">15.0</span>
           </div>
           
           <div class="base-health right">
-            <span class="label">적군 본진</span>
+            <span class="label">☠️ 지옥문</span>
             <div class="health-bar-container">
               <div id="enemy-health-bar" class="health-bar fill"></div>
             </div>
@@ -86,42 +86,42 @@
         <!-- Economy HUD (Left Side) -->
         <div class="hud-economy">
           <div class="resource-box">
-            <span class="label">미네랄</span>
+            <span class="label">✝️ 신앙심</span>
             <div class="value-row">
               <div class="mineral-icon"></div>
               <span id="minerals-text" class="value">250</span>
             </div>
           </div>
           <div class="resource-box income-box">
-            <span class="label">인컴 (웨이브당)</span>
+            <span class="label">헌금 (웨이브당)</span>
             <span id="income-text" class="value">+60</span>
           </div>
           <div class="hero-instruction" style="margin-top:10px; font-size:10px; color:#f1c40f; text-shadow:0 0 5px #000; font-weight:bold; max-width: 170px; line-height: 1.3;">
-            ♻️ 오른쪽 클릭(우클릭): 유닛 1마리 환급 (80% 미네랄 반환)!
+            ♻️ 우클릭: 성직자 1명 환속 (80% 신앙심 반환)
           </div>
         </div>
 
         <!-- Live Real-Time Debugging Monitor (Right Side) -->
         <div id="debug-monitor" class="debug-panel">
-          <div class="debug-header">🛠️ 스폰 환급 전략 모니터</div>
+          <div class="debug-header">☠️ 악마 군단 정보</div>
           <div class="debug-row">
-            <span class="lbl">적군(AI) 잔여 미네랄:</span>
+            <span class="lbl">악마 군단 사악한 힘:</span>
             <span id="debug-ai-minerals" class="val gold">250 💎</span>
           </div>
           <div class="debug-row">
-            <span class="lbl">적군(AI) 웨이브 인컴:</span>
+            <span class="lbl">악마 군단 증원 속도:</span>
             <span id="debug-ai-income" class="val green">+60 💎</span>
           </div>
           <div class="debug-row border-top">
-            <span class="lbl">적군(AI) 병력 스폰라인:</span>
-            <span id="debug-ai-units" class="val cyan">질럿0 마린0 메딕0 스나0 골리앗0</span>
+            <span class="lbl">악마 군단 소환진:</span>
+            <span id="debug-ai-units" class="val cyan">임프0 서큐0 리치0 밴시0 발록0</span>
           </div>
           <div class="debug-row">
-            <span class="lbl">아군 영구 스폰라인:</span>
-            <span id="debug-player-units" class="val cyan">질럿0 마린0 메딕0 스나0 골리앗0</span>
+            <span class="lbl">성직자 교단 소환진:</span>
+            <span id="debug-player-units" class="val cyan">수도승0 퇴마0 사제0 심판0 천사0</span>
           </div>
           <div class="debug-log-row" id="debug-last-action">
-            [전략]: 우클릭으로 미네랄 80% 환급 후 카운터 재배치!
+            [교단]: 악마의 침공에 대비하라!
           </div>
         </div>
 
@@ -135,7 +135,7 @@
         <div class="bottom-controls">
           <!-- Building Menu -->
           <div class="panel build-menu">
-            <div class="menu-title">⚡ 영구 스폰 라인 (좌클릭: 구매 | ♻️ 우클릭: 80% 환급)</div>
+            <div class="menu-title">✝️ 성직자 소환 (좌클릭: 소환 | ♻️ 우클릭: 80% 환속)</div>
             <div class="build-buttons">
               <button class="build-btn" data-type="melee" data-cost="50">
                 <span class="hotkey-badge">[1]</span>
@@ -146,7 +146,7 @@
                   </svg>
                 </div>
                 <div class="info">
-                  <span class="name">질럿 (근접)</span>
+                  <span class="name">🙏 수도승 (근접)</span>
                   <span class="cost"><div class="mineral-icon small"></div> 50</span>
                 </div>
               </button>
@@ -159,7 +159,7 @@
                   </svg>
                 </div>
                 <div class="info">
-                  <span class="name">마린 (원거리)</span>
+                  <span class="name">✝️ 엑소시스트 (원거리)</span>
                   <span class="cost"><div class="mineral-icon small"></div> 100</span>
                 </div>
               </button>
@@ -172,7 +172,7 @@
                   </svg>
                 </div>
                 <div class="info">
-                  <span class="name">메딕 (치유서포터)</span>
+                  <span class="name">⛪ 사제 (치유)</span>
                   <span class="cost"><div class="mineral-icon small"></div> 120</span>
                 </div>
               </button>
@@ -185,7 +185,7 @@
                   </svg>
                 </div>
                 <div class="info">
-                  <span class="name">스나이퍼 (초원거리)</span>
+                  <span class="name">🔥 이단심판관 (저격)</span>
                   <span class="cost"><div class="mineral-icon small"></div> 150</span>
                 </div>
               </button>
@@ -198,7 +198,7 @@
                   </svg>
                 </div>
                 <div class="info">
-                  <span class="name">골리앗 (헤비탱크)</span>
+                  <span class="name">👼 대천사 (광역심판)</span>
                   <span class="cost"><div class="mineral-icon small"></div> 200</span>
                 </div>
               </button>
@@ -207,7 +207,7 @@
           
           <!-- Economy Menu -->
           <div class="panel economy-menu">
-            <div class="menu-title">💎 경제 & 시대발전 (ECONOMY)</div>
+            <div class="menu-title">💎 교단 경제 & 성물 (FAITH)</div>
             <div class="build-buttons">
               <button class="build-btn income-btn" data-type="income" data-cost="120">
                 <span class="hotkey-badge">[Q]</span>
@@ -217,7 +217,7 @@
                   </svg>
                 </div>
                 <div class="info">
-                  <span class="name">가스 채취기 (+15)</span>
+                  <span class="name">🕯️ 제단 봉헌 (+15)</span>
                   <span class="cost"><div class="mineral-icon small"></div> 120</span>
                 </div>
               </button>
@@ -229,7 +229,7 @@
                   </svg>
                 </div>
                 <div class="info">
-                  <span class="name">시대 발전</span>
+                  <span class="name">📖 성서 계시</span>
                   <span class="cost"><div class="mineral-icon small"></div> 800</span>
                 </div>
               </button>
@@ -238,7 +238,7 @@
           
           <!-- Special Menu -->
           <div class="panel special-menu">
-            <div class="menu-title">☠️ 특수 능력 (ULTIMATE)</div>
+            <div class="menu-title">⚡ 신성 기적 (MIRACLE)</div>
             <div class="build-buttons">
               <button class="build-btn ultimate-btn" data-type="ultimate" data-cost="500">
                 <span class="hotkey-badge">[E]</span>
@@ -248,7 +248,7 @@
                   </svg>
                 </div>
                 <div class="info">
-                  <span class="name">궤도 폭격 (부대 타격)</span>
+                  <span class="name">⚡ 천벌 (부대 타격)</span>
                   <span class="cost"><div class="mineral-icon small"></div> 500</span>
                 </div>
               </button>
@@ -260,7 +260,7 @@
       <!-- Game Over Screen -->
       <div id="game-over-screen" class="hidden">
         <h1 id="game-over-title">승리!</h1>
-        <button id="restart-btn">다시 플레이</button>
+        <button id="restart-btn">다시 엑소시즘</button>
       </div>
     </div>
     <script type="module" src="./main.js"></script>
