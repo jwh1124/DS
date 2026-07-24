@@ -173,7 +173,7 @@ class Game {
     if (qSniper) qSniper.textContent = `x${pSniper}`;
     if (qTank) qTank.textContent = `x${pTank}`;
     
-    // Update Debug Monitor UI with Strict 50/50 Symmetrical Cap Status
+    // Update Debug Monitor UI with Symmetrical Cap Status
     const enemySpawners = this.waveSystem.spawners.enemy;
     const aiMelee = enemySpawners.filter(t => t === 'melee').length;
     const aiRanged = enemySpawners.filter(t => t === 'ranged').length;
@@ -302,7 +302,7 @@ class Game {
         this.triggerOrbitalStrike();
       }
     } else {
-      // STRICT 50-UNIT SPAWNER CAP SYMMETRICALLY FOR BOTH TEAMS!
+      // 50-UNIT SPAWNER CAP
       if (this.waveSystem.spawners.player.length >= 50) {
         this.entityManager.addEntity(new FloatingText(
           this, `⚠️ 스폰 라인 최대 한도 (50/50 MAX)!`, this.playerBase.x, this.playerBase.y - 120, '#ff0055', true
@@ -323,6 +323,37 @@ class Game {
     }
   }
 
+  // 80% Mineral Refund Feature on Right-Click or Shift+Key!
+  triggerRefundAction(type) {
+    if (!this.isRunning) return;
+    
+    const unitCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
+    const unitNames = { melee: '질럿', ranged: '마린', medic: '메딕', sniper: '스나이퍼', tank: '골리앗' };
+    
+    if (!unitCosts[type]) return;
+    
+    const removed = this.waveSystem.removeSpawner('player', type);
+    if (removed) {
+      const refundAmount = Math.floor(unitCosts[type] * 0.8); // 80% mineral refund
+      this.economy.minerals += refundAmount;
+      this.audio.playMagic();
+      
+      this.entityManager.addEntity(new FloatingText(
+        this, `♻️ ${unitNames[type]} 환급 (+${refundAmount} 💎)`, this.playerBase.x, this.playerBase.y - 100, '#2ecc71', true
+      ));
+      
+      for (let i = 0; i < 10; i++) {
+        this.entityManager.addEntity(new Particle(
+          this, this.playerBase.x, this.playerBase.y, '#2ecc71', 0.5, 40, Math.random() * Math.PI * 2, 3, 'spark'
+        ));
+      }
+    } else {
+      this.entityManager.addEntity(new FloatingText(
+        this, `⚠️ 환급할 ${unitNames[type]} 없음!`, this.playerBase.x, this.playerBase.y - 100, '#ff0055', false
+      ));
+    }
+  }
+
   setupInput() {
     const tooltip = document.getElementById('tooltip');
     const ttTitle = document.getElementById('tooltip-title');
@@ -332,11 +363,11 @@ class Game {
     const ttRange = document.getElementById('tt-range');
 
     const unitStats = {
-      melee: { title: '질럿 (근접) [단축키 1]', desc: '체력이 높고 저렴한 최전방 방패 역할.', hp: 120, dmg: 25, range: '근접' },
-      ranged: { title: '마린 (원거리) [단축키 2]', desc: '사거리가 길지만 체력이 약한 딜러.', hp: 60, dmg: 35, range: '원거리' },
-      medic: { title: '메딕 (치유서포터) [단축키 3]', desc: '아군 부대의 체력을 지속 회복시키는 생명줄.', hp: 100, dmg: '치유+30', range: '중거리' },
-      sniper: { title: '스나이퍼 (초원거리) [단축키 4]', desc: '초원거리에서 중장갑 탱크를 한방에 관통하는 암살자.', hp: 80, dmg: 75, range: '초원거리' },
-      tank: { title: '골리앗 (헤비탱크) [단축키 5]', desc: '75px 광역 포격 데미지로 뭉친 유닛을 클리어.', hp: 300, dmg: '60(AOE)', range: '중거리' },
+      melee: { title: '질럿 (근접) [좌클릭: 구매 | 우클릭: ♻️환급+40💎]', desc: '체력이 높고 저렴한 최전방 방패 역할.', hp: 120, dmg: 25, range: '근접' },
+      ranged: { title: '마린 (원거리) [좌클릭: 구매 | 우클릭: ♻️환급+80💎]', desc: '사거리가 길지만 체력이 약한 딜러.', hp: 60, dmg: 35, range: '원거리' },
+      medic: { title: '메딕 (치유서포터) [좌클릭: 구매 | 우클릭: ♻️환급+96💎]', desc: '아군 부대의 체력을 지속 회복시키는 생명줄.', hp: 100, dmg: '치유+30', range: '중거리' },
+      sniper: { title: '스나이퍼 (초원거리) [좌클릭: 구매 | 우클릭: ♻️환급+120💎]', desc: '초원거리에서 중장갑 탱크를 한방에 관통하는 암살자.', hp: 80, dmg: 75, range: '초원거리' },
+      tank: { title: '골리앗 (헤비탱크) [좌클릭: 구매 | 우클릭: ♻️환급+160💎]', desc: '75px 광역 포격 데미지로 뭉친 유닛을 클리어.', hp: 300, dmg: '60(AOE)', range: '중거리' },
       income: { title: '가스 채취기 [단축키 Q]', desc: '매 웨이브마다 추가 미네랄을 +15 획득.', hp: '-', dmg: '-', range: '-' },
       tech: { title: '시대 발전 [단축키 W]', desc: '본진 타워 개방 및 유닛 스탯/비주얼 티어 업그레이드.', hp: '-', dmg: '-', range: '-' },
       ultimate: { title: '궤도 폭격 [단축키 E]', desc: '전장의 모든 적 부대에게 150 피해 지원 사격 (본진 피해 없음).', hp: '-', dmg: '150(부대)', range: '전체' }
@@ -363,10 +394,20 @@ class Game {
         tooltip.classList.add('hidden');
       });
 
+      // Left Click = Buy Unit
       btn.addEventListener('click', (e) => {
         const type = btn.dataset.type;
         const cost = parseInt(btn.dataset.cost);
         this.triggerAction(type, cost, btn);
+      });
+
+      // Right Click = Refund Unit (80% Mineral Return!)
+      btn.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const type = btn.dataset.type;
+        if (['melee', 'ranged', 'medic', 'sniper', 'tank'].includes(type)) {
+          this.triggerRefundAction(type);
+        }
       });
     });
     
@@ -422,6 +463,17 @@ class Game {
       if (!this.isRunning) return;
       
       const key = e.key.toLowerCase();
+      
+      // Shift + 1~5 = Keyboard Shortcut Refund!
+      if (e.shiftKey) {
+        if (key === '!' || key === '1') this.triggerRefundAction('melee');
+        else if (key === '@' || key === '2') this.triggerRefundAction('ranged');
+        else if (key === '#' || key === '3') this.triggerRefundAction('medic');
+        else if (key === '$' || key === '4') this.triggerRefundAction('sniper');
+        else if (key === '%' || key === '5') this.triggerRefundAction('tank');
+        return;
+      }
+      
       if (key === '1') {
         const btn = document.querySelector('.build-btn[data-type="melee"]');
         if (btn) this.triggerAction('melee', parseInt(btn.dataset.cost), btn);

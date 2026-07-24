@@ -19,14 +19,12 @@ export class WaveSystem {
     this.aiMinerals = 250;
     this.aiIncome = 60;
     this.aiUltimateCooldown = 0;
-    this.isSuddenDeath = false;
-    this.lastActionLog = '[시스템]: 서든데스 결전 시스템 가동 준비 완료';
+    this.lastActionLog = '[전략적 스폰 환급]: 스폰 라인 80% 미네랄 환급 시스템 가동';
   }
 
   start() {
     this.isActive = true;
     this.timeUntilWave = 3;
-    this.isSuddenDeath = false;
     
     const diff = this.game.difficulty || 1.0;
     this.aiMinerals = Math.floor(250 * diff);
@@ -47,21 +45,20 @@ export class WaveSystem {
     return false;
   }
 
+  removeSpawner(team, type) {
+    const idx = this.spawners[team].indexOf(type);
+    if (idx !== -1) {
+      this.spawners[team].splice(idx, 1);
+      return true;
+    }
+    return false;
+  }
+
   update(dt) {
     if (!this.isActive) return;
 
     if (this.aiUltimateCooldown > 0) {
       this.aiUltimateCooldown -= dt;
-    }
-
-    // Sudden Death Mechanism: Base HP decay (-25 HP/sec for both bases) to end stalemates!
-    if (this.isSuddenDeath) {
-      if (this.game.playerBase && this.game.playerBase.isAlive) {
-        this.game.playerBase.hp = Math.max(1, this.game.playerBase.hp - dt * 25);
-      }
-      if (this.game.enemyBase && this.game.enemyBase.isAlive) {
-        this.game.enemyBase.hp = Math.max(1, this.game.enemyBase.hp - dt * 25);
-      }
     }
 
     this.timeUntilWave -= dt;
@@ -75,19 +72,8 @@ export class WaveSystem {
   spawnWave() {
     this.aiWaveCount++;
     
-    // Wave 15: Sudden Death Trigger (본진 체력 서서히 감소 & 인컴 2배 뻥튀기)
-    if (this.aiWaveCount >= 15 && !this.isSuddenDeath) {
-      this.isSuddenDeath = true;
-      if (this.game.audio) this.game.audio.playBossAlarm();
-      if (this.game.addScreenShake) this.game.addScreenShake(15);
-      this.game.entityManager.addEntity(new FloatingText(
-        this.game, `🔥 [SUDDEN DEATH 서든데스 발동] 본진 붕괴 시작! 🔥`, WORLD_WIDTH/2, 160, '#ff0055', true
-      ));
-    }
-    
-    // AI Income addition (2x during Sudden Death)
-    const currentAiIncome = this.isSuddenDeath ? this.aiIncome * 2 : this.aiIncome;
-    this.aiMinerals += currentAiIncome;
+    // AI Income addition
+    this.aiMinerals += this.aiIncome;
     
     const unitCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
     const unitNames = { melee: '질럿', ranged: '마린', medic: '메딕(힐러)', sniper: '스나이퍼', tank: '골리앗' };
@@ -177,8 +163,7 @@ export class WaveSystem {
       
       this.game.entityManager.addEntity(new FloatingText(this.game, `⚠️ 경고: 이벤트 보스 출격! (Wave ${this.aiWaveCount}) ⚠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
     } else {
-      const suddenText = this.isSuddenDeath ? '🔥 SUDDEN DEATH 🔥 ' : '';
-      this.game.entityManager.addEntity(new FloatingText(this.game, `${suddenText}WAVE ${this.aiWaveCount} 출격!`, WORLD_WIDTH/2, 220, '#00e5ff', false));
+      this.game.entityManager.addEntity(new FloatingText(this.game, `WAVE ${this.aiWaveCount} 출격!`, WORLD_WIDTH/2, 220, '#00e5ff', false));
     }
     
     // Spawn player units
@@ -196,14 +181,10 @@ export class WaveSystem {
       this.game.entityManager.addEntity(unit);
     });
     
-    // Trigger player income (2x during Sudden Death)
-    if (this.isSuddenDeath) {
-      this.game.economy.triggerIncome();
-    }
+    // Trigger player income
     this.game.economy.triggerIncome();
-    
     if (this.game.playerBase) {
-      const incomeAmt = this.isSuddenDeath ? this.game.economy.income * 2 : this.game.economy.income;
+      const incomeAmt = this.game.economy.income;
       this.game.entityManager.addEntity(new FloatingText(this.game, `+${incomeAmt} 💎`, this.game.playerBase.x, this.game.playerBase.y - 80, '#2ecc71', true));
     }
   }
