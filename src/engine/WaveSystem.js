@@ -15,18 +15,18 @@ export class WaveSystem {
     };
     
     this.aiWaveCount = 0;
-    this.aiMinerals = 250; // AI starts with equal minerals as player!
-    this.aiIncome = 60;    // AI income per wave
+    this.aiMinerals = 200;
+    this.aiIncome = 45; // AI income is tuned lower than player's (70) so Player always has economic advantage!
   }
 
   start() {
     this.isActive = true;
-    this.timeUntilWave = 3; // Initial 3s countdown for quick first wave action!
+    this.timeUntilWave = 3;
     
-    // Configure AI Economy based on difficulty
     const diff = this.game.difficulty || 1.0;
-    this.aiMinerals = Math.floor(250 * diff);
-    this.aiIncome = Math.floor(60 * diff);
+    this.aiMinerals = Math.floor(200 * diff);
+    // AI Income scaling: Easy 35, Normal 45, Hard 60 (Player gets 70!)
+    this.aiIncome = Math.floor(45 * diff);
   }
 
   stop() {
@@ -51,19 +51,16 @@ export class WaveSystem {
   spawnWave() {
     this.aiWaveCount++;
     
-    // 1. AI Economy & Fair Purchase Logic
-    // AI receives wave income
+    // AI Income
     this.aiMinerals += this.aiIncome;
     
-    // AI buys units into its persistent spawner list using its mineral budget
-    const unitCosts = { melee: 50, ranged: 100, tank: 200 };
+    const unitCosts = { melee: 50, ranged: 90, tank: 180 };
     const unitTypes = ['melee', 'ranged', 'tank'];
     
-    // AI tries to buy units as long as it has minerals
+    // AI purchases units prudently
     let attempts = 0;
-    while (this.aiMinerals >= 50 && attempts < 10) {
+    while (this.aiMinerals >= 50 && attempts < 6) {
       attempts++;
-      // Pick affordable unit
       const affordable = unitTypes.filter(t => unitCosts[t] <= this.aiMinerals);
       if (affordable.length === 0) break;
       
@@ -90,7 +87,7 @@ export class WaveSystem {
       this.game.entityManager.addEntity(new FloatingText(this.game, `WAVE ${this.aiWaveCount} 출격!`, WORLD_WIDTH/2, 220, '#00e5ff', false));
     }
     
-    // 2. Spawn player units from persistent queue
+    // Spawn player units
     const pBaseY = this.game.canvas.height / 2;
     this.spawners.player.forEach((type, idx) => {
       const yOffset = (idx % 5 - 2) * 22;
@@ -98,7 +95,7 @@ export class WaveSystem {
       this.game.entityManager.addEntity(unit);
     });
 
-    // 3. Spawn enemy units from persistent queue
+    // Spawn enemy units
     const eBaseY = this.game.canvas.height / 2;
     this.spawners.enemy.forEach((type, idx) => {
       const yOffset = (idx % 5 - 2) * 22;

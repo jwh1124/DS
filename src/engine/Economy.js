@@ -1,8 +1,8 @@
 export class Economy {
   constructor(game) {
     this.game = game;
-    this.minerals = 250; // Boosted starting minerals (250) for immediate 5 Zealots or 2 Marines
-    this.income = 60;    // Starting income per wave (60)
+    this.minerals = 300; // Boosted player starting minerals to 300
+    this.income = 70;    // Boosted player starting income to 70 per wave
     this.isActive = false;
   }
 

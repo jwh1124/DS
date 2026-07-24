@@ -46,12 +46,13 @@
       
       <!-- Cheat Menu (Test Mode) -->
       <div id="cheat-menu" class="cheat-panel">
-        <span class="cheat-title">테스트 치트:</span>
+        <span class="cheat-title">옵션 & 치트:</span>
         <button class="cheat-btn" data-speed="1">1x</button>
         <button class="cheat-btn" data-speed="2">2x</button>
         <button class="cheat-btn" data-speed="3">3x</button>
         <button class="cheat-btn" id="cheat-money-btn">💰 미네랄 +10000</button>
         <button class="cheat-btn" id="audio-toggle-btn">🔊 사운드 켬</button>
+        <button class="cheat-btn" id="auto-spend-btn">🤖 자동 생산: 끔</button>
       </div>
 
       <!-- UI Layer -->
@@ -87,12 +88,12 @@
             <span class="label">미네랄</span>
             <div class="value-row">
               <div class="mineral-icon"></div>
-              <span id="minerals-text" class="value">250</span>
+              <span id="minerals-text" class="value">300</span>
             </div>
           </div>
           <div class="resource-box income-box">
             <span class="label">인컴 (웨이브당)</span>
-            <span id="income-text" class="value">+60</span>
+            <span id="income-text" class="value">+70</span>
           </div>
           <div class="hero-instruction" style="margin-top:15px; font-size:11px; color:#f1c40f; text-shadow:0 0 5px #000; font-weight:bold;">
             [A] / [D] 카메라 이동 | [1][2][3][Q][W][E] 단축키
@@ -104,11 +105,11 @@
           <div class="debug-header">🛠️ 실시간 자원 & AI 디버그 모니터</div>
           <div class="debug-row">
             <span class="lbl">적군(AI) 보유 미네랄:</span>
-            <span id="debug-ai-minerals" class="val gold">250 💎</span>
+            <span id="debug-ai-minerals" class="val gold">200 💎</span>
           </div>
           <div class="debug-row">
             <span class="lbl">적군(AI) 웨이브 인컴:</span>
-            <span id="debug-ai-income" class="val green">+60 💎</span>
+            <span id="debug-ai-income" class="val green">+45 💎</span>
           </div>
           <div class="debug-row border-top">
             <span class="lbl">적군(AI) 누적 부대:</span>
@@ -145,7 +146,7 @@
                   <span class="cost"><div class="mineral-icon small"></div> 50</span>
                 </div>
               </button>
-              <button class="build-btn" data-type="ranged" data-cost="100">
+              <button class="build-btn" data-type="ranged" data-cost="90">
                 <span class="hotkey-badge">[2]</span>
                 <span class="queue-badge" id="queue-ranged">x0</span>
                 <div class="icon ranged-icon">
@@ -155,10 +156,10 @@
                 </div>
                 <div class="info">
                   <span class="name">마린 (원거리)</span>
-                  <span class="cost"><div class="mineral-icon small"></div> 100</span>
+                  <span class="cost"><div class="mineral-icon small"></div> 90</span>
                 </div>
               </button>
-              <button class="build-btn" data-type="tank" data-cost="200">
+              <button class="build-btn" data-type="tank" data-cost="180">
                 <span class="hotkey-badge">[3]</span>
                 <span class="queue-badge" id="queue-tank">x0</span>
                 <div class="icon tank-icon">
@@ -168,7 +169,7 @@
                 </div>
                 <div class="info">
                   <span class="name">골리앗 (헤비탱크)</span>
-                  <span class="cost"><div class="mineral-icon small"></div> 200</span>
+                  <span class="cost"><div class="mineral-icon small"></div> 180</span>
                 </div>
               </button>
             </div>
@@ -178,7 +179,7 @@
           <div class="panel economy-menu">
             <div class="menu-title">💎 경제 & 시대발전 (ECONOMY)</div>
             <div class="build-buttons">
-              <button class="build-btn income-btn" data-type="income" data-cost="120">
+              <button class="build-btn income-btn" data-type="income" data-cost="100">
                 <span class="hotkey-badge">[Q]</span>
                 <div class="icon income-icon">
                   <svg viewBox="0 0 24 24" class="svg-icon">
@@ -186,8 +187,8 @@
                   </svg>
                 </div>
                 <div class="info">
-                  <span class="name">가스 채취기 (+15)</span>
-                  <span class="cost"><div class="mineral-icon small"></div> 120</span>
+                  <span class="name">가스 채취기 (+20)</span>
+                  <span class="cost"><div class="mineral-icon small"></div> 100</span>
                 </div>
               </button>
               <button class="build-btn tech-btn" data-type="tech" data-cost="800">
