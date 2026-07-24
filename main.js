@@ -140,18 +140,35 @@ class Game {
     this.entityManager.update(scaledDt);
     this.hud.update();
     
+    // Update Build Queue Badges
     const playerSpawners = this.waveSystem.spawners.player;
-    const meleeCount = playerSpawners.filter(t => t === 'melee').length;
-    const rangedCount = playerSpawners.filter(t => t === 'ranged').length;
-    const tankCount = playerSpawners.filter(t => t === 'tank').length;
+    const pMelee = playerSpawners.filter(t => t === 'melee').length;
+    const pRanged = playerSpawners.filter(t => t === 'ranged').length;
+    const pTank = playerSpawners.filter(t => t === 'tank').length;
     
     const qMelee = document.getElementById('queue-melee');
     const qRanged = document.getElementById('queue-ranged');
     const qTank = document.getElementById('queue-tank');
     
-    if (qMelee) qMelee.textContent = `x${meleeCount}`;
-    if (qRanged) qRanged.textContent = `x${rangedCount}`;
-    if (qTank) qTank.textContent = `x${tankCount}`;
+    if (qMelee) qMelee.textContent = `x${pMelee}`;
+    if (qRanged) qRanged.textContent = `x${pRanged}`;
+    if (qTank) qTank.textContent = `x${pTank}`;
+    
+    // Update Real-Time Debugger Monitor UI
+    const enemySpawners = this.waveSystem.spawners.enemy;
+    const aiMelee = enemySpawners.filter(t => t === 'melee').length;
+    const aiRanged = enemySpawners.filter(t => t === 'ranged').length;
+    const aiTank = enemySpawners.filter(t => t === 'tank').length;
+    
+    const dbgAiMinerals = document.getElementById('debug-ai-minerals');
+    const dbgAiIncome = document.getElementById('debug-ai-income');
+    const dbgAiUnits = document.getElementById('debug-ai-units');
+    const dbgPlayerUnits = document.getElementById('debug-player-units');
+    
+    if (dbgAiMinerals) dbgAiMinerals.textContent = `${Math.floor(this.waveSystem.aiMinerals)} 💎`;
+    if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 💎`;
+    if (dbgAiUnits) dbgAiUnits.textContent = `질럿 ${aiMelee} / 마린 ${aiRanged} / 골리앗 ${aiTank}`;
+    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `질럿 ${pMelee} / 마린 ${pRanged} / 골리앗 ${pTank}`;
     
     if (this.moveCameraLeft) {
       this.cameraX -= this.cameraSpeed * dt;
@@ -229,7 +246,7 @@ class Game {
     
     if (type === 'income') {
       if (this.economy.spendMinerals(cost)) {
-        this.economy.increaseIncome(15); // +15 income gain per Gas Extractor
+        this.economy.increaseIncome(15);
         for (let i = 0; i < 15; i++) {
           this.entityManager.addEntity(new Particle(
             this, this.playerBase.x, this.playerBase.y, '#2ecc71', 0.8, 60, Math.random() * Math.PI * 2, 4, 'spark'

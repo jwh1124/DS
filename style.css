@@ -27,7 +27,6 @@ body {
   border: 1px solid rgba(0, 229, 255, 0.3);
 }
 
-/* Subtle Retro Scanlines */
 .scanlines {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
@@ -48,7 +47,6 @@ body {
   image-rendering: pixelated;
 }
 
-/* UI Layer */
 #ui-layer {
   position: absolute;
   top: 0;
@@ -105,6 +103,56 @@ body {
   border-color: #00e5ff;
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.7);
 }
+
+/* Live Debugger Monitor */
+.debug-panel {
+  position: absolute;
+  top: 110px;
+  right: 15px;
+  background: rgba(10, 18, 35, 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(241, 196, 15, 0.5);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.75), 0 0 12px rgba(241, 196, 15, 0.15);
+  pointer-events: auto;
+  z-index: 30;
+  min-width: 230px;
+}
+.debug-header {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  color: #f1c40f;
+  border-bottom: 1px solid rgba(241, 196, 15, 0.3);
+  padding-bottom: 4px;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+.debug-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+.debug-row.border-top {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 4px;
+}
+.debug-row .lbl {
+  color: #aaa;
+}
+.debug-row .val {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+}
+.debug-row .val.gold { color: #f1c40f; text-shadow: 0 0 5px rgba(241, 196, 15, 0.5); }
+.debug-row .val.green { color: #2ecc71; text-shadow: 0 0 5px rgba(46, 204, 113, 0.5); }
+.debug-row .val.cyan { color: #00e5ff; text-shadow: 0 0 5px rgba(0, 229, 255, 0.5); }
 
 /* Minimap Radar Styling */
 #minimap-container {
