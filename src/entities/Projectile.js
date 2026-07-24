@@ -36,11 +36,6 @@ export class Projectile {
     const dist = Math.sqrt(dx*dx + dy*dy);
     
     if (dist < this.radius + targetRadius || dist < 12) {
-      if (this.target && this.target.isAlive) {
-        const isCrit = Math.random() < 0.15;
-        const finalDmg = isCrit ? this.damage * 1.5 : this.damage;
-        this.target.takeDamage(finalDmg, isCrit);
-      }
       this.explode();
       return;
     }
@@ -75,24 +70,53 @@ export class Projectile {
       this.game.audio.playHit();
     }
     
-    // Shockwave on impact
-    this.game.entityManager.addEntity(new Particle(
-      this.game, this.x, this.y, this.color, 0.3, 0, 0, 15, 'shockwave'
-    ));
+    // Apply primary damage to direct target
+    if (this.target && this.target.isAlive) {
+      const isCrit = Math.random() < 0.15;
+      const finalDmg = isCrit ? this.damage * 1.5 : this.damage;
+      this.target.takeDamage(finalDmg, isCrit);
+    }
     
-    // Spark particles
-    const particleCount = this.isHeavy ? 12 : 6;
-    for (let i = 0; i < particleCount; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 80 + 30;
+    // AOE Splash Damage for Heavy Shells (Tanks / Heavy Turrets) to clear stacked armies!
+    if (this.isHeavy) {
+      const enemyTeam = this.team === 'player' ? 'enemy' : 'player';
+      const enemies = this.game.entityManager.getEntitiesByTeam(enemyTeam);
+      const splashRadius = 75;
+      const splashDmg = this.damage * 0.5; // 50% splash damage to nearby stacked units
+      
+      enemies.forEach(enemy => {
+        if (enemy !== this.target && enemy.isAlive) {
+          const edx = enemy.x - this.x;
+          const edy = enemy.y - this.y;
+          const edist = Math.sqrt(edx*edx + edy*edy);
+          if (edist <= splashRadius) {
+            enemy.takeDamage(splashDmg, false);
+          }
+        }
+      });
+      
+      // Heavy Shockwave explosion visual
       this.game.entityManager.addEntity(new Particle(
-        this.game, this.x, this.y, this.color, 0.35, speed, angle, Math.random() * 3 + 2, 'spark'
+        this.game, this.x, this.y, '#f1c40f', 0.45, 0, 0, splashRadius, 'shockwave'
+      ));
+      
+      if (this.game.addScreenShake) {
+        this.game.addScreenShake(5);
+      }
+    } else {
+      this.game.entityManager.addEntity(new Particle(
+        this.game, this.x, this.y, this.color, 0.3, 0, 0, 15, 'shockwave'
       ));
     }
     
-    // Slight screen shake for heavy shots
-    if (this.isHeavy && this.game.addScreenShake) {
-      this.game.addScreenShake(3);
+    // Spark particles
+    const particleCount = this.isHeavy ? 14 : 6;
+    for (let i = 0; i < particleCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 90 + 30;
+      this.game.entityManager.addEntity(new Particle(
+        this.game, this.x, this.y, this.color, 0.35, speed, angle, Math.random() * 3 + 2, 'spark'
+      ));
     }
   }
 
@@ -101,13 +125,12 @@ export class Projectile {
     
     ctx.save();
     
-    // Draw projectile energy glow
     ctx.shadowBlur = 15;
     ctx.shadowColor = this.color;
     
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff'; // White core
+    ctx.fillStyle = '#ffffff';
     ctx.fill();
     
     ctx.beginPath();

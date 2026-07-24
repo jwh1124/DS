@@ -1,4 +1,5 @@
 import { Unit } from '../entities/Unit.js';
+import { Particle } from '../entities/Particle.js';
 import { FloatingText } from '../entities/FloatingText.js';
 import { WORLD_WIDTH } from '../../main.js';
 
@@ -16,8 +17,9 @@ export class WaveSystem {
     
     this.aiWaveCount = 0;
     this.aiMinerals = 250;
-    this.aiIncome = 60; // 100% EQUAL & FAIR default (60 / wave)
-    this.lastActionLog = '[스마트 AI]: 실시간 상성 카운터 AI 가동 준비 완료';
+    this.aiIncome = 60;
+    this.aiUltimateCooldown = 0; // AI Ultimate Cooldown timer
+    this.lastActionLog = '[스마트 AI]: AI 궤도 폭격 전술 가동 준비 완료';
   }
 
   start() {
@@ -26,9 +28,9 @@ export class WaveSystem {
     
     const diff = this.game.difficulty || 1.0;
     this.aiMinerals = Math.floor(250 * diff);
-    // Fair difficulty scaling: Easy 45, Normal 60 (Equal to player!), Hard 75, Insane 90
     this.aiIncome = Math.floor(60 * diff);
-    this.lastActionLog = `[스마트 AI]: AI 초기 자원 ${this.aiMinerals}💎 / 인컴 +${this.aiIncome}💎 세팅 완료`;
+    this.aiUltimateCooldown = 20; // Initial 20s grace period
+    this.lastActionLog = `[스마트 AI]: 초기 자원 ${this.aiMinerals}💎 / 인컴 +${this.aiIncome}💎 세팅 완료`;
   }
 
   stop() {
@@ -41,6 +43,10 @@ export class WaveSystem {
 
   update(dt) {
     if (!this.isActive) return;
+
+    if (this.aiUltimateCooldown > 0) {
+      this.aiUltimateCooldown -= dt;
+    }
 
     this.timeUntilWave -= dt;
 
@@ -59,64 +65,67 @@ export class WaveSystem {
     const unitCosts = { melee: 50, ranged: 100, tank: 200 };
     const unitNames = { melee: '질럿(근접)', ranged: '마린(원거리)', tank: '골리앗(탱크)' };
     
-    // Smart AI Tech Upgrade Decision
-    if (this.aiMinerals >= 800 && this.game.enemyBase && this.game.enemyBase.techLevel < 5) {
-      this.game.enemyBase.upgradeTech();
-      this.aiMinerals -= 800;
-      this.lastActionLog = `[스마트 AI 업그레이드]: AI 시대 발전 (Lv.${this.game.enemyBase.techLevel}) 완료! (-800💎)`;
-    }
-    
-    // Smart Counter-Pick AI Logic:
-    // AI analyzes player's army composition to counter-pick units!
-    const pMelee = this.spawners.player.filter(t => t === 'melee').length;
-    const pRanged = this.spawners.player.filter(t => t === 'ranged').length;
-    const pTank = this.spawners.player.filter(t => t === 'tank').length;
-    
-    // Counter Strategy:
-    // Player has mostly Melee -> AI buys Ranged (Marines counter Zealots)
-    // Player has mostly Ranged -> AI buys Tank (Goliaths counter Marines)
-    // Player has mostly Tank -> AI buys Melee (Zealots counter Goliaths)
-    let preferredUnit = 'melee';
-    if (pMelee >= pRanged && pMelee >= pTank) {
-      preferredUnit = 'ranged'; // Counter Melee with Ranged
-    } else if (pRanged >= pMelee && pRanged >= pTank) {
-      preferredUnit = 'tank';   // Counter Ranged with Tank
+    // AI Tactical Orbital Strike Check:
+    // If player has >= 8 units accumulated on battlefield and AI ultimate is ready, AI fires Orbital Strike!
+    const playerUnits = this.game.entityManager.getEntitiesByTeam('player').filter(e => e.radius && e.type);
+    if (playerUnits.length >= 8 && this.aiUltimateCooldown <= 0 && this.aiMinerals >= 300) {
+      this.triggerAiOrbitalStrike();
+      this.aiMinerals -= 300;
+      this.aiUltimateCooldown = 35; // 35s cooldown
+      this.lastActionLog = `[AI 궤도 폭격 ☠️]: 플레이어 밀집 부대 타격! (-300💎, 쿨타임 35s)`;
     } else {
-      preferredUnit = 'melee';  // Counter Tank with Melee
-    }
-    
-    // AI purchases preferred counter unit if affordable
-    let purchasedCount = 0;
-    let lastBoughtType = '';
-    let attempts = 0;
-    
-    while (this.aiMinerals >= 50 && attempts < 6) {
-      attempts++;
-      
-      let chosen = preferredUnit;
-      if (unitCosts[chosen] > this.aiMinerals) {
-        // Fallback to affordable unit if preferred is too expensive
-        const unitTypes = ['melee', 'ranged', 'tank'];
-        const affordable = unitTypes.filter(t => unitCosts[t] <= this.aiMinerals);
-        if (affordable.length === 0) break;
-        chosen = affordable[Math.floor(Math.random() * affordable.length)];
+      // Smart AI Tech Upgrade Decision
+      if (this.aiMinerals >= 800 && this.game.enemyBase && this.game.enemyBase.techLevel < 5) {
+        this.game.enemyBase.upgradeTech();
+        this.aiMinerals -= 800;
+        this.lastActionLog = `[스마트 AI 업그레이드]: AI 시대 발전 (Lv.${this.game.enemyBase.techLevel}) 완료! (-800💎)`;
       }
       
-      this.addSpawner('enemy', chosen);
-      this.aiMinerals -= unitCosts[chosen];
-      purchasedCount++;
-      lastBoughtType = chosen;
-    }
-    
-    if (purchasedCount > 0) {
-      this.lastActionLog = `[AI 카운터 저격]: ${unitNames[lastBoughtType]} 추가 (-${unitCosts[lastBoughtType]}💎, 잔여 ${Math.floor(this.aiMinerals)}💎)`;
-    } else if (!this.lastActionLog.includes('시대 발전')) {
-      this.lastActionLog = `[AI 자원 저축]: 구매 없음 (잔여 ${Math.floor(this.aiMinerals)}💎, 인컴 +${this.aiIncome}💎)`;
+      // Smart Counter-Pick AI Logic
+      const pMelee = this.spawners.player.filter(t => t === 'melee').length;
+      const pRanged = this.spawners.player.filter(t => t === 'ranged').length;
+      const pTank = this.spawners.player.filter(t => t === 'tank').length;
+      
+      let preferredUnit = 'melee';
+      if (pMelee >= pRanged && pMelee >= pTank) {
+        preferredUnit = 'ranged';
+      } else if (pRanged >= pMelee && pRanged >= pTank) {
+        preferredUnit = 'tank';
+      } else {
+        preferredUnit = 'melee';
+      }
+      
+      let purchasedCount = 0;
+      let lastBoughtType = '';
+      let attempts = 0;
+      
+      while (this.aiMinerals >= 50 && attempts < 6) {
+        attempts++;
+        
+        let chosen = preferredUnit;
+        if (unitCosts[chosen] > this.aiMinerals) {
+          const unitTypes = ['melee', 'ranged', 'tank'];
+          const affordable = unitTypes.filter(t => unitCosts[t] <= this.aiMinerals);
+          if (affordable.length === 0) break;
+          chosen = affordable[Math.floor(Math.random() * affordable.length)];
+        }
+        
+        this.addSpawner('enemy', chosen);
+        this.aiMinerals -= unitCosts[chosen];
+        purchasedCount++;
+        lastBoughtType = chosen;
+      }
+      
+      if (purchasedCount > 0) {
+        this.lastActionLog = `[AI 카운터 저격]: ${unitNames[lastBoughtType]} 추가 (-${unitCosts[lastBoughtType]}💎, 잔여 ${Math.floor(this.aiMinerals)}💎)`;
+      } else if (!this.lastActionLog.includes('시대 발전') && !this.lastActionLog.includes('궤도 폭격')) {
+        this.lastActionLog = `[AI 자원 저축]: 구매 없음 (잔여 ${Math.floor(this.aiMinerals)}💎, 인컴 +${this.aiIncome}💎)`;
+      }
     }
     
     const eBaseY = this.game.canvas.height / 2;
     
-    // Boss wave check (Every 6 waves) - Spawn ONE-TIME temporary event boss!
+    // Boss wave check (Every 6 waves)
     if (this.aiWaveCount > 0 && this.aiWaveCount % 6 === 0) {
       const tempBoss = new Unit(this.game, WORLD_WIDTH - 200, eBaseY, 'enemy', 'tank');
       tempBoss.makeBoss();
@@ -134,7 +143,7 @@ export class WaveSystem {
       this.game.entityManager.addEntity(new FloatingText(this.game, `WAVE ${this.aiWaveCount} 출격!`, WORLD_WIDTH/2, 220, '#00e5ff', false));
     }
     
-    // Spawn player units from permanent queue
+    // Spawn player units
     const pBaseY = this.game.canvas.height / 2;
     this.spawners.player.forEach((type, idx) => {
       const yOffset = (idx % 5 - 2) * 22;
@@ -142,7 +151,7 @@ export class WaveSystem {
       this.game.entityManager.addEntity(unit);
     });
 
-    // Spawn enemy units from paid permanent queue
+    // Spawn enemy units
     this.spawners.enemy.forEach((type, idx) => {
       const yOffset = (idx % 5 - 2) * 22;
       const unit = new Unit(this.game, WORLD_WIDTH - 200, eBaseY + yOffset, 'enemy', type);
@@ -154,6 +163,35 @@ export class WaveSystem {
     if (this.game.playerBase) {
       const incomeAmt = this.game.economy.income;
       this.game.entityManager.addEntity(new FloatingText(this.game, `+${incomeAmt} 💎`, this.game.playerBase.x, this.game.playerBase.y - 80, '#2ecc71', true));
+    }
+  }
+
+  triggerAiOrbitalStrike() {
+    if (this.game.audio) {
+      this.game.audio.playExplosion();
+      this.game.audio.playBossAlarm();
+    }
+    if (this.game.addScreenShake) {
+      this.game.addScreenShake(22);
+    }
+    
+    this.game.entityManager.addEntity(new FloatingText(this.game, `⚠️ 경고: AI 전술 궤도 폭격 발사! (-150 피해) ⚠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
+
+    const players = this.game.entityManager.getEntitiesByTeam('player');
+    players.forEach(p => {
+      for (let i = 0; i < 18; i++) {
+        this.game.entityManager.addEntity(new Particle(
+          this.game, p.x + (Math.random()-0.5)*30, p.y - 80 - Math.random()*200, '#ff0055', 0.8, 300, Math.PI/2, 5, 'spark'
+        ));
+      }
+      this.game.entityManager.addEntity(new Particle(
+        this.game, p.x, p.y, '#ff0055', 0.4, 0, 0, 30, 'shockwave'
+      ));
+      p.takeDamage(150, true);
+    });
+    
+    if (this.game.playerBase && this.game.playerBase.isAlive) {
+      this.game.playerBase.takeDamage(25);
     }
   }
 }
