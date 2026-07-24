@@ -52,11 +52,14 @@ export class Unit {
       }
     } else if (this.team === 'enemy' && this.game.waveSystem) {
       const difficultyMultiplier = this.game.difficulty || 1.0;
-      const enemyTechLevel = Math.min(5, 1 + Math.floor(this.game.waveSystem.aiWaveCount / 5));
+      const enemyTechLevel = Math.min(5, 1 + Math.floor(this.game.waveSystem.aiWaveCount / 6));
       
-      this.maxHp *= difficultyMultiplier;
+      // Fair stat scaling: +15% HP & Damage on Hard mode instead of ridiculous 200%
+      const statBonus = 1 + (difficultyMultiplier - 1) * 0.5;
+      
+      this.maxHp *= statBonus;
       this.hp = this.maxHp;
-      this.damage *= difficultyMultiplier;
+      this.damage *= statBonus;
       
       if (enemyTechLevel > 1) {
         this.maxHp *= enemyTechLevel;
@@ -71,9 +74,9 @@ export class Unit {
   makeBoss() {
     this.isBoss = true;
     this.scale = 2.5;
-    this.maxHp *= 8;
+    this.maxHp *= 7;
     this.hp = this.maxHp;
-    this.damage *= 2.5;
+    this.damage *= 2.2;
     this.radius *= 2.2;
     this.color = '#ff0055';
   }
@@ -298,21 +301,17 @@ export class Unit {
     
     ctx.save();
     
-    // 1. Soft Oval Drop Shadow
     ctx.beginPath();
     ctx.ellipse(this.x, this.y + (16 * this.scale), 18 * this.scale, 7 * this.scale, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.fill();
     
-    // Recoil offset
     const recoilX = this.recoil * 6 * this.dir;
     ctx.translate(this.x - recoilX, this.y);
     
-    // Walking leg bobbing
     const bobY = this.state === 'moving' ? Math.sin(this.animTime) * 2.5 : 0;
     ctx.translate(0, bobY);
     
-    // 2. Boss Pulse Aura & Shield Rings
     if (this.isBoss) {
       ctx.beginPath();
       ctx.arc(0, 0, 32 + Math.sin(Date.now() * 0.008) * 5, 0, Math.PI * 2);
@@ -326,7 +325,6 @@ export class Unit {
       ctx.shadowBlur = 0;
     }
     
-    // 3. Aura Buff Glow
     if (this.hasAura) {
       ctx.beginPath();
       ctx.arc(0, 0, 26, 0, Math.PI * 2);
@@ -346,7 +344,6 @@ export class Unit {
     
     ctx.scale(this.scale, this.scale);
     
-    // 4. Commercial-Grade High-Fidelity Character Drawing
     const mainColor = this.team === 'player' ? 
       (this.tier === 1 ? '#00e5ff' : (this.tier === 2 ? '#0984e3' : '#6c5ce7')) : 
       (this.tier === 1 ? '#ff3333' : (this.tier === 2 ? '#d63031' : '#8e44ad'));
@@ -358,13 +355,10 @@ export class Unit {
     const goldColor = this.tier === 1 ? '#f1c40f' : (this.tier === 2 ? '#e67e22' : '#00ff00');
     
     if (this.type === 'melee') {
-      // --- ZEALOT (Cyber Psionic Warrior) ---
-      // Cyber Armor Legs
       ctx.fillStyle = darkColor;
       ctx.fillRect(-10, 4, 6, 12);
       ctx.fillRect(2, 4, 6, 12);
       
-      // Torso & Armor Chestplate
       ctx.fillStyle = mainColor;
       ctx.beginPath();
       ctx.moveTo(-12, -8);
@@ -377,7 +371,6 @@ export class Unit {
       ctx.lineWidth = 1.5;
       ctx.stroke();
       
-      // Chest Power Crystal Core
       ctx.fillStyle = goldColor;
       ctx.shadowBlur = 10;
       ctx.shadowColor = goldColor;
@@ -386,22 +379,19 @@ export class Unit {
       ctx.fill();
       ctx.shadowBlur = 0;
       
-      // Cyber Helmet Visor
       ctx.fillStyle = darkColor;
       ctx.fillRect(-7, -20, 14, 11);
       ctx.fillStyle = mainColor;
       ctx.shadowBlur = 8;
       ctx.shadowColor = mainColor;
-      ctx.fillRect(-4, -17, 11, 4); // Visor glow
+      ctx.fillRect(-4, -17, 11, 4);
       ctx.shadowBlur = 0;
       
-      // Dual Psionic Plasma Blades
       const bladeFlicker = Math.sin(Date.now() * 0.02) * 2;
       ctx.shadowBlur = 18;
       ctx.shadowColor = mainColor;
       ctx.fillStyle = mainColor;
       
-      // Right Blade
       ctx.beginPath();
       ctx.moveTo(8, -2);
       ctx.lineTo(26 + bladeFlicker, -8);
@@ -409,7 +399,6 @@ export class Unit {
       ctx.closePath();
       ctx.fill();
       
-      // White Inner Energy Core
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.moveTo(9, -2);
@@ -420,26 +409,21 @@ export class Unit {
       ctx.shadowBlur = 0;
 
     } else if (this.type === 'ranged') {
-      // --- MARINE (Exo-Suit Heavy Infantry) ---
-      // Heavy Mechanical Legs
       ctx.fillStyle = '#2c3e50';
       ctx.fillRect(-11, 6, 7, 12);
       ctx.fillRect(2, 6, 7, 12);
       
-      // Armored Exo Body
       ctx.fillStyle = mainColor;
       ctx.fillRect(-13, -10, 22, 16);
       ctx.fillStyle = darkColor;
       ctx.fillRect(-11, -8, 18, 12);
       
-      // Shoulder Shield Pauldrons
       ctx.fillStyle = mainColor;
       ctx.beginPath();
       ctx.arc(-11, -8, 6, 0, Math.PI * 2);
       ctx.arc(9, -8, 6, 0, Math.PI * 2);
       ctx.fill();
       
-      // Visor Helmet
       ctx.fillStyle = '#1e272e';
       ctx.fillRect(-6, -22, 12, 11);
       ctx.fillStyle = goldColor;
@@ -448,13 +432,11 @@ export class Unit {
       ctx.fillRect(-2, -19, 9, 4);
       ctx.shadowBlur = 0;
       
-      // Gauss Rifle Assault Cannon
       ctx.fillStyle = '#485460';
       ctx.fillRect(2, -4, 20, 6);
       ctx.fillStyle = '#1e272e';
       ctx.fillRect(18, -6, 6, 10);
       
-      // Laser Sight Beam
       ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -463,48 +445,40 @@ export class Unit {
       ctx.stroke();
 
     } else if (this.type === 'tank') {
-      // --- GOLIATH (Heavy Bipedal Mech Walker) ---
-      // Hydraulic Mech Legs
       ctx.fillStyle = '#2c3e50';
       ctx.fillRect(-16, 8, 10, 14);
       ctx.fillRect(4, 8, 10, 14);
       ctx.fillStyle = '#1e272e';
-      ctx.fillRect(-18, 18, 13, 5); // Feet treads
+      ctx.fillRect(-18, 18, 13, 5);
       ctx.fillRect(2, 18, 13, 5);
       
-      // Main Mech Cockpit Chassis
       ctx.fillStyle = darkColor;
       ctx.fillRect(-18, -14, 34, 22);
       ctx.fillStyle = mainColor;
       ctx.fillRect(-14, -12, 26, 18);
       
-      // Armored Glass Cockpit
       ctx.fillStyle = goldColor;
       ctx.shadowBlur = 12;
       ctx.shadowColor = goldColor;
       ctx.fillRect(-4, -10, 14, 8);
       ctx.shadowBlur = 0;
       
-      // Twin Shoulder Missile Launcher Pods
       ctx.fillStyle = '#34495e';
       ctx.fillRect(-16, -26, 12, 12);
       ctx.fillRect(4, -26, 12, 12);
       
-      // Missile Tips
       ctx.fillStyle = '#e74c3c';
       ctx.fillRect(-14, -24, 4, 4);
       ctx.fillRect(-8, -24, 4, 4);
       ctx.fillRect(6, -24, 4, 4);
       ctx.fillRect(12, -24, 4, 4);
       
-      // Autocannon Barrel
       ctx.fillStyle = '#1e272e';
       ctx.fillRect(8, -2, 18, 5);
     }
     
     ctx.restore();
     
-    // 5. Render Health Bar & Tier Badges
     ctx.save();
     const hpPercent = Math.max(0, this.hp / this.maxHp);
     const barW = Math.max(34, 34 * this.scale);
@@ -532,7 +506,6 @@ export class Unit {
       ctx.fillText(stars, this.x, barY - 4);
     }
     
-    // 6. Laser Arc Effect for Attack
     if (this.state === 'attacking' && this.target && this.type === 'melee' && this.attackCooldown > this.attackSpeed - 0.2) {
       ctx.beginPath();
       ctx.moveTo(this.x + (this.dir * 18 * this.scale), this.y);
