@@ -16,7 +16,8 @@ export class WaveSystem {
     
     this.aiWaveCount = 0;
     this.aiMinerals = 200;
-    this.aiIncome = 45; // AI income is tuned lower than player's (70) so Player always has economic advantage!
+    this.aiIncome = 45;
+    this.lastActionLog = '[AI 시스템]: 게임 준비 완료 (공정 자원 연산 중)';
   }
 
   start() {
@@ -25,8 +26,8 @@ export class WaveSystem {
     
     const diff = this.game.difficulty || 1.0;
     this.aiMinerals = Math.floor(200 * diff);
-    // AI Income scaling: Easy 35, Normal 45, Hard 60 (Player gets 70!)
     this.aiIncome = Math.floor(45 * diff);
+    this.lastActionLog = `[AI 시스템]: 초기 자원 ${this.aiMinerals}💎 / 인컴 +${this.aiIncome}💎 세팅 완료`;
   }
 
   stop() {
@@ -55,10 +56,14 @@ export class WaveSystem {
     this.aiMinerals += this.aiIncome;
     
     const unitCosts = { melee: 50, ranged: 90, tank: 180 };
+    const unitNames = { melee: '질럿', ranged: '마린', tank: '골리앗' };
     const unitTypes = ['melee', 'ranged', 'tank'];
     
-    // AI purchases units prudently
+    // AI buys unit spawner only when AI has enough minerals!
+    let purchasedCount = 0;
+    let lastBoughtType = '';
     let attempts = 0;
+    
     while (this.aiMinerals >= 50 && attempts < 6) {
       attempts++;
       const affordable = unitTypes.filter(t => unitCosts[t] <= this.aiMinerals);
@@ -67,6 +72,14 @@ export class WaveSystem {
       const chosen = affordable[Math.floor(Math.random() * affordable.length)];
       this.addSpawner('enemy', chosen);
       this.aiMinerals -= unitCosts[chosen];
+      purchasedCount++;
+      lastBoughtType = chosen;
+    }
+    
+    if (purchasedCount > 0) {
+      this.lastActionLog = `[AI 구매 기록]: ${unitNames[lastBoughtType]} 스폰라인 추가 (-${unitCosts[lastBoughtType]}💎, 잔여 ${Math.floor(this.aiMinerals)}💎)`;
+    } else {
+      this.lastActionLog = `[AI 자원 저축]: 이번 웨이브 구매 없음 (잔여 ${Math.floor(this.aiMinerals)}💎)`;
     }
     
     // Boss wave check (Every 6 waves)

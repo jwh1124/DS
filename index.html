@@ -95,16 +95,16 @@
             <span class="label">인컴 (웨이브당)</span>
             <span id="income-text" class="value">+70</span>
           </div>
-          <div class="hero-instruction" style="margin-top:15px; font-size:11px; color:#f1c40f; text-shadow:0 0 5px #000; font-weight:bold;">
-            [A] / [D] 카메라 이동 | [1][2][3][Q][W][E] 단축키
+          <div class="hero-instruction" style="margin-top:10px; font-size:10px; color:#f1c40f; text-shadow:0 0 5px #000; font-weight:bold; max-width: 170px; line-height: 1.3;">
+            💡 룰 안내: 구매한 유닛 생산 라인은 매 웨이브마다 영구 출격합니다!
           </div>
         </div>
 
         <!-- Live Real-Time Debugging Monitor (Right Side) -->
         <div id="debug-monitor" class="debug-panel">
-          <div class="debug-header">🛠️ 실시간 자원 & AI 디버그 모니터</div>
+          <div class="debug-header">🛠️ AI 자원 & 영구 스폰라인 모니터</div>
           <div class="debug-row">
-            <span class="lbl">적군(AI) 보유 미네랄:</span>
+            <span class="lbl">적군(AI) 잔여 미네랄:</span>
             <span id="debug-ai-minerals" class="val gold">200 💎</span>
           </div>
           <div class="debug-row">
@@ -112,12 +112,15 @@
             <span id="debug-ai-income" class="val green">+45 💎</span>
           </div>
           <div class="debug-row border-top">
-            <span class="lbl">적군(AI) 누적 부대:</span>
+            <span class="lbl">적군(AI) 영구 스폰라인:</span>
             <span id="debug-ai-units" class="val cyan">질럿 0 / 마린 0 / 골리앗 0</span>
           </div>
           <div class="debug-row">
-            <span class="lbl">아군 누적 부대:</span>
+            <span class="lbl">아군 영구 스폰라인:</span>
             <span id="debug-player-units" class="val cyan">질럿 0 / 마린 0 / 골리앗 0</span>
+          </div>
+          <div class="debug-log-row" id="debug-last-action">
+            [AI 시스템]: 게임 준비 완료 (공정 자원 연산 중)
           </div>
         </div>
 
@@ -131,7 +134,7 @@
         <div class="bottom-controls">
           <!-- Building Menu -->
           <div class="panel build-menu">
-            <div class="menu-title">⚡ 유닛 생산 (UNIT BARRACKS)</div>
+            <div class="menu-title">⚡ 영구 유닛 생산 라인 (PERMANENT SPAWNERS)</div>
             <div class="build-buttons">
               <button class="build-btn" data-type="melee" data-cost="50">
                 <span class="hotkey-badge">[1]</span>

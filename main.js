@@ -19,7 +19,7 @@ class Game {
     this.isRunning = false;
     this.screenShake = 0;
     this.ultimateCooldown = 0;
-    this.autoSpend = false; // Optional Auto-Spend toggle
+    this.autoSpend = false;
     
     this.audio = new AudioEngine();
     
@@ -176,11 +176,13 @@ class Game {
     const dbgAiIncome = document.getElementById('debug-ai-income');
     const dbgAiUnits = document.getElementById('debug-ai-units');
     const dbgPlayerUnits = document.getElementById('debug-player-units');
+    const dbgLastAction = document.getElementById('debug-last-action');
     
     if (dbgAiMinerals) dbgAiMinerals.textContent = `${Math.floor(this.waveSystem.aiMinerals)} 💎`;
     if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 💎`;
     if (dbgAiUnits) dbgAiUnits.textContent = `질럿 ${aiMelee} / 마린 ${aiRanged} / 골리앗 ${aiTank}`;
     if (dbgPlayerUnits) dbgPlayerUnits.textContent = `질럿 ${pMelee} / 마린 ${pRanged} / 골리앗 ${pTank}`;
+    if (dbgLastAction && this.waveSystem.lastActionLog) dbgLastAction.textContent = this.waveSystem.lastActionLog;
     
     if (this.moveCameraLeft) {
       this.cameraX -= this.cameraSpeed * dt;
@@ -258,7 +260,7 @@ class Game {
     
     if (type === 'income') {
       if (this.economy.spendMinerals(cost)) {
-        this.economy.increaseIncome(20); // +20 income boost per Gas Extractor
+        this.economy.increaseIncome(20);
         for (let i = 0; i < 15; i++) {
           this.entityManager.addEntity(new Particle(
             this, this.playerBase.x, this.playerBase.y, '#2ecc71', 0.8, 60, Math.random() * Math.PI * 2, 4, 'spark'
