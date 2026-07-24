@@ -8,121 +8,6 @@ const UNIT_STATS = {
   tank: { hp: 300, damage: 60, range: 60, speed: 40, attackSpeed: 1.5, color: '#9b59b6' }
 };
 
-const PIXEL_ART = {
-  player: {
-    melee: [
-      "----------------",
-      "------kkk-------",
-      "-----kwgck------",
-      "----kcgccck-----",
-      "----kgcgcck-----",
-      "-----kccck------",
-      "----kgccckg-----",
-      "---kggcccggk----",
-      "---kgckkkcgk----",
-      "--kcck---kcck---",
-      "--kcck---kcck---",
-      "-kgggk---kgggk--",
-      "-kcccgkkkgcccgk-",
-      "kkccck---kccckk-",
-      "-kkkk-----kkkk--",
-      "----------------"
-    ],
-    ranged: [
-      "----------------",
-      "------kkk-------",
-      "-----kwcwk------",
-      "-----kccck------",
-      "---kkkgcckk-----",
-      "--kcgkgcckk-----",
-      "-kcggkgccckkk---",
-      "kkccgkgcccccgkk-",
-      "-kcccgkkkkkkk---",
-      "--kcck---kcck---",
-      "--kcck---kcck---",
-      "--kgck---kgck---",
-      "--kcck---kcck---",
-      "-kkcckk-kkcckk--",
-      "-kkkkk---kkkkk--",
-      "----------------"
-    ],
-    tank: [
-      "----------------",
-      "-----kkkkk------",
-      "---kkcwgwckk----",
-      "--kcccgcgccck---",
-      "--kccccccccck---",
-      "--kggccgcccgk---",
-      "kkkcccgcgcccckkk",
-      "kggccccgccccggck",
-      "kggcccccccccggck",
-      "kkkccccccccckkkk",
-      "---kkkkkkkkk----",
-      "---kkcgggcck----",
-      "--kcccgggccck---",
-      "-kggcgggggcggk--",
-      "-kkkkkkkkkkkkk--",
-      "----------------"
-    ]
-  },
-  enemy: {
-    melee: [
-      "----------------",
-      "------kkk-------",
-      "-----kwyrk------",
-      "----kryrrrk-----",
-      "----kyryrrk-----",
-      "-----krrrk------",
-      "----kyrrrkd-----",
-      "---kddrrrddk----",
-      "---kdrkkkrdk----",
-      "--krrk---krrk---",
-      "--krrk---krrk---",
-      "-kdddk---kdddk--",
-      "-krrrdkkkdrrrdk-",
-      "kkrrrk---krrrkk-",
-      "-kkkk-----kkkk--",
-      "----------------"
-    ],
-    ranged: [
-      "----------------",
-      "------kkk-------",
-      "-----kwywk------",
-      "-----krrrk------",
-      "---kkkdrrkk-----",
-      "--krykdrrkk-----",
-      "-kddykdrrrkkk---",
-      "kkrrykdrrrrrdkk-",
-      "-krrrdkkkkkkk---",
-      "--krrk---krrk---",
-      "--krrk---krrk---",
-      "--kdrk---kdrk---",
-      "--krrk---krrk---",
-      "-kkrrkk-kkrrkk--",
-      "-kkkkk---kkkkk--",
-      "----------------"
-    ],
-    tank: [
-      "----------------",
-      "-----kkkkk------",
-      "---kkyrdrdykk---",
-      "--krrrdrdrrrk---",
-      "--krrrrrrrrrk---",
-      "--kddrrdrrrdk---",
-      "kkkrrdrdrrrrkkkk",
-      "kddrrrrdrrrrddrk",
-      "kddrrrrrrrrrddrk",
-      "kkkrrrrrrrrrkkkk",
-      "---kkkkkkkkk----",
-      "---kkrdddrrk----",
-      "--krrrdddrrrk---",
-      "-kddrdddddrddk--",
-      "-kkkkkkkkkkkkk--",
-      "----------------"
-    ]
-  }
-};
-
 export class Unit {
   constructor(game, x, y, team, type) {
     this.game = game;
@@ -140,7 +25,7 @@ export class Unit {
     this.attackSpeed = stats.attackSpeed;
     this.color = team === 'player' ? '#00e5ff' : '#ff3333';
     
-    this.radius = 20;
+    this.radius = 22;
     this.isAlive = true;
     
     this.state = 'moving';
@@ -151,6 +36,7 @@ export class Unit {
     this.scale = 1;
     this.tier = 1;
     this.recoil = 0;
+    this.animTime = Math.random() * 10;
     
     this.dir = team === 'player' ? 1 : -1;
     
@@ -184,7 +70,7 @@ export class Unit {
   
   makeBoss() {
     this.isBoss = true;
-    this.scale = 2.4;
+    this.scale = 2.5;
     this.maxHp *= 8;
     this.hp = this.maxHp;
     this.damage *= 2.5;
@@ -198,9 +84,8 @@ export class Unit {
     
     const textStr = isCritical ? `CRIT! -${Math.floor(amount)}` : `-${Math.floor(amount)}`;
     const textColor = isCritical ? '#f1c40f' : (this.team === 'player' ? '#ff4d4d' : '#00e5ff');
-    this.game.entityManager.addEntity(new FloatingText(this.game, textStr, this.x, this.y - 35 * this.scale, textColor, isCritical));
+    this.game.entityManager.addEntity(new FloatingText(this.game, textStr, this.x, this.y - 38 * this.scale, textColor, isCritical));
     
-    // Spark particles on damage
     for (let i = 0; i < (isCritical ? 8 : 3); i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = Math.random() * 60 + 20;
@@ -221,27 +106,24 @@ export class Unit {
       this.game.audio.playExplosion();
     }
     
-    // Impact Screen Shake for Boss or Tank
     if ((this.isBoss || this.type === 'tank') && this.game.addScreenShake) {
-      this.game.addScreenShake(this.isBoss ? 12 : 5);
+      this.game.addScreenShake(this.isBoss ? 14 : 6);
     }
     
-    // Shockwave
     this.game.entityManager.addEntity(new Particle(
-      this.game, this.x, this.y, this.color, 0.45, 0, 0, 20 * this.scale, 'shockwave'
+      this.game, this.x, this.y, this.color, 0.45, 0, 0, 22 * this.scale, 'shockwave'
     ));
 
-    const particleCount = this.isBoss ? 40 : 18;
+    const particleCount = this.isBoss ? 45 : 20;
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 120 + 40;
+      const speed = Math.random() * 140 + 40;
       this.game.entityManager.addEntity(new Particle(
-        this.game, this.x, this.y, this.color, 0.6, speed, angle, Math.random() * 4 + 2, 'spark'
+        this.game, this.x, this.y, this.color, 0.65, speed, angle, Math.random() * 4 + 2, 'spark'
       ));
     }
     
-    // Core white flash particle
-    this.game.entityManager.addEntity(new Particle(this.game, this.x, this.y, '#ffffff', 0.2, 0, 0, 25 * this.scale));
+    this.game.entityManager.addEntity(new Particle(this.game, this.x, this.y, '#ffffff', 0.2, 0, 0, 28 * this.scale));
   }
 
   findTarget() {
@@ -273,6 +155,8 @@ export class Unit {
   update(dt) {
     if (!this.isAlive) return;
     
+    this.animTime += dt * 8;
+    
     if (this.attackCooldown > 0) {
       this.attackCooldown -= dt;
     }
@@ -303,7 +187,6 @@ export class Unit {
       this.x += currentSpeed * this.dir * dt;
     }
     
-    // Dust & Energy Engine trails
     if (this.state === 'moving' && Math.random() > 0.5) {
       const trailAngle = this.dir === 1 ? Math.PI + (Math.random()-0.5)*0.5 : (Math.random()-0.5)*0.5;
       this.game.entityManager.addEntity(new Particle(
@@ -332,23 +215,22 @@ export class Unit {
     if (this.type === 'ranged') {
       this.game.entityManager.addEntity(new Projectile(
         this.game, 
-        this.x + (this.dir * 18 * this.scale), 
-        this.y - 5 * this.scale, 
+        this.x + (this.dir * 22 * this.scale), 
+        this.y - 6 * this.scale, 
         target, 
         currentDamage, 
         this.color, 
         this.team,
         false
       ));
-      // Muzzle flash particle
       this.game.entityManager.addEntity(new Particle(
-        this.game, this.x + (this.dir * 22 * this.scale), this.y - 5 * this.scale, '#fff', 0.12, 0, 0, 10, 'spark'
+        this.game, this.x + (this.dir * 26 * this.scale), this.y - 6 * this.scale, '#fff', 0.12, 0, 0, 12, 'spark'
       ));
     } else if (this.type === 'tank') {
       this.game.entityManager.addEntity(new Projectile(
         this.game, 
-        this.x + (this.dir * 20 * this.scale), 
-        this.y - 8 * this.scale, 
+        this.x + (this.dir * 25 * this.scale), 
+        this.y - 12 * this.scale, 
         target, 
         currentDamage, 
         '#f1c40f', 
@@ -356,15 +238,13 @@ export class Unit {
         true
       ));
     } else {
-      // Melee attack
-      const isCrit = Math.random() < 0.15;
+      const isCrit = Math.random() < 0.18;
       const finalDmg = isCrit ? currentDamage * 1.5 : currentDamage;
       target.takeDamage(finalDmg, isCrit);
       
-      // Melee Spark burst
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 5; i++) {
         this.game.entityManager.addEntity(new Particle(
-          this.game, target.x, target.y, this.color, 0.2, 50, Math.random() * Math.PI * 2, 3, 'spark'
+          this.game, target.x, target.y, this.color, 0.25, 60, Math.random() * Math.PI * 2, 3, 'spark'
         ));
       }
     }
@@ -418,23 +298,29 @@ export class Unit {
     
     ctx.save();
     
-    // 1. Draw Drop Shadow on Ground
+    // 1. Soft Oval Drop Shadow
     ctx.beginPath();
-    ctx.ellipse(this.x, this.y + (this.radius * this.scale * 0.8), this.radius * this.scale * 0.9, 6 * this.scale, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.ellipse(this.x, this.y + (16 * this.scale), 18 * this.scale, 7 * this.scale, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.fill();
     
-    ctx.translate(this.x - (this.recoil * 5 * this.dir), this.y);
+    // Recoil offset
+    const recoilX = this.recoil * 6 * this.dir;
+    ctx.translate(this.x - recoilX, this.y);
     
-    // 2. Boss Pulse Aura
+    // Walking leg bobbing
+    const bobY = this.state === 'moving' ? Math.sin(this.animTime) * 2.5 : 0;
+    ctx.translate(0, bobY);
+    
+    // 2. Boss Pulse Aura & Shield Rings
     if (this.isBoss) {
       ctx.beginPath();
-      ctx.arc(0, 0, this.radius + 12 + Math.sin(Date.now() * 0.008) * 4, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 0, 85, 0.25)';
+      ctx.arc(0, 0, 32 + Math.sin(Date.now() * 0.008) * 5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 0, 85, 0.2)';
       ctx.fill();
       ctx.strokeStyle = '#ff0055';
-      ctx.lineWidth = 2;
-      ctx.shadowBlur = 15;
+      ctx.lineWidth = 2.5;
+      ctx.shadowBlur = 20;
       ctx.shadowColor = '#ff0055';
       ctx.stroke();
       ctx.shadowBlur = 0;
@@ -443,10 +329,10 @@ export class Unit {
     // 3. Aura Buff Glow
     if (this.hasAura) {
       ctx.beginPath();
-      ctx.arc(0, 0, this.radius + 6, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(241, 196, 15, 0.35)';
+      ctx.arc(0, 0, 26, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(241, 196, 15, 0.3)';
       ctx.fill();
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 15;
       ctx.shadowColor = '#f1c40f';
       ctx.strokeStyle = '#f1c40f';
       ctx.lineWidth = 2;
@@ -460,99 +346,207 @@ export class Unit {
     
     ctx.scale(this.scale, this.scale);
     
-    // 4. Render Pixel Art Sprite
-    const sprite = PIXEL_ART[this.team][this.type];
-    const pixelSize = 3;
-    const w = sprite[0].length * pixelSize;
-    const h = sprite.length * pixelSize;
+    // 4. Commercial-Grade High-Fidelity Character Drawing
+    const mainColor = this.team === 'player' ? 
+      (this.tier === 1 ? '#00e5ff' : (this.tier === 2 ? '#0984e3' : '#6c5ce7')) : 
+      (this.tier === 1 ? '#ff3333' : (this.tier === 2 ? '#d63031' : '#8e44ad'));
     
-    ctx.translate(-w/2, -h/2);
+    const darkColor = this.team === 'player' ? 
+      (this.tier === 1 ? '#0083b0' : (this.tier === 2 ? '#005f73' : '#4a69bd')) : 
+      (this.tier === 1 ? '#b00000' : (this.tier === 2 ? '#c0392b' : '#5f27cd'));
     
-    for (let r = 0; r < sprite.length; r++) {
-      for (let c = 0; c < sprite[r].length; c++) {
-        const char = sprite[r][c];
-        if (char !== '-') {
-          if (char === 'k') ctx.fillStyle = '#111';
-          else if (char === 'w') ctx.fillStyle = '#fff';
-          else if (char === 'g') {
-            if (this.tier === 1) ctx.fillStyle = '#7f8c8d'; 
-            else if (this.tier === 2) ctx.fillStyle = '#bdc3c7'; 
-            else ctx.fillStyle = '#2c3e50'; 
-          }
-          else if (char === 'y') {
-            if (this.tier === 1) ctx.fillStyle = '#f1c40f'; 
-            else if (this.tier === 2) ctx.fillStyle = '#e67e22'; 
-            else ctx.fillStyle = '#00ff00'; 
-          }
-          else if (char === 'c') {
-            if (this.tier === 1) ctx.fillStyle = this.team === 'player' ? '#00e5ff' : '#ff3333'; 
-            else if (this.tier === 2) ctx.fillStyle = this.team === 'player' ? '#0984e3' : '#d63031'; 
-            else ctx.fillStyle = this.team === 'player' ? '#6c5ce7' : '#8e44ad'; 
-          }
-          else if (char === 'd') {
-            if (this.tier === 1) ctx.fillStyle = this.team === 'player' ? '#0083b0' : '#b00000';
-            else if (this.tier === 2) ctx.fillStyle = this.team === 'player' ? '#005f73' : '#c0392b';
-            else ctx.fillStyle = this.team === 'player' ? '#4a69bd' : '#5f27cd';
-          }
-          else if (char === 'r') {
-            if (this.tier === 1) ctx.fillStyle = '#e74c3c';
-            else if (this.tier === 2) ctx.fillStyle = '#d63031';
-            else ctx.fillStyle = '#8e44ad';
-          }
-          
-          ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize);
-        }
-      }
+    const goldColor = this.tier === 1 ? '#f1c40f' : (this.tier === 2 ? '#e67e22' : '#00ff00');
+    
+    if (this.type === 'melee') {
+      // --- ZEALOT (Cyber Psionic Warrior) ---
+      // Cyber Armor Legs
+      ctx.fillStyle = darkColor;
+      ctx.fillRect(-10, 4, 6, 12);
+      ctx.fillRect(2, 4, 6, 12);
+      
+      // Torso & Armor Chestplate
+      ctx.fillStyle = mainColor;
+      ctx.beginPath();
+      ctx.moveTo(-12, -8);
+      ctx.lineTo(12, -8);
+      ctx.lineTo(8, 6);
+      ctx.lineTo(-8, 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      
+      // Chest Power Crystal Core
+      ctx.fillStyle = goldColor;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = goldColor;
+      ctx.beginPath();
+      ctx.arc(0, -2, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      // Cyber Helmet Visor
+      ctx.fillStyle = darkColor;
+      ctx.fillRect(-7, -20, 14, 11);
+      ctx.fillStyle = mainColor;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = mainColor;
+      ctx.fillRect(-4, -17, 11, 4); // Visor glow
+      ctx.shadowBlur = 0;
+      
+      // Dual Psionic Plasma Blades
+      const bladeFlicker = Math.sin(Date.now() * 0.02) * 2;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = mainColor;
+      ctx.fillStyle = mainColor;
+      
+      // Right Blade
+      ctx.beginPath();
+      ctx.moveTo(8, -2);
+      ctx.lineTo(26 + bladeFlicker, -8);
+      ctx.lineTo(14, 4);
+      ctx.closePath();
+      ctx.fill();
+      
+      // White Inner Energy Core
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(9, -2);
+      ctx.lineTo(22 + bladeFlicker, -7);
+      ctx.lineTo(13, 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+    } else if (this.type === 'ranged') {
+      // --- MARINE (Exo-Suit Heavy Infantry) ---
+      // Heavy Mechanical Legs
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(-11, 6, 7, 12);
+      ctx.fillRect(2, 6, 7, 12);
+      
+      // Armored Exo Body
+      ctx.fillStyle = mainColor;
+      ctx.fillRect(-13, -10, 22, 16);
+      ctx.fillStyle = darkColor;
+      ctx.fillRect(-11, -8, 18, 12);
+      
+      // Shoulder Shield Pauldrons
+      ctx.fillStyle = mainColor;
+      ctx.beginPath();
+      ctx.arc(-11, -8, 6, 0, Math.PI * 2);
+      ctx.arc(9, -8, 6, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Visor Helmet
+      ctx.fillStyle = '#1e272e';
+      ctx.fillRect(-6, -22, 12, 11);
+      ctx.fillStyle = goldColor;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = goldColor;
+      ctx.fillRect(-2, -19, 9, 4);
+      ctx.shadowBlur = 0;
+      
+      // Gauss Rifle Assault Cannon
+      ctx.fillStyle = '#485460';
+      ctx.fillRect(2, -4, 20, 6);
+      ctx.fillStyle = '#1e272e';
+      ctx.fillRect(18, -6, 6, 10);
+      
+      // Laser Sight Beam
+      ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(24, -2);
+      ctx.lineTo(60, -2);
+      ctx.stroke();
+
+    } else if (this.type === 'tank') {
+      // --- GOLIATH (Heavy Bipedal Mech Walker) ---
+      // Hydraulic Mech Legs
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(-16, 8, 10, 14);
+      ctx.fillRect(4, 8, 10, 14);
+      ctx.fillStyle = '#1e272e';
+      ctx.fillRect(-18, 18, 13, 5); // Feet treads
+      ctx.fillRect(2, 18, 13, 5);
+      
+      // Main Mech Cockpit Chassis
+      ctx.fillStyle = darkColor;
+      ctx.fillRect(-18, -14, 34, 22);
+      ctx.fillStyle = mainColor;
+      ctx.fillRect(-14, -12, 26, 18);
+      
+      // Armored Glass Cockpit
+      ctx.fillStyle = goldColor;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = goldColor;
+      ctx.fillRect(-4, -10, 14, 8);
+      ctx.shadowBlur = 0;
+      
+      // Twin Shoulder Missile Launcher Pods
+      ctx.fillStyle = '#34495e';
+      ctx.fillRect(-16, -26, 12, 12);
+      ctx.fillRect(4, -26, 12, 12);
+      
+      // Missile Tips
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(-14, -24, 4, 4);
+      ctx.fillRect(-8, -24, 4, 4);
+      ctx.fillRect(6, -24, 4, 4);
+      ctx.fillRect(12, -24, 4, 4);
+      
+      // Autocannon Barrel
+      ctx.fillStyle = '#1e272e';
+      ctx.fillRect(8, -2, 18, 5);
     }
+    
     ctx.restore();
     
     // 5. Render Health Bar & Tier Badges
     ctx.save();
     const hpPercent = Math.max(0, this.hp / this.maxHp);
-    const barW = Math.max(30, 30 * this.scale);
-    const barH = this.isBoss ? 6 : 4;
+    const barW = Math.max(34, 34 * this.scale);
+    const barH = this.isBoss ? 7 : 5;
     const barX = this.x - barW / 2;
-    const barY = this.y - (this.radius * this.scale) - 16;
+    const barY = this.y - (this.radius * this.scale) - 18;
     
-    // Health bar container with dark border
-    ctx.fillStyle = 'rgba(10, 15, 20, 0.8)';
+    ctx.fillStyle = 'rgba(10, 15, 20, 0.85)';
     ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
     
-    // Red background fill
     ctx.fillStyle = 'rgba(231, 76, 60, 0.8)';
     ctx.fillRect(barX, barY, barW, barH);
     
-    // Health fill gradient
     ctx.fillStyle = this.team === 'player' ? '#00e5ff' : '#2ecc71';
-    ctx.shadowBlur = 6;
+    ctx.shadowBlur = 8;
     ctx.shadowColor = ctx.fillStyle;
     ctx.fillRect(barX, barY, barW * hpPercent, barH);
     ctx.shadowBlur = 0;
     
-    // Tier stars
     if (this.tier > 1) {
       ctx.fillStyle = '#f1c40f';
-      ctx.font = '10px Orbitron';
+      ctx.font = '700 11px Orbitron';
       ctx.textAlign = 'center';
       const stars = this.tier === 2 ? '★' : '★★';
-      ctx.fillText(stars, this.x, barY - 3);
+      ctx.fillText(stars, this.x, barY - 4);
     }
     
-    // 6. Enhanced Melee Laser Arc
-    if (this.state === 'attacking' && this.target && this.type === 'melee' && this.attackCooldown > this.attackSpeed - 0.18) {
+    // 6. Laser Arc Effect for Attack
+    if (this.state === 'attacking' && this.target && this.type === 'melee' && this.attackCooldown > this.attackSpeed - 0.2) {
       ctx.beginPath();
-      ctx.moveTo(this.x + (this.dir * 15 * this.scale), this.y);
+      ctx.moveTo(this.x + (this.dir * 18 * this.scale), this.y);
       ctx.lineTo(this.target.x, this.target.y);
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.stroke();
       
       ctx.beginPath();
-      ctx.moveTo(this.x + (this.dir * 15 * this.scale), this.y);
+      ctx.moveTo(this.x + (this.dir * 18 * this.scale), this.y);
       ctx.lineTo(this.target.x, this.target.y);
       ctx.strokeStyle = this.color;
-      ctx.lineWidth = 5;
-      ctx.shadowBlur = 15;
+      ctx.lineWidth = 6;
+      ctx.shadowBlur = 18;
       ctx.shadowColor = this.color;
       ctx.stroke();
       ctx.shadowBlur = 0;

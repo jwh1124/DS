@@ -44,7 +44,6 @@ class Game {
     this.gameSpeed = 1;
     this.difficulty = 1.0;
     
-    // Parallax Dust Particles with dynamic glowing depth
     this.dustParticles = Array.from({length: 120}, () => ({
       x: Math.random() * WORLD_WIDTH,
       y: Math.random() * (this.canvas.height - 150),
@@ -115,7 +114,6 @@ class Game {
     
     const scaledDt = dt * this.gameSpeed;
     
-    // Screen shake decay
     if (this.screenShake > 0) {
       this.screenShake = Math.max(0, this.screenShake - dt * 25);
     }
@@ -124,6 +122,20 @@ class Game {
     this.economy.update(scaledDt);
     this.entityManager.update(scaledDt);
     this.hud.update();
+    
+    // Update Build Queue Badges
+    const playerSpawners = this.waveSystem.spawners.player;
+    const meleeCount = playerSpawners.filter(t => t === 'melee').length;
+    const rangedCount = playerSpawners.filter(t => t === 'ranged').length;
+    const tankCount = playerSpawners.filter(t => t === 'tank').length;
+    
+    const qMelee = document.getElementById('queue-melee');
+    const qRanged = document.getElementById('queue-ranged');
+    const qTank = document.getElementById('queue-tank');
+    
+    if (qMelee) qMelee.textContent = `x${meleeCount}`;
+    if (qRanged) qRanged.textContent = `x${rangedCount}`;
+    if (qTank) qTank.textContent = `x${tankCount}`;
     
     // Camera Navigation
     if (this.moveCameraLeft) {
@@ -142,7 +154,6 @@ class Game {
     
     this.ctx.save();
     
-    // Apply Camera Translation with Screen Shake
     let shakeX = 0;
     let shakeY = 0;
     if (this.screenShake > 0) {
@@ -152,7 +163,6 @@ class Game {
     
     this.ctx.translate(-Math.floor(this.cameraX) + shakeX, shakeY);
     
-    // Draw background (parallax or tiled)
     if (this.bgImage.complete && this.bgImage.naturalWidth > 0) {
       this.ctx.drawImage(this.bgImage, 0, 0, 1500, this.canvas.height);
       this.ctx.drawImage(this.bgImage, 1500, 0, 1500, this.canvas.height);
@@ -160,7 +170,6 @@ class Game {
       this.drawFallbackBackground();
     }
     
-    // Draw Parallax Dust & Ambient Embers
     this.dustParticles.forEach(p => {
       p.x -= p.speed;
       if (p.x < 0) p.x = WORLD_WIDTH;
@@ -171,7 +180,6 @@ class Game {
       this.ctx.fill();
     });
     
-    // Draw Ground & Cyber Grid Line
     this.ctx.fillStyle = '#1a100a';
     this.ctx.fillRect(0, this.canvas.height - 150, WORLD_WIDTH, 150);
     
@@ -181,12 +189,10 @@ class Game {
     this.ctx.fillRect(0, this.canvas.height - 150, WORLD_WIDTH, 4);
     this.ctx.shadowBlur = 0;
     
-    // Draw Entities (Bases, Units, Projectiles, Particles)
     this.entityManager.draw(this.ctx);
     
     this.ctx.restore();
     
-    // Render Minimap Radar Overlay
     if (this.minimap) {
       this.minimap.draw();
     }
@@ -197,6 +203,58 @@ class Game {
     this.ctx.fillRect(0, 0, WORLD_WIDTH, this.canvas.height);
   }
   
+  triggerAction(type, cost, btnElement) {
+    if (!this.isRunning) return;
+    
+    this.audio.playClick();
+    
+    if (type === 'income') {
+      if (this.economy.spendMinerals(cost)) {
+        this.economy.increaseIncome(10);
+        for (let i = 0; i < 15; i++) {
+          this.entityManager.addEntity(new Particle(
+            this, this.playerBase.x, this.playerBase.y, '#2ecc71', 0.8, 60, Math.random() * Math.PI * 2, 4, 'spark'
+          ));
+        }
+      }
+    } else if (type === 'tech') {
+      if (this.playerBase.techLevel >= 5) return;
+      
+      if (this.economy.spendMinerals(cost)) {
+        this.playerBase.upgradeTech();
+        
+        if (btnElement) {
+          if (this.playerBase.techLevel >= 5) {
+            btnElement.dataset.cost = Infinity;
+            btnElement.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> -`;
+            btnElement.querySelector('.name').innerHTML = `시대 발전 (MAX)`;
+            btnElement.style.opacity = 0.5;
+          } else {
+            const nextCost = cost * 2;
+            btnElement.dataset.cost = nextCost;
+            btnElement.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> ${nextCost}`;
+            btnElement.querySelector('.name').innerHTML = `시대 발전 (Lv.${this.playerBase.techLevel + 1})`;
+          }
+        }
+      }
+    } else if (type === 'ultimate') {
+      if (this.economy.spendMinerals(cost)) {
+        this.triggerOrbitalStrike();
+      }
+    } else {
+      if (this.waveSystem.spawners.player.length >= 50) return;
+      
+      if (this.economy.spendMinerals(cost)) {
+        this.waveSystem.addSpawner('player', type);
+        for (let i = 0; i < 12; i++) {
+          this.entityManager.addEntity(new Particle(
+            this, this.playerBase.x, this.playerBase.y, '#00e5ff', 0.5, 50, Math.random() * Math.PI * 2, 3, 'spark'
+          ));
+        }
+      }
+    }
+  }
+
   setupInput() {
     const tooltip = document.getElementById('tooltip');
     const ttTitle = document.getElementById('tooltip-title');
@@ -206,12 +264,12 @@ class Game {
     const ttRange = document.getElementById('tt-range');
 
     const unitStats = {
-      melee: { title: '질럿 (근접)', desc: '체력이 높고 저렴한 최전방 방패 역할.', hp: 120, dmg: 25, range: '근접' },
-      ranged: { title: '마린 (원거리)', desc: '사거리가 길지만 체력이 약한 딜러.', hp: 60, dmg: 35, range: '원거리' },
-      tank: { title: '골리앗 (헤비 탱크)', desc: '단단한 장갑과 강력한 한방 공격력.', hp: 300, dmg: 60, range: '중거리' },
-      income: { title: '가스 채취기', desc: '매 웨이브마다 추가 미네랄을 +10 획득.', hp: '-', dmg: '-', range: '-' },
-      tech: { title: '시대 발전', desc: '본진 타워 개방 및 유닛 최대체력/공격력 티어 업그레이드.', hp: '-', dmg: '-', range: '-' },
-      ultimate: { title: '궤도 폭격', desc: '화면 내 모든 적에게 500 고정 피해 및 본진 타격.', hp: '-', dmg: '500', range: '전체' }
+      melee: { title: '질럿 (근접) [단축키 1]', desc: '플라즈마 검을 사용하는 최전방 근접 돌격자.', hp: 120, dmg: 25, range: '근접' },
+      ranged: { title: '마린 (원거리) [단축키 2]', desc: '가우스 소총으로 장거리 사격을 퍼붓는 딜러.', hp: 60, dmg: 35, range: '원거리' },
+      tank: { title: '골리앗 (헤비탱크) [단축키 3]', desc: '미사일 포트와 오토캐논을 장착한 중장갑 메카.', hp: 300, dmg: 60, range: '중거리' },
+      income: { title: '가스 채취기 [단축키 Q]', desc: '매 웨이브마다 추가 미네랄을 +10 획득.', hp: '-', dmg: '-', range: '-' },
+      tech: { title: '시대 발전 [단축키 W]', desc: '본진 타워 개방 및 유닛 스탯/비주얼 티어 업그레이드.', hp: '-', dmg: '-', range: '-' },
+      ultimate: { title: '궤도 폭격 [단축키 E]', desc: '전장의 모든 적에게 500 피해를 입히는 광역기.', hp: '-', dmg: '500', range: '전체' }
     };
 
     document.querySelectorAll('.build-btn').forEach(btn => {
@@ -238,55 +296,7 @@ class Game {
       btn.addEventListener('click', (e) => {
         const type = btn.dataset.type;
         const cost = parseInt(btn.dataset.cost);
-        
-        this.audio.playClick();
-        
-        if (type === 'income') {
-          if (this.economy.spendMinerals(cost)) {
-            this.economy.increaseIncome(10);
-            for (let i = 0; i < 15; i++) {
-              this.entityManager.addEntity(new Particle(
-                this, this.playerBase.x, this.playerBase.y, '#2ecc71', 0.8, 60, Math.random() * Math.PI * 2, 4, 'spark'
-              ));
-            }
-          }
-        } else if (type === 'tech') {
-          if (this.playerBase.techLevel >= 5) {
-            return;
-          }
-          
-          if (this.economy.spendMinerals(cost)) {
-            this.playerBase.upgradeTech();
-            
-            if (this.playerBase.techLevel >= 5) {
-              btn.dataset.cost = Infinity;
-              btn.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> -`;
-              btn.querySelector('.name').innerHTML = `시대 발전 (MAX)`;
-              btn.style.opacity = 0.5;
-            } else {
-              const nextCost = cost * 2;
-              btn.dataset.cost = nextCost;
-              btn.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> ${nextCost}`;
-              btn.querySelector('.name').innerHTML = `시대 발전 (Lv.${this.playerBase.techLevel + 1})`;
-            }
-          }
-        } else if (type === 'ultimate') {
-          if (this.economy.spendMinerals(cost)) {
-            this.triggerOrbitalStrike();
-          }
-        } else {
-          if (this.waveSystem.spawners.player.length >= 50) {
-            return;
-          }
-          if (this.economy.spendMinerals(cost)) {
-            this.waveSystem.addSpawner('player', type);
-            for (let i = 0; i < 12; i++) {
-              this.entityManager.addEntity(new Particle(
-                this, this.playerBase.x, this.playerBase.y, '#00e5ff', 0.5, 50, Math.random() * Math.PI * 2, 3, 'spark'
-              ));
-            }
-          }
-        }
+        this.triggerAction(type, cost, btn);
       });
     });
     
@@ -310,12 +320,11 @@ class Game {
       this.audio.playMagic();
     });
 
-    // Audio Toggle
     const audioBtn = document.getElementById('audio-toggle-btn');
     if (audioBtn) {
       audioBtn.addEventListener('click', () => {
         const isMuted = this.audio.toggleMute();
-        audioBtn.textContent = isMuted ? '🔇 음소거' : '🔊 소리 켬';
+        audioBtn.textContent = isMuted ? '🔇 사운드 끔' : '🔊 사운드 켬';
         if (isMuted) {
           audioBtn.classList.remove('active');
         } else {
@@ -324,11 +333,35 @@ class Game {
       });
     }
     
-    // Free Camera Controls
+    // Keybinds for Camera and Action Hotkeys (1, 2, 3, Q, W, E)
     window.addEventListener('keydown', (e) => {
       if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.moveCameraLeft = true;
       if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.moveCameraRight = true;
+      
+      if (!this.isRunning) return;
+      
+      const key = e.key.toLowerCase();
+      if (key === '1') {
+        const btn = document.querySelector('.build-btn[data-type="melee"]');
+        if (btn) this.triggerAction('melee', parseInt(btn.dataset.cost), btn);
+      } else if (key === '2') {
+        const btn = document.querySelector('.build-btn[data-type="ranged"]');
+        if (btn) this.triggerAction('ranged', parseInt(btn.dataset.cost), btn);
+      } else if (key === '3') {
+        const btn = document.querySelector('.build-btn[data-type="tank"]');
+        if (btn) this.triggerAction('tank', parseInt(btn.dataset.cost), btn);
+      } else if (key === 'q') {
+        const btn = document.querySelector('.build-btn[data-type="income"]');
+        if (btn) this.triggerAction('income', parseInt(btn.dataset.cost), btn);
+      } else if (key === 'w') {
+        const btn = document.querySelector('.build-btn[data-type="tech"]');
+        if (btn) this.triggerAction('tech', parseInt(btn.dataset.cost), btn);
+      } else if (key === 'e') {
+        const btn = document.querySelector('.build-btn[data-type="ultimate"]');
+        if (btn) this.triggerAction('ultimate', parseInt(btn.dataset.cost), btn);
+      }
     });
+    
     window.addEventListener('keyup', (e) => {
       if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.moveCameraLeft = false;
       if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.moveCameraRight = false;
@@ -341,7 +374,6 @@ class Game {
 
     const enemies = this.entityManager.getEntitiesByTeam('enemy');
     enemies.forEach(enemy => {
-      // Beam burst particles
       for (let i = 0; i < 25; i++) {
         this.entityManager.addEntity(new Particle(
           this, enemy.x + (Math.random()-0.5)*40, enemy.y - 100 - Math.random()*250, '#f1c40f', 0.9, 350, Math.PI/2, 6, 'spark'
@@ -357,7 +389,7 @@ class Game {
       this.enemyBase.takeDamage(100);
       for (let i = 0; i < 50; i++) {
         this.entityManager.addEntity(new Particle(
-          this, this.enemyBase.x + (Math.random()-0.5)*120, this.enemyBase.y - Math.random()*300, '#f1c40f', 1.1, 450, Math.PI/2, 8, 'spark'
+          this.game || this, this.enemyBase.x + (Math.random()-0.5)*120, this.enemyBase.y - Math.random()*300, '#f1c40f', 1.1, 450, Math.PI/2, 8, 'spark'
         ));
       }
     }
