@@ -1,8 +1,8 @@
 export class Economy {
   constructor(game) {
     this.game = game;
-    this.minerals = 300; // Boosted player starting minerals to 300
-    this.income = 70;    // Boosted player starting income to 70 per wave
+    this.minerals = 250; // Standard starting minerals (250)
+    this.income = 60;    // Standard starting income (60)
     this.isActive = false;
   }
 
