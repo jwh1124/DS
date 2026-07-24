@@ -2,6 +2,7 @@ import { GameLoop } from './src/engine/GameLoop.js';
 import { EntityManager } from './src/engine/EntityManager.js';
 import { WaveSystem } from './src/engine/WaveSystem.js';
 import { HUD } from './src/ui/HUD.js';
+import { Minimap } from './src/ui/Minimap.js';
 import { Base } from './src/entities/Base.js';
 import { Economy } from './src/engine/Economy.js';
 import { Particle } from './src/entities/Particle.js';
@@ -16,6 +17,7 @@ class Game {
     this.ctx.imageSmoothingEnabled = false;
     
     this.isRunning = false;
+    this.screenShake = 0;
     
     this.audio = new AudioEngine();
     
@@ -23,6 +25,7 @@ class Game {
     this.economy = new Economy(this);
     this.waveSystem = new WaveSystem(this);
     this.hud = new HUD(this);
+    this.minimap = new Minimap(this);
     this.loop = new GameLoop(this.update.bind(this), this.draw.bind(this));
     
     this.playerBase = new Base(this, 150, this.canvas.height / 2, 'player', 5000);
@@ -34,24 +37,24 @@ class Game {
     this.bgImage.src = import.meta.env.BASE_URL + 'bg.png';
     
     this.cameraX = 0;
-    this.cameraSpeed = 600; // pixels per second
+    this.cameraSpeed = 650;
     this.moveCameraLeft = false;
     this.moveCameraRight = false;
     
     this.gameSpeed = 1;
-    this.difficulty = 1.0; // Default Normal
+    this.difficulty = 1.0;
     
-    // Parallax Dust
-    this.dustParticles = Array.from({length: 100}, () => ({
+    // Parallax Dust Particles with dynamic glowing depth
+    this.dustParticles = Array.from({length: 120}, () => ({
       x: Math.random() * WORLD_WIDTH,
-      y: Math.random() * this.canvas.height,
-      speed: Math.random() * 0.5 + 0.1,
-      size: Math.random() * 2 + 1
+      y: Math.random() * (this.canvas.height - 150),
+      speed: Math.random() * 0.8 + 0.2,
+      size: Math.random() * 2.5 + 0.8,
+      alpha: Math.random() * 0.4 + 0.1
     }));
     
     this.setupInput();
     
-    // UI Setup
     document.getElementById('ui-layer').style.display = 'none';
     
     document.querySelectorAll('.diff-btn').forEach(btn => {
@@ -73,6 +76,10 @@ class Game {
     });
   }
   
+  addScreenShake(intensity) {
+    this.screenShake = Math.max(this.screenShake, intensity);
+  }
+  
   start() {
     this.isRunning = true;
     document.getElementById('game-over-screen').classList.add('hidden');
@@ -91,11 +98,13 @@ class Game {
     const title = document.getElementById('game-over-title');
     
     if (winner === 'player') {
-      title.textContent = '승리!';
+      title.textContent = 'VICTORY!';
       title.style.color = '#00e5ff';
+      title.style.textShadow = '0 0 30px #00e5ff';
     } else {
-      title.textContent = '패배...';
+      title.textContent = 'DEFEAT...';
       title.style.color = '#ff3333';
+      title.style.textShadow = '0 0 30px #ff3333';
     }
     
     gameOverScreen.classList.remove('hidden');
@@ -106,12 +115,17 @@ class Game {
     
     const scaledDt = dt * this.gameSpeed;
     
+    // Screen shake decay
+    if (this.screenShake > 0) {
+      this.screenShake = Math.max(0, this.screenShake - dt * 25);
+    }
+    
     this.waveSystem.update(scaledDt);
     this.economy.update(scaledDt);
     this.entityManager.update(scaledDt);
     this.hud.update();
     
-    // Free Camera Movement (uses real dt for smooth movement)
+    // Camera Navigation
     if (this.moveCameraLeft) {
       this.cameraX -= this.cameraSpeed * dt;
     }
@@ -119,7 +133,6 @@ class Game {
       this.cameraX += this.cameraSpeed * dt;
     }
     
-    // Clamp camera
     if (this.cameraX < 0) this.cameraX = 0;
     if (this.cameraX > WORLD_WIDTH - this.canvas.width) this.cameraX = WORLD_WIDTH - this.canvas.width;
   }
@@ -128,43 +141,59 @@ class Game {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
     this.ctx.save();
-    // Apply Camera Translation
-    this.ctx.translate(-Math.floor(this.cameraX), 0);
+    
+    // Apply Camera Translation with Screen Shake
+    let shakeX = 0;
+    let shakeY = 0;
+    if (this.screenShake > 0) {
+      shakeX = (Math.random() - 0.5) * this.screenShake;
+      shakeY = (Math.random() - 0.5) * this.screenShake;
+    }
+    
+    this.ctx.translate(-Math.floor(this.cameraX) + shakeX, shakeY);
     
     // Draw background (parallax or tiled)
     if (this.bgImage.complete && this.bgImage.naturalWidth > 0) {
-      // Tile background twice to cover 3000px roughly
       this.ctx.drawImage(this.bgImage, 0, 0, 1500, this.canvas.height);
       this.ctx.drawImage(this.bgImage, 1500, 0, 1500, this.canvas.height);
     } else {
       this.drawFallbackBackground();
     }
     
-    // Draw Parallax Dust
-    this.ctx.fillStyle = 'rgba(255, 230, 150, 0.3)';
+    // Draw Parallax Dust & Ambient Embers
     this.dustParticles.forEach(p => {
-      // Dust moves slowly left, camera movement adds parallax
       p.x -= p.speed;
       if (p.x < 0) p.x = WORLD_WIDTH;
       
+      this.ctx.fillStyle = `rgba(241, 196, 15, ${p.alpha})`;
       this.ctx.beginPath();
-      this.ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+      this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       this.ctx.fill();
     });
     
-    // Draw ground line
-    this.ctx.fillStyle = '#221100';
+    // Draw Ground & Cyber Grid Line
+    this.ctx.fillStyle = '#1a100a';
     this.ctx.fillRect(0, this.canvas.height - 150, WORLD_WIDTH, 150);
-    this.ctx.fillStyle = '#ff8800';
-    this.ctx.fillRect(0, this.canvas.height - 150, WORLD_WIDTH, 5);
     
+    this.ctx.shadowBlur = 10;
+    this.ctx.shadowColor = '#ff8800';
+    this.ctx.fillStyle = '#ff8800';
+    this.ctx.fillRect(0, this.canvas.height - 150, WORLD_WIDTH, 4);
+    this.ctx.shadowBlur = 0;
+    
+    // Draw Entities (Bases, Units, Projectiles, Particles)
     this.entityManager.draw(this.ctx);
     
     this.ctx.restore();
+    
+    // Render Minimap Radar Overlay
+    if (this.minimap) {
+      this.minimap.draw();
+    }
   }
   
   drawFallbackBackground() {
-    this.ctx.fillStyle = '#2c1e16';
+    this.ctx.fillStyle = '#1c1510';
     this.ctx.fillRect(0, 0, WORLD_WIDTH, this.canvas.height);
   }
   
@@ -186,7 +215,6 @@ class Game {
     };
 
     document.querySelectorAll('.build-btn').forEach(btn => {
-      // Tooltip Hover Logic
       btn.addEventListener('mouseenter', (e) => {
         const type = btn.dataset.type;
         const stats = unitStats[type];
@@ -218,13 +246,12 @@ class Game {
             this.economy.increaseIncome(10);
             for (let i = 0; i < 15; i++) {
               this.entityManager.addEntity(new Particle(
-                this, this.playerBase.x, this.playerBase.y, '#2ecc71', 1.0, 50, Math.random() * Math.PI * 2, 4
+                this, this.playerBase.x, this.playerBase.y, '#2ecc71', 0.8, 60, Math.random() * Math.PI * 2, 4, 'spark'
               ));
             }
           }
         } else if (type === 'tech') {
           if (this.playerBase.techLevel >= 5) {
-            // Reached max level
             return;
           }
           
@@ -237,7 +264,6 @@ class Game {
               btn.querySelector('.name').innerHTML = `시대 발전 (MAX)`;
               btn.style.opacity = 0.5;
             } else {
-              // Increase cost dynamically for next tech
               const nextCost = cost * 2;
               btn.dataset.cost = nextCost;
               btn.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> ${nextCost}`;
@@ -250,15 +276,13 @@ class Game {
           }
         } else {
           if (this.waveSystem.spawners.player.length >= 50) {
-            // Cap player spawners to prevent extreme lag
-            // Optionally could add a visual floating text saying "MAX UNITS REACHED"
             return;
           }
           if (this.economy.spendMinerals(cost)) {
             this.waveSystem.addSpawner('player', type);
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < 12; i++) {
               this.entityManager.addEntity(new Particle(
-                this, this.playerBase.x, this.playerBase.y, '#00e5ff', 0.5, 40, Math.random() * Math.PI * 2, 3
+                this, this.playerBase.x, this.playerBase.y, '#00e5ff', 0.5, 50, Math.random() * Math.PI * 2, 3, 'spark'
               ));
             }
           }
@@ -279,13 +303,26 @@ class Game {
       });
     });
     
-    // Initial active state for 1x speed
     document.querySelector('.cheat-btn[data-speed="1"]').classList.add('active');
     
     document.getElementById('cheat-money-btn').addEventListener('click', () => {
       this.economy.minerals += 10000;
       this.audio.playMagic();
     });
+
+    // Audio Toggle
+    const audioBtn = document.getElementById('audio-toggle-btn');
+    if (audioBtn) {
+      audioBtn.addEventListener('click', () => {
+        const isMuted = this.audio.toggleMute();
+        audioBtn.textContent = isMuted ? '🔇 음소거' : '🔊 소리 켬';
+        if (isMuted) {
+          audioBtn.classList.remove('active');
+        } else {
+          audioBtn.classList.add('active');
+        }
+      });
+    }
     
     // Free Camera Controls
     window.addEventListener('keydown', (e) => {
@@ -300,28 +337,27 @@ class Game {
   
   triggerOrbitalStrike() {
     this.audio.playExplosion();
-    
-    this.canvas.style.transform = "translate(15px, 15px)";
-    setTimeout(() => this.canvas.style.transform = "translate(-15px, -15px)", 50);
-    setTimeout(() => this.canvas.style.transform = "translate(15px, -15px)", 100);
-    setTimeout(() => this.canvas.style.transform = "translate(-15px, 15px)", 150);
-    setTimeout(() => this.canvas.style.transform = "none", 200);
+    this.addScreenShake(25);
 
     const enemies = this.entityManager.getEntitiesByTeam('enemy');
     enemies.forEach(enemy => {
-      for (let i = 0; i < 20; i++) {
+      // Beam burst particles
+      for (let i = 0; i < 25; i++) {
         this.entityManager.addEntity(new Particle(
-          this, enemy.x + (Math.random()-0.5)*40, enemy.y - 100 - Math.random()*200, '#f1c40f', 0.8, 300, Math.PI/2, 6
+          this, enemy.x + (Math.random()-0.5)*40, enemy.y - 100 - Math.random()*250, '#f1c40f', 0.9, 350, Math.PI/2, 6, 'spark'
         ));
       }
-      enemy.takeDamage(500); 
+      this.entityManager.addEntity(new Particle(
+        this, enemy.x, enemy.y, '#f1c40f', 0.5, 0, 0, 40, 'shockwave'
+      ));
+      enemy.takeDamage(500, true); 
     });
     
     if (this.enemyBase && this.enemyBase.isAlive) {
       this.enemyBase.takeDamage(100);
       for (let i = 0; i < 50; i++) {
         this.entityManager.addEntity(new Particle(
-          this, this.enemyBase.x + (Math.random()-0.5)*100, this.enemyBase.y - Math.random()*300, '#f1c40f', 1.0, 400, Math.PI/2, 8
+          this, this.enemyBase.x + (Math.random()-0.5)*120, this.enemyBase.y - Math.random()*300, '#f1c40f', 1.1, 450, Math.PI/2, 8, 'spark'
         ));
       }
     }

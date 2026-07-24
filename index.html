@@ -12,13 +12,14 @@
   </head>
   <body>
     <div id="game-container">
+      <div class="scanlines"></div>
       <canvas id="gameCanvas" width="1280" height="720"></canvas>
       
       <!-- Title Screen -->
       <div id="title-screen">
         <div class="logo-container">
           <h1 class="main-title">데저트<br>스트라이크</h1>
-          <h2 class="sub-title">상용화 에디션</h2>
+          <h2 class="sub-title">COMMERCIAL ULTIMATE EDITION</h2>
         </div>
         
         <!-- 난이도 선택 -->
@@ -44,15 +45,16 @@
       </div>
       
       <!-- Cheat Menu (Test Mode) -->
-    <div id="cheat-menu" class="cheat-panel">
-      <span class="cheat-title">테스트 치트:</span>
-      <button class="cheat-btn" data-speed="1">1x</button>
-      <button class="cheat-btn" data-speed="2">2x</button>
-      <button class="cheat-btn" data-speed="3">3x</button>
-      <button class="cheat-btn" id="cheat-money-btn">💰 미네랄 +10000</button>
-    </div>
+      <div id="cheat-menu" class="cheat-panel">
+        <span class="cheat-title">테스트 치트:</span>
+        <button class="cheat-btn" data-speed="1">1x</button>
+        <button class="cheat-btn" data-speed="2">2x</button>
+        <button class="cheat-btn" data-speed="3">3x</button>
+        <button class="cheat-btn" id="cheat-money-btn">💰 미네랄 +10000</button>
+        <button class="cheat-btn" id="audio-toggle-btn">🔊 음소거</button>
+      </div>
 
-    <!-- UI Layer -->
+      <!-- UI Layer -->
       <div id="ui-layer">
         
         <!-- Top HUD -->
@@ -92,9 +94,15 @@
             <span class="label">인컴</span>
             <span id="income-text" class="value">+50 / 웨이브</span>
           </div>
-          <div class="hero-instruction" style="margin-top:20px; font-size:12px; color:#f1c40f; text-shadow:0 0 5px #000; font-weight:bold;">
-            [A] / [D] 키로 카메라 이동 (전장 탐색)
+          <div class="hero-instruction" style="margin-top:15px; font-size:11px; color:#f1c40f; text-shadow:0 0 5px #000; font-weight:bold;">
+            [A] / [D] 키로 전장 카메라 탐색
           </div>
+        </div>
+
+        <!-- Minimap Radar (Center Bottom) -->
+        <div id="minimap-container">
+          <div class="minimap-header">BATTLEFIELD RADAR</div>
+          <canvas id="minimapCanvas" width="220" height="40"></canvas>
         </div>
 
         <!-- Bottom Controls -->

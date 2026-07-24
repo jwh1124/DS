@@ -26,7 +26,6 @@ export class WaveSystem {
     this.isActive = false;
   }
   
-  // Directly add a unit type to the spawn queue
   addSpawner(team, type) {
     this.spawners[team].push(type);
   }
@@ -46,30 +45,36 @@ export class WaveSystem {
     this.aiWaveCount++;
     
     const types = ['melee', 'ranged', 'tank'];
-    
-    // AI Builder Logic (scales linearly with time, not exponentially)
-    this.spawners.enemy = []; // Clear previous spawners to prevent infinite scaling freeze!
+    this.spawners.enemy = [];
     
     const difficultyMultiplier = this.game.difficulty || 1.0;
     const maxEnemies = Math.floor(30 * difficultyMultiplier);
-    const numEnemies = Math.min(1 + Math.floor(this.aiWaveCount * 1.5 * difficultyMultiplier), maxEnemies); // Cap at max
+    const numEnemies = Math.min(1 + Math.floor(this.aiWaveCount * 1.5 * difficultyMultiplier), maxEnemies);
     for(let i = 0; i < numEnemies; i++) {
       const randomType = types[Math.floor(Math.random() * types.length)];
       this.addSpawner('enemy', randomType);
     }
     
-    // Boss wave
     let isBossWave = false;
     if (this.aiWaveCount > 0 && this.aiWaveCount % 5 === 0) {
       isBossWave = true;
-      this.addSpawner('enemy', 'tank'); // The boss
-      this.game.entityManager.addEntity(new FloatingText(this.game, `WARNING: BOSS WAVE!`, WORLD_WIDTH/2, 200, '#ff3333'));
+      this.addSpawner('enemy', 'tank');
+      
+      if (this.game.audio) {
+        this.game.audio.playBossAlarm();
+      }
+      if (this.game.addScreenShake) {
+        this.game.addScreenShake(8);
+      }
+      
+      this.game.entityManager.addEntity(new FloatingText(this.game, `⚠️ 경고: 보스 웨이브 출격! ⚠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
+    } else {
+      this.game.entityManager.addEntity(new FloatingText(this.game, `WAVE ${this.aiWaveCount} 돌격!`, WORLD_WIDTH/2, 220, '#00e5ff', false));
     }
     
     // Spawn player units near player base
     const pBaseY = this.game.canvas.height / 2;
     this.spawners.player.forEach((type, idx) => {
-      // Stagger them slightly
       const yOffset = (idx % 5 - 2) * 20;
       const unit = new Unit(this.game, 150, pBaseY + yOffset, 'player', type);
       this.game.entityManager.addEntity(unit);
@@ -81,7 +86,6 @@ export class WaveSystem {
       const yOffset = (idx % 5 - 2) * 20;
       const unit = new Unit(this.game, WORLD_WIDTH - 200, eBaseY + yOffset, 'enemy', type);
       
-      // If it's a boss wave, make the last unit the boss
       if (isBossWave && idx === this.spawners.enemy.length - 1) {
         unit.makeBoss();
       }
@@ -89,7 +93,11 @@ export class WaveSystem {
       this.game.entityManager.addEntity(unit);
     });
     
-    // Trigger income
+    // Trigger income & floating text
     this.game.economy.triggerIncome();
+    if (this.game.playerBase) {
+      const incomeAmt = this.game.economy.income;
+      this.game.entityManager.addEntity(new FloatingText(this.game, `+${incomeAmt} 💎`, this.game.playerBase.x, this.game.playerBase.y - 80, '#2ecc71', true));
+    }
   }
 }
