@@ -134,14 +134,12 @@ export class Unit {
 
   findTarget() {
     if (this.type === 'medic') {
-      // Medic targets ONLY injured mobile battlefield units (EXCLUDES Base/Buildings!)
       const friends = this.game.entityManager.getEntitiesByTeam(this.team);
       let injuredFriend = null;
       let lowestHpRatio = 1.0;
       
       for (let i = 0; i < friends.length; i++) {
         const f = friends[i];
-        // Explicitly exclude Base and non-unit entities!
         if (f !== this && f.isAlive && f.hp < f.maxHp && f.type !== undefined && f !== this.game.playerBase && f !== this.game.enemyBase) {
           const ratio = f.hp / f.maxHp;
           if (ratio < lowestHpRatio) {
@@ -239,7 +237,6 @@ export class Unit {
   
   performAttack(target) {
     if (this.type === 'medic') {
-      // Medic Heal Pulse (+30 HP) - Targets ONLY mobile units!
       if (target && target.isAlive && target.type !== undefined) {
         const healAmt = 30 * this.tier;
         target.hp = Math.min(target.maxHp, target.hp + healAmt);
@@ -247,7 +244,6 @@ export class Unit {
         if (this.game.audio) this.game.audio.playMagic();
         this.game.entityManager.addEntity(new FloatingText(this.game, `+${healAmt} HP`, target.x, target.y - 40, '#2ecc71', false));
         
-        // Healing green shockwave
         this.game.entityManager.addEntity(new Particle(
           this.game, target.x, target.y, '#2ecc71', 0.4, 0, 0, 30, 'shockwave'
         ));
@@ -260,7 +256,12 @@ export class Unit {
       return;
     }
 
-    const currentDamage = this.hasAura ? this.damage * 1.4 : this.damage;
+    let currentDamage = this.hasAura ? this.damage * 1.4 : this.damage;
+    
+    // 2x Siege Damage Multiplier when attacking Base structures!
+    if (target.maxHp && target.techLevel !== undefined) {
+      currentDamage *= 2.0;
+    }
     
     if (this.game.audio) {
       this.game.audio.playShoot();
