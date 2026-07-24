@@ -167,12 +167,7 @@ export class Base {
         this.turretAngle = Math.atan2(closestEnemy.y - (this.y - 70), closestEnemy.x - this.x);
         
         if (this.turretCooldown <= 0) {
-          closestEnemy.takeDamage(this.turretDamage);
-          this.game.entityManager.addEntity(new Particle(
-            this.game, closestEnemy.x, closestEnemy.y, '#ffffff', 0.2, 0, 0, 18, 'spark'
-          ));
-          this.turretCooldown = this.turretAttackSpeed;
-          
+          // FIX: Fire projectile ONLY (projectile will handle takeDamage upon impact)
           this.game.entityManager.addEntity(new Projectile(
             this.game, 
             this.x + Math.cos(this.turretAngle) * 40, 
@@ -183,6 +178,7 @@ export class Base {
             this.team,
             true
           ));
+          this.turretCooldown = this.turretAttackSpeed;
         }
       }
     }

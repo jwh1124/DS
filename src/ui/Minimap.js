@@ -1,3 +1,5 @@
+import { WORLD_WIDTH } from '../../main.js';
+
 export class Minimap {
   constructor(game) {
     this.game = game;
@@ -15,9 +17,9 @@ export class Minimap {
     const handleMapClick = (e) => {
       const rect = this.canvas.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
-      const scaleX = 2000 / this.canvas.width; // 2000 is WORLD_WIDTH
+      const scaleX = WORLD_WIDTH / this.canvas.width;
       const targetCamX = (clickX * scaleX) - (this.game.canvas.width / 2);
-      this.game.cameraX = Math.max(0, Math.min(2000 - this.game.canvas.width, targetCamX));
+      this.game.cameraX = Math.max(0, Math.min(WORLD_WIDTH - this.game.canvas.width, targetCamX));
     };
     
     let isDragging = false;
@@ -37,7 +39,6 @@ export class Minimap {
     if (!this.ctx) return;
     const w = this.canvas.width;
     const h = this.canvas.height;
-    const worldW = 2000;
     
     this.ctx.clearRect(0, 0, w, h);
     
@@ -49,7 +50,7 @@ export class Minimap {
     this.ctx.fillStyle = '#ff8800';
     this.ctx.fillRect(0, h - 6, w, 2);
     
-    const scale = w / worldW;
+    const scale = w / WORLD_WIDTH;
     
     // Draw bases
     if (this.game.playerBase && this.game.playerBase.isAlive) {

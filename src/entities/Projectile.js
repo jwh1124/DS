@@ -11,7 +11,10 @@ export class Projectile {
     this.team = team;
     this.isHeavy = isHeavy;
     
-    this.speed = isHeavy ? 450 : 360;
+    this.targetLastX = target ? target.x : x;
+    this.targetLastY = target ? target.y : y;
+    
+    this.speed = isHeavy ? 480 : 400;
     this.radius = isHeavy ? 6 : 4;
     this.isAlive = true;
   }
@@ -19,40 +22,48 @@ export class Projectile {
   update(dt) {
     if (!this.isAlive) return;
 
-    if (this.target && this.target.isAlive) {
-      const dx = this.target.x - this.x;
-      const dy = this.target.y - this.y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      
-      if (dist < this.radius + (this.target.radius || 10)) {
-        // Critical hit calculation (15% chance for 1.5x damage)
+    if (this.target) {
+      if (this.target.x !== undefined) this.targetLastX = this.target.x;
+      if (this.target.y !== undefined) this.targetLastY = this.target.y;
+    }
+
+    const targetX = (this.target && this.target.isAlive) ? this.target.x : this.targetLastX;
+    const targetY = (this.target && this.target.isAlive) ? this.target.y : this.targetLastY;
+    const targetRadius = (this.target && this.target.radius) ? this.target.radius : 10;
+
+    const dx = targetX - this.x;
+    const dy = targetY - this.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    
+    if (dist < this.radius + targetRadius || dist < 12) {
+      if (this.target && this.target.isAlive) {
         const isCrit = Math.random() < 0.15;
         const finalDmg = isCrit ? this.damage * 1.5 : this.damage;
-        
         this.target.takeDamage(finalDmg, isCrit);
-        this.explode();
-        return;
       }
-      
-      this.x += (dx / dist) * this.speed * dt;
-      this.y += (dy / dist) * this.speed * dt;
-      
-      // Dynamic trail particles
-      if (Math.random() > 0.3) {
-        this.game.entityManager.addEntity(new Particle(
-          this.game, 
-          this.x - (dx / dist) * 6, 
-          this.y - (dy / dist) * 6, 
-          this.color, 
-          0.25, 
-          15, 
-          Math.atan2(-dy, -dx) + (Math.random() - 0.5) * 0.5, 
-          this.isHeavy ? 4 : 2,
-          'spark'
-        ));
-      }
-    } else {
-      this.isAlive = false;
+      this.explode();
+      return;
+    }
+    
+    const moveDist = this.speed * dt;
+    if (dist > 0) {
+      this.x += (dx / dist) * Math.min(moveDist, dist);
+      this.y += (dy / dist) * Math.min(moveDist, dist);
+    }
+    
+    // Dynamic trail particles
+    if (Math.random() > 0.3) {
+      this.game.entityManager.addEntity(new Particle(
+        this.game, 
+        this.x - (dx / Math.max(1, dist)) * 6, 
+        this.y - (dy / Math.max(1, dist)) * 6, 
+        this.color, 
+        0.25, 
+        15, 
+        Math.atan2(-dy, -dx) + (Math.random() - 0.5) * 0.5, 
+        this.isHeavy ? 4 : 2,
+        'spark'
+      ));
     }
   }
   

@@ -38,11 +38,15 @@ export class HUD {
       this.eHealthBar.style.width = `${(eBase.hp / eBase.maxHp) * 100}%`;
     }
     
-    // Update button states (disabled if not enough minerals)
+    // Update button states (disabled if not enough minerals or on ultimate cooldown)
     const currentMinerals = this.game.economy.minerals;
     this.buildButtons.forEach(btn => {
+      const type = btn.dataset.type;
       const cost = parseInt(btn.dataset.cost);
-      if (currentMinerals >= cost) {
+      
+      if (type === 'ultimate' && this.game.ultimateCooldown > 0) {
+        btn.disabled = true;
+      } else if (currentMinerals >= cost) {
         btn.disabled = false;
       } else {
         btn.disabled = true;
