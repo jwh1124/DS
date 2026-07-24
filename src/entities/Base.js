@@ -57,7 +57,7 @@ const BASE_SPRITE_ENEMY = [
 ];
 
 export class Base {
-  constructor(game, x, y, team, maxHp) {
+  constructor(game, x, y, team, maxHp = 10000) {
     this.game = game;
     this.x = x;
     this.y = y;
@@ -70,11 +70,15 @@ export class Base {
     this.techLevel = 1;
     this.turretCooldown = 0;
     this.turretAttackSpeed = 1.0;
-    this.turretDamage = 50;
+    this.turretDamage = 60;
     this.turretRange = 1000;
     
     this.shieldHitTimer = 0;
     this.turretAngle = team === 'player' ? 0 : Math.PI;
+    
+    // Emergency Comeback Protocol Flags
+    this.emergencyPhase1 = false; // 60% HP
+    this.emergencyPhase2 = false; // 30% HP
   }
   
   upgradeTech() {
@@ -107,10 +111,37 @@ export class Base {
     if (!this.isAlive) return;
     
     this.hp -= amount;
-    this.shieldHitTimer = 0.4; // Shield flash duration
+    this.shieldHitTimer = 0.4;
     
     if (this.game.addScreenShake) {
       this.game.addScreenShake(3);
+    }
+    
+    // Emergency Comeback Protocol Threshold Checks
+    const hpRatio = this.hp / this.maxHp;
+    
+    // Phase 1 Emergency: HP < 60% -> Give +300 💎 Emergency Fund!
+    if (!this.emergencyPhase1 && hpRatio <= 0.6) {
+      this.emergencyPhase1 = true;
+      if (this.team === 'player' && this.game.economy) {
+        this.game.economy.minerals += 300;
+        this.game.entityManager.addEntity(new FloatingText(this.game, `🆘 비상 지원 자원 +300 💎!`, this.x, this.y - 100, '#f1c40f', true));
+      } else if (this.team === 'enemy' && this.game.waveSystem) {
+        this.game.waveSystem.aiMinerals += 300;
+      }
+      if (this.game.audio) this.game.audio.playMagic();
+    }
+    
+    // Phase 2 Emergency: HP < 30% -> Give +500 💎 Critical Desperation Fund!
+    if (!this.emergencyPhase2 && hpRatio <= 0.3) {
+      this.emergencyPhase2 = true;
+      if (this.team === 'player' && this.game.economy) {
+        this.game.economy.minerals += 500;
+        this.game.entityManager.addEntity(new FloatingText(this.game, `🚨 역전 절체절명 자원 +500 💎!`, this.x, this.y - 120, '#ff0055', true));
+      } else if (this.team === 'enemy' && this.game.waveSystem) {
+        this.game.waveSystem.aiMinerals += 500;
+      }
+      if (this.game.audio) this.game.audio.playBossAlarm();
     }
     
     if (this.hp <= 0) {
@@ -141,8 +172,8 @@ export class Base {
       this.shieldHitTimer -= dt;
     }
     
-    // Turret logic (active if techLevel > 1)
-    if (this.techLevel > 1) {
+    // Turret logic (active if techLevel > 1 or in Emergency Phase 2)
+    if (this.techLevel > 1 || this.emergencyPhase2) {
       if (this.turretCooldown > 0) this.turretCooldown -= dt;
       
       const enemyTeam = this.team === 'player' ? 'enemy' : 'player';
@@ -167,7 +198,6 @@ export class Base {
         this.turretAngle = Math.atan2(closestEnemy.y - (this.y - 70), closestEnemy.x - this.x);
         
         if (this.turretCooldown <= 0) {
-          // FIX: Fire projectile ONLY (projectile will handle takeDamage upon impact)
           this.game.entityManager.addEntity(new Projectile(
             this.game, 
             this.x + Math.cos(this.turretAngle) * 40, 
@@ -260,8 +290,8 @@ export class Base {
     }
     ctx.restore();
     
-    // 4. Rotating Defense Turret (if Tech upgraded)
-    if (this.techLevel > 1) {
+    // 4. Rotating Defense Turret (if Tech upgraded or Emergency)
+    if (this.techLevel > 1 || this.emergencyPhase2) {
       ctx.save();
       ctx.translate(this.x, this.y - 70);
       ctx.rotate(this.turretAngle);

@@ -41,7 +41,6 @@ export class Unit {
     this.dir = team === 'player' ? 1 : -1;
     
     // 100% SYMMETRIC STAT SCALING:
-    // Both Player and Enemy units scale stats strictly based on their respective Base Tech Level!
     const base = this.team === 'player' ? this.game.playerBase : this.game.enemyBase;
     if (base && base.techLevel > 1) {
       const techLevel = Math.min(5, base.techLevel);
@@ -52,10 +51,9 @@ export class Unit {
       this.scale = 1 + (this.tier - 1) * 0.35;
     }
     
-    // Apply difficulty multiplier ONLY to Enemy units (Easy 0.7x, Normal 1.0x, Hard 1.2x)
+    // Apply difficulty multiplier ONLY to Enemy units
     if (this.team === 'enemy') {
       const diff = this.game.difficulty || 1.0;
-      // On Normal (1.0x), Enemy stats are 100% EQUAL to Player stats!
       const diffMultiplier = diff === 1.0 ? 1.0 : (1 + (diff - 1) * 0.5);
       this.maxHp *= diffMultiplier;
       this.hp = this.maxHp;
@@ -66,9 +64,9 @@ export class Unit {
   makeBoss() {
     this.isBoss = true;
     this.scale = 2.5;
-    this.maxHp *= 5; // Reduced boss HP multiplier from 7 to 5 for fair fight
+    this.maxHp *= 5;
     this.hp = this.maxHp;
-    this.damage *= 1.8; // Reduced boss damage multiplier from 2.2 to 1.8
+    this.damage *= 1.8;
     this.radius *= 2.2;
     this.color = '#ff0055';
   }
@@ -92,6 +90,16 @@ export class Unit {
     if (this.hp <= 0) {
       this.hp = 0;
       this.isAlive = false;
+      
+      // Award Kill Bounty to opposing team!
+      const bounty = this.isBoss ? 100 : (this.type === 'tank' ? 20 : (this.type === 'ranged' ? 10 : 5));
+      if (this.team === 'enemy' && this.game.economy) {
+        this.game.economy.minerals += bounty;
+        this.game.entityManager.addEntity(new FloatingText(this.game, `+${bounty} 💎`, this.x, this.y - 55 * this.scale, '#f1c40f', true));
+      } else if (this.team === 'player' && this.game.waveSystem) {
+        this.game.waveSystem.aiMinerals += bounty;
+      }
+      
       this.explode();
     }
   }

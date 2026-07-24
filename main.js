@@ -30,8 +30,9 @@ class Game {
     this.minimap = new Minimap(this);
     this.loop = new GameLoop(this.update.bind(this), this.draw.bind(this));
     
-    this.playerBase = new Base(this, 150, this.canvas.height / 2, 'player', 5000);
-    this.enemyBase = new Base(this, WORLD_WIDTH - 150, this.canvas.height / 2, 'enemy', 5000);
+    // Increased Base HP to 10,000 for epic tug-of-war playtime!
+    this.playerBase = new Base(this, 150, this.canvas.height / 2, 'player', 10000);
+    this.enemyBase = new Base(this, WORLD_WIDTH - 150, this.canvas.height / 2, 'enemy', 10000);
     this.entityManager.addEntity(this.playerBase);
     this.entityManager.addEntity(this.enemyBase);
     
@@ -317,7 +318,7 @@ class Game {
     const unitStats = {
       melee: { title: '질럿 (근접) [단축키 1]', desc: '체력이 높고 저렴한 최전방 방패 역할.', hp: 120, dmg: 25, range: '근접' },
       ranged: { title: '마린 (원거리) [단축키 2]', desc: '사거리가 길지만 체력이 약한 딜러.', hp: 60, dmg: 35, range: '원거리' },
-      tank: { title: '골리aths (헤비탱크) [단축키 3]', desc: '단단한 장갑과 강력한 한방 공격력.', hp: 300, dmg: 60, range: '중거리' },
+      tank: { title: '골리앗 (헤비탱크) [단축키 3]', desc: '단단한 장갑과 강력한 한방 공격력.', hp: 300, dmg: 60, range: '중거리' },
       income: { title: '가스 채취기 [단축키 Q]', desc: '매 웨이브마다 추가 미네랄을 +15 획득.', hp: '-', dmg: '-', range: '-' },
       tech: { title: '시대 발전 [단축키 W]', desc: '본진 타워 개방 및 유닛 스탯/비주얼 티어 업그레이드.', hp: '-', dmg: '-', range: '-' },
       ultimate: { title: '궤도 폭격 [단축키 E]', desc: '전장의 모든 적에게 150 피해 지원 사격 (쿨타임 30초).', hp: '-', dmg: '150', range: '전체' }
