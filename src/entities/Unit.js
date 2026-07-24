@@ -134,14 +134,15 @@ export class Unit {
 
   findTarget() {
     if (this.type === 'medic') {
-      // Medic targets injured allies!
+      // Medic targets ONLY injured mobile battlefield units (EXCLUDES Base/Buildings!)
       const friends = this.game.entityManager.getEntitiesByTeam(this.team);
       let injuredFriend = null;
       let lowestHpRatio = 1.0;
       
       for (let i = 0; i < friends.length; i++) {
         const f = friends[i];
-        if (f !== this && f.isAlive && f.hp < f.maxHp) {
+        // Explicitly exclude Base and non-unit entities!
+        if (f !== this && f.isAlive && f.hp < f.maxHp && f.type !== undefined && f !== this.game.playerBase && f !== this.game.enemyBase) {
           const ratio = f.hp / f.maxHp;
           if (ratio < lowestHpRatio) {
             lowestHpRatio = ratio;
@@ -238,8 +239,8 @@ export class Unit {
   
   performAttack(target) {
     if (this.type === 'medic') {
-      // Medic Heal Pulse (+30 HP)
-      if (target && target.isAlive) {
+      // Medic Heal Pulse (+30 HP) - Targets ONLY mobile units!
+      if (target && target.isAlive && target.type !== undefined) {
         const healAmt = 30 * this.tier;
         target.hp = Math.min(target.maxHp, target.hp + healAmt);
         
@@ -266,7 +267,6 @@ export class Unit {
     }
     
     if (this.type === 'sniper') {
-      // Sniper Ultra Long Range High Damage Shot!
       this.game.entityManager.addEntity(new Projectile(
         this.game, 
         this.x + (this.dir * 24 * this.scale), 
@@ -278,7 +278,6 @@ export class Unit {
         false
       ));
       
-      // Laser beam visual effect for Sniper
       this.game.entityManager.addEntity(new Particle(
         this.game, this.x + (this.dir * 24 * this.scale), this.y - 8 * this.scale, '#e74c3c', 0.2, 0, 0, 16, 'spark'
       ));
@@ -410,7 +409,6 @@ export class Unit {
     const goldColor = this.tier === 1 ? '#f1c40f' : (this.tier === 2 ? '#e67e22' : '#00ff00');
     
     if (this.type === 'medic') {
-      // MEDIC Visual (Green Shield Cross)
       ctx.fillStyle = '#2c3e50';
       ctx.fillRect(-8, 6, 6, 10);
       ctx.fillRect(2, 6, 6, 10);
@@ -418,7 +416,6 @@ export class Unit {
       ctx.fillStyle = '#2ecc71';
       ctx.fillRect(-10, -10, 20, 16);
       
-      // White Cross icon
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-3, -7, 6, 10);
       ctx.fillRect(-6, -4, 12, 4);
@@ -432,7 +429,6 @@ export class Unit {
       ctx.shadowBlur = 0;
 
     } else if (this.type === 'sniper') {
-      // SNIPER Visual (Red Cloaked Assassin with Long Rifle)
       ctx.fillStyle = '#111';
       ctx.fillRect(-7, 6, 5, 12);
       ctx.fillRect(2, 6, 5, 12);
@@ -454,11 +450,10 @@ export class Unit {
       ctx.fillRect(-2, -19, 7, 3);
       ctx.shadowBlur = 0;
       
-      // Long Rifle Barrel
       ctx.fillStyle = '#2c3e50';
       ctx.fillRect(2, -8, 30, 4);
       ctx.fillStyle = '#e74c3c';
-      ctx.fillRect(14, -11, 4, 3); // Scope
+      ctx.fillRect(14, -11, 4, 3);
 
     } else if (this.type === 'melee') {
       ctx.fillStyle = darkColor;
