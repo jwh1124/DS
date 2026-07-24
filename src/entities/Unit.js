@@ -40,43 +40,35 @@ export class Unit {
     
     this.dir = team === 'player' ? 1 : -1;
     
-    // Scale stats based on Tech Level (Player) or Wave Count (Enemy)
-    if (this.team === 'player' && this.game.playerBase) {
-      const techLevel = Math.min(5, this.game.playerBase.techLevel);
-      if (techLevel > 1) {
-        this.maxHp *= techLevel;
-        this.hp = this.maxHp;
-        this.damage *= techLevel;
-        this.tier = Math.min(3, Math.ceil(techLevel / 2));
-        this.scale = 1 + (this.tier - 1) * 0.35;
-      }
-    } else if (this.team === 'enemy' && this.game.waveSystem) {
-      const difficultyMultiplier = this.game.difficulty || 1.0;
-      const enemyTechLevel = Math.min(5, 1 + Math.floor(this.game.waveSystem.aiWaveCount / 6));
-      
-      // Fair stat scaling: +15% HP & Damage on Hard mode instead of ridiculous 200%
-      const statBonus = 1 + (difficultyMultiplier - 1) * 0.5;
-      
-      this.maxHp *= statBonus;
+    // 100% SYMMETRIC STAT SCALING:
+    // Both Player and Enemy units scale stats strictly based on their respective Base Tech Level!
+    const base = this.team === 'player' ? this.game.playerBase : this.game.enemyBase;
+    if (base && base.techLevel > 1) {
+      const techLevel = Math.min(5, base.techLevel);
+      this.maxHp *= techLevel;
       this.hp = this.maxHp;
-      this.damage *= statBonus;
-      
-      if (enemyTechLevel > 1) {
-        this.maxHp *= enemyTechLevel;
-        this.hp = this.maxHp;
-        this.damage *= enemyTechLevel;
-        this.tier = Math.min(3, Math.ceil(enemyTechLevel / 2));
-        this.scale = 1 + (this.tier - 1) * 0.35;
-      }
+      this.damage *= techLevel;
+      this.tier = Math.min(3, Math.ceil(techLevel / 2));
+      this.scale = 1 + (this.tier - 1) * 0.35;
+    }
+    
+    // Apply difficulty multiplier ONLY to Enemy units (Easy 0.7x, Normal 1.0x, Hard 1.2x)
+    if (this.team === 'enemy') {
+      const diff = this.game.difficulty || 1.0;
+      // On Normal (1.0x), Enemy stats are 100% EQUAL to Player stats!
+      const diffMultiplier = diff === 1.0 ? 1.0 : (1 + (diff - 1) * 0.5);
+      this.maxHp *= diffMultiplier;
+      this.hp = this.maxHp;
+      this.damage *= diffMultiplier;
     }
   }
   
   makeBoss() {
     this.isBoss = true;
     this.scale = 2.5;
-    this.maxHp *= 7;
+    this.maxHp *= 5; // Reduced boss HP multiplier from 7 to 5 for fair fight
     this.hp = this.maxHp;
-    this.damage *= 2.2;
+    this.damage *= 1.8; // Reduced boss damage multiplier from 2.2 to 1.8
     this.radius *= 2.2;
     this.color = '#ff0055';
   }
