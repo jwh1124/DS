@@ -30,7 +30,6 @@ class Game {
     this.minimap = new Minimap(this);
     this.loop = new GameLoop(this.update.bind(this), this.draw.bind(this));
     
-    // Increased Base HP to 10,000 for epic tug-of-war playtime!
     this.playerBase = new Base(this, 150, this.canvas.height / 2, 'player', 10000);
     this.enemyBase = new Base(this, WORLD_WIDTH - 150, this.canvas.height / 2, 'enemy', 10000);
     this.entityManager.addEntity(this.playerBase);
@@ -127,8 +126,8 @@ class Game {
     
     // Auto-Spend Feature
     if (this.autoSpend && this.economy.minerals >= 50) {
-      const pTypes = ['melee', 'ranged', 'tank'];
-      const pCosts = { melee: 50, ranged: 100, tank: 200 };
+      const pTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank'];
+      const pCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
       const affordable = pTypes.filter(t => pCosts[t] <= this.economy.minerals);
       if (affordable.length > 0) {
         const pick = affordable[Math.floor(Math.random() * affordable.length)];
@@ -144,7 +143,7 @@ class Game {
         if (nameSpan) nameSpan.textContent = `궤도 폭격 (${Math.ceil(this.ultimateCooldown)}s)`;
       } else {
         ultBtn.disabled = false;
-        if (nameSpan) nameSpan.textContent = `궤도 폭격 (광역기)`;
+        if (nameSpan) nameSpan.textContent = `궤도 폭격 (부대 타격)`;
       }
     }
     
@@ -153,24 +152,32 @@ class Game {
     this.entityManager.update(scaledDt);
     this.hud.update();
     
-    // Update Build Queue Badges
+    // Update Build Queue Badges (5 Unit Classes)
     const playerSpawners = this.waveSystem.spawners.player;
     const pMelee = playerSpawners.filter(t => t === 'melee').length;
     const pRanged = playerSpawners.filter(t => t === 'ranged').length;
+    const pMedic = playerSpawners.filter(t => t === 'medic').length;
+    const pSniper = playerSpawners.filter(t => t === 'sniper').length;
     const pTank = playerSpawners.filter(t => t === 'tank').length;
     
     const qMelee = document.getElementById('queue-melee');
     const qRanged = document.getElementById('queue-ranged');
+    const qMedic = document.getElementById('queue-medic');
+    const qSniper = document.getElementById('queue-sniper');
     const qTank = document.getElementById('queue-tank');
     
     if (qMelee) qMelee.textContent = `x${pMelee}`;
     if (qRanged) qRanged.textContent = `x${pRanged}`;
+    if (qMedic) qMedic.textContent = `x${pMedic}`;
+    if (qSniper) qSniper.textContent = `x${pSniper}`;
     if (qTank) qTank.textContent = `x${pTank}`;
     
-    // Update Real-Time Debugger Monitor UI
+    // Update Debug Monitor UI
     const enemySpawners = this.waveSystem.spawners.enemy;
     const aiMelee = enemySpawners.filter(t => t === 'melee').length;
     const aiRanged = enemySpawners.filter(t => t === 'ranged').length;
+    const aiMedic = enemySpawners.filter(t => t === 'medic').length;
+    const aiSniper = enemySpawners.filter(t => t === 'sniper').length;
     const aiTank = enemySpawners.filter(t => t === 'tank').length;
     
     const dbgAiMinerals = document.getElementById('debug-ai-minerals');
@@ -181,8 +188,8 @@ class Game {
     
     if (dbgAiMinerals) dbgAiMinerals.textContent = `${Math.floor(this.waveSystem.aiMinerals)} 💎`;
     if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 💎`;
-    if (dbgAiUnits) dbgAiUnits.textContent = `질럿 ${aiMelee} / 마린 ${aiRanged} / 골리앗 ${aiTank}`;
-    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `질럿 ${pMelee} / 마린 ${pRanged} / 골리앗 ${pTank}`;
+    if (dbgAiUnits) dbgAiUnits.textContent = `질럿${aiMelee} 마린${aiRanged} 메딕${aiMedic} 스나${aiSniper} 골리앗${aiTank}`;
+    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `질럿${pMelee} 마린${pRanged} 메딕${pMedic} 스나${pSniper} 골리앗${pTank}`;
     if (dbgLastAction && this.waveSystem.lastActionLog) dbgLastAction.textContent = this.waveSystem.lastActionLog;
     
     if (this.moveCameraLeft) {
@@ -318,10 +325,12 @@ class Game {
     const unitStats = {
       melee: { title: '질럿 (근접) [단축키 1]', desc: '체력이 높고 저렴한 최전방 방패 역할.', hp: 120, dmg: 25, range: '근접' },
       ranged: { title: '마린 (원거리) [단축키 2]', desc: '사거리가 길지만 체력이 약한 딜러.', hp: 60, dmg: 35, range: '원거리' },
-      tank: { title: '골리앗 (헤비탱크) [단축키 3]', desc: '단단한 장갑과 강력한 한방 공격력.', hp: 300, dmg: 60, range: '중거리' },
+      medic: { title: '메딕 (치유서포터) [단축키 3]', desc: '아군 부대의 체력을 지속 회복시키는 생명줄.', hp: 100, dmg: '치유+30', range: '중거리' },
+      sniper: { title: '스나이퍼 (초원거리) [단축키 4]', desc: '초원거리에서 중장갑 탱크를 한방에 관통하는 암살자.', hp: 80, dmg: 75, range: '초원거리' },
+      tank: { title: '골리앗 (헤비탱크) [단축키 5]', desc: '75px 광역 포격 데미지로 뭉친 유닛을 클리어.', hp: 300, dmg: '60(AOE)', range: '중거리' },
       income: { title: '가스 채취기 [단축키 Q]', desc: '매 웨이브마다 추가 미네랄을 +15 획득.', hp: '-', dmg: '-', range: '-' },
       tech: { title: '시대 발전 [단축키 W]', desc: '본진 타워 개방 및 유닛 스탯/비주얼 티어 업그레이드.', hp: '-', dmg: '-', range: '-' },
-      ultimate: { title: '궤도 폭격 [단축키 E]', desc: '전장의 모든 적에게 150 피해 지원 사격 (쿨타임 30초).', hp: '-', dmg: '150', range: '전체' }
+      ultimate: { title: '궤도 폭격 [단축키 E]', desc: '전장의 모든 적 부대에게 150 피해 지원 사격 (본진 피해 없음).', hp: '-', dmg: '150(부대)', range: '전체' }
     };
 
     document.querySelectorAll('.build-btn').forEach(btn => {
@@ -411,6 +420,12 @@ class Game {
         const btn = document.querySelector('.build-btn[data-type="ranged"]');
         if (btn) this.triggerAction('ranged', parseInt(btn.dataset.cost), btn);
       } else if (key === '3') {
+        const btn = document.querySelector('.build-btn[data-type="medic"]');
+        if (btn) this.triggerAction('medic', parseInt(btn.dataset.cost), btn);
+      } else if (key === '4') {
+        const btn = document.querySelector('.build-btn[data-type="sniper"]');
+        if (btn) this.triggerAction('sniper', parseInt(btn.dataset.cost), btn);
+      } else if (key === '5') {
         const btn = document.querySelector('.build-btn[data-type="tank"]');
         if (btn) this.triggerAction('tank', parseInt(btn.dataset.cost), btn);
       } else if (key === 'q') {
@@ -448,14 +463,7 @@ class Game {
       enemy.takeDamage(150, true);
     });
     
-    if (this.enemyBase && this.enemyBase.isAlive) {
-      this.enemyBase.takeDamage(25);
-      for (let i = 0; i < 30; i++) {
-        this.entityManager.addEntity(new Particle(
-          this.game || this, this.enemyBase.x + (Math.random()-0.5)*100, this.enemyBase.y - Math.random()*250, '#f1c40f', 0.9, 350, Math.PI/2, 6, 'spark'
-        ));
-      }
-    }
+    // NOTE: Base damage REMOVED as requested! Orbital strike affects units ONLY!
   }
 }
 

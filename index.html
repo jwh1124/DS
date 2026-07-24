@@ -97,13 +97,13 @@
             <span id="income-text" class="value">+60</span>
           </div>
           <div class="hero-instruction" style="margin-top:10px; font-size:10px; color:#f1c40f; text-shadow:0 0 5px #000; font-weight:bold; max-width: 170px; line-height: 1.3;">
-            ⚔ 처치 상금 & 🆘 위기탈출 비상 자원으로 역전 기회 발판!
+            🎯 5종 유닛 라인업: 메딕(치유) & 스나이퍼(초원거리) 참전!
           </div>
         </div>
 
         <!-- Live Real-Time Debugging Monitor (Right Side) -->
         <div id="debug-monitor" class="debug-panel">
-          <div class="debug-header">🛠️ 역전 시스템 & 밸런스 모니터</div>
+          <div class="debug-header">🛠️ 5종 병과 전략 모니터</div>
           <div class="debug-row">
             <span class="lbl">적군(AI) 잔여 미네랄:</span>
             <span id="debug-ai-minerals" class="val gold">250 💎</span>
@@ -113,15 +113,15 @@
             <span id="debug-ai-income" class="val green">+60 💎</span>
           </div>
           <div class="debug-row border-top">
-            <span class="lbl">적군(AI) 카운터 스폰라인:</span>
-            <span id="debug-ai-units" class="val cyan">질럿 0 / 마린 0 / 골리앗 0</span>
+            <span class="lbl">적군(AI) 병력 스폰라인:</span>
+            <span id="debug-ai-units" class="val cyan">질럿0 마린0 메딕0 스나0 골리앗0</span>
           </div>
           <div class="debug-row">
             <span class="lbl">아군 영구 스폰라인:</span>
-            <span id="debug-player-units" class="val cyan">질럿 0 / 마린 0 / 골리앗 0</span>
+            <span id="debug-player-units" class="val cyan">질럿0 마린0 메딕0 스나0 골리앗0</span>
           </div>
           <div class="debug-log-row" id="debug-last-action">
-            [역전 시스템]: 10,000 HP 장기전 & 처치 상금 가동 중
+            [전략]: 궤도 폭격 본진 피격 면제 패치 완료
           </div>
         </div>
 
@@ -135,7 +135,7 @@
         <div class="bottom-controls">
           <!-- Building Menu -->
           <div class="panel build-menu">
-            <div class="menu-title">⚡ 영구 유닛 생산 라인 (PERMANENT SPAWNERS)</div>
+            <div class="menu-title">⚡ 5종 영구 유닛 생산 라인 (PERMANENT SPAWNERS)</div>
             <div class="build-buttons">
               <button class="build-btn" data-type="melee" data-cost="50">
                 <span class="hotkey-badge">[1]</span>
@@ -163,8 +163,34 @@
                   <span class="cost"><div class="mineral-icon small"></div> 100</span>
                 </div>
               </button>
-              <button class="build-btn" data-type="tank" data-cost="200">
+              <button class="build-btn" data-type="medic" data-cost="120">
                 <span class="hotkey-badge">[3]</span>
+                <span class="queue-badge" id="queue-medic">x0</span>
+                <div class="icon medic-icon">
+                  <svg viewBox="0 0 24 24" class="svg-icon">
+                    <path fill="currentColor" d="M19 10.5h-5.5V5h-3v5.5H5v3h5.5V19h3v-5.5H19v-3z"/>
+                  </svg>
+                </div>
+                <div class="info">
+                  <span class="name">메딕 (치유서포터)</span>
+                  <span class="cost"><div class="mineral-icon small"></div> 120</span>
+                </div>
+              </button>
+              <button class="build-btn" data-type="sniper" data-cost="150">
+                <span class="hotkey-badge">[4]</span>
+                <span class="queue-badge" id="queue-sniper">x0</span>
+                <div class="icon sniper-icon">
+                  <svg viewBox="0 0 24 24" class="svg-icon">
+                    <path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 17.93V18h-2v1.93A8 8 0 0 1 4.07 13H6v-2H4.07A8 8 0 0 1 11 4.07V6h2V4.07A8 8 0 0 1 19.93 11H18v2h1.93A8 8 0 0 1 13 19.93z"/>
+                  </svg>
+                </div>
+                <div class="info">
+                  <span class="name">스나이퍼 (초원거리)</span>
+                  <span class="cost"><div class="mineral-icon small"></div> 150</span>
+                </div>
+              </button>
+              <button class="build-btn" data-type="tank" data-cost="200">
+                <span class="hotkey-badge">[5]</span>
                 <span class="queue-badge" id="queue-tank">x0</span>
                 <div class="icon tank-icon">
                   <svg viewBox="0 0 24 24" class="svg-icon">
@@ -222,7 +248,7 @@
                   </svg>
                 </div>
                 <div class="info">
-                  <span class="name">궤도 폭격 (광역기)</span>
+                  <span class="name">궤도 폭격 (부대 타격)</span>
                   <span class="cost"><div class="mineral-icon small"></div> 500</span>
                 </div>
               </button>

@@ -18,8 +18,8 @@ export class WaveSystem {
     this.aiWaveCount = 0;
     this.aiMinerals = 250;
     this.aiIncome = 60;
-    this.aiUltimateCooldown = 0; // AI Ultimate Cooldown timer
-    this.lastActionLog = '[스마트 AI]: AI 궤도 폭격 전술 가동 준비 완료';
+    this.aiUltimateCooldown = 0;
+    this.lastActionLog = '[스마트 AI]: 5종 종합 유닛 전술 준비 완료';
   }
 
   start() {
@@ -29,7 +29,7 @@ export class WaveSystem {
     const diff = this.game.difficulty || 1.0;
     this.aiMinerals = Math.floor(250 * diff);
     this.aiIncome = Math.floor(60 * diff);
-    this.aiUltimateCooldown = 20; // Initial 20s grace period
+    this.aiUltimateCooldown = 20;
     this.lastActionLog = `[스마트 AI]: 초기 자원 ${this.aiMinerals}💎 / 인컴 +${this.aiIncome}💎 세팅 완료`;
   }
 
@@ -62,17 +62,16 @@ export class WaveSystem {
     // AI Income addition
     this.aiMinerals += this.aiIncome;
     
-    const unitCosts = { melee: 50, ranged: 100, tank: 200 };
-    const unitNames = { melee: '질럿(근접)', ranged: '마린(원거리)', tank: '골리앗(탱크)' };
+    const unitCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
+    const unitNames = { melee: '질럿', ranged: '마린', medic: '메딕(힐러)', sniper: '스나이퍼', tank: '골리앗' };
     
-    // AI Tactical Orbital Strike Check:
-    // If player has >= 8 units accumulated on battlefield and AI ultimate is ready, AI fires Orbital Strike!
+    // AI Tactical Orbital Strike Check (Targets ONLY battlefield units, NOT Base!)
     const playerUnits = this.game.entityManager.getEntitiesByTeam('player').filter(e => e.radius && e.type);
     if (playerUnits.length >= 8 && this.aiUltimateCooldown <= 0 && this.aiMinerals >= 300) {
       this.triggerAiOrbitalStrike();
       this.aiMinerals -= 300;
-      this.aiUltimateCooldown = 35; // 35s cooldown
-      this.lastActionLog = `[AI 궤도 폭격 ☠️]: 플레이어 밀집 부대 타격! (-300💎, 쿨타임 35s)`;
+      this.aiUltimateCooldown = 35;
+      this.lastActionLog = `[AI 궤도 폭격 ☠️]: 플레이어 부대 타격! (-300💎, 쿨타임 35s)`;
     } else {
       // Smart AI Tech Upgrade Decision
       if (this.aiMinerals >= 800 && this.game.enemyBase && this.game.enemyBase.techLevel < 5) {
@@ -81,16 +80,21 @@ export class WaveSystem {
         this.lastActionLog = `[스마트 AI 업그레이드]: AI 시대 발전 (Lv.${this.game.enemyBase.techLevel}) 완료! (-800💎)`;
       }
       
-      // Smart Counter-Pick AI Logic
+      // Smart Counter-Pick AI Logic (across 5 unit classes)
       const pMelee = this.spawners.player.filter(t => t === 'melee').length;
       const pRanged = this.spawners.player.filter(t => t === 'ranged').length;
+      const pSniper = this.spawners.player.filter(t => t === 'sniper').length;
       const pTank = this.spawners.player.filter(t => t === 'tank').length;
       
       let preferredUnit = 'melee';
-      if (pMelee >= pRanged && pMelee >= pTank) {
-        preferredUnit = 'ranged';
+      if (pTank > 2) {
+        preferredUnit = 'sniper'; // Snipers destroy heavy tanks!
+      } else if (pMelee >= pRanged && pMelee >= pTank) {
+        preferredUnit = 'ranged'; // Marines counter Zealots
       } else if (pRanged >= pMelee && pRanged >= pTank) {
-        preferredUnit = 'tank';
+        preferredUnit = 'tank';   // Goliaths counter Marines
+      } else if (this.spawners.enemy.length > 5 && !this.spawners.enemy.includes('medic')) {
+        preferredUnit = 'medic';  // Add medic support if army is growing
       } else {
         preferredUnit = 'melee';
       }
@@ -104,7 +108,7 @@ export class WaveSystem {
         
         let chosen = preferredUnit;
         if (unitCosts[chosen] > this.aiMinerals) {
-          const unitTypes = ['melee', 'ranged', 'tank'];
+          const unitTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank'];
           const affordable = unitTypes.filter(t => unitCosts[t] <= this.aiMinerals);
           if (affordable.length === 0) break;
           chosen = affordable[Math.floor(Math.random() * affordable.length)];
@@ -190,8 +194,6 @@ export class WaveSystem {
       p.takeDamage(150, true);
     });
     
-    if (this.game.playerBase && this.game.playerBase.isAlive) {
-      this.game.playerBase.takeDamage(25);
-    }
+    // NOTE: Base damage REMOVED as requested! Orbital strike affects units ONLY!
   }
 }

@@ -5,6 +5,8 @@ import { FloatingText } from './FloatingText.js';
 const UNIT_STATS = {
   melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#00e5ff' },
   ranged: { hp: 60, damage: 35, range: 250, speed: 70, attackSpeed: 1.2, color: '#3498db' },
+  medic: { hp: 100, damage: 0, range: 180, speed: 65, attackSpeed: 1.5, color: '#2ecc71' },
+  sniper: { hp: 80, damage: 75, range: 450, speed: 55, attackSpeed: 2.0, color: '#e74c3c' },
   tank: { hp: 300, damage: 60, range: 60, speed: 40, attackSpeed: 1.5, color: '#9b59b6' }
 };
 
@@ -16,16 +18,16 @@ export class Unit {
     this.team = team;
     this.type = type;
     
-    const stats = UNIT_STATS[type];
+    const stats = UNIT_STATS[type] || UNIT_STATS.melee;
     this.maxHp = stats.hp;
     this.hp = stats.hp;
     this.damage = stats.damage;
     this.range = stats.range;
     this.speed = stats.speed;
     this.attackSpeed = stats.attackSpeed;
-    this.color = team === 'player' ? '#00e5ff' : '#ff3333';
+    this.color = team === 'player' ? (stats.color || '#00e5ff') : '#ff3333';
     
-    this.radius = 22;
+    this.radius = type === 'tank' ? 26 : 20;
     this.isAlive = true;
     
     this.state = 'moving';
@@ -40,24 +42,24 @@ export class Unit {
     
     this.dir = team === 'player' ? 1 : -1;
     
-    // 100% SYMMETRIC STAT SCALING:
+    // 100% SYMMETRIC STAT SCALING
     const base = this.team === 'player' ? this.game.playerBase : this.game.enemyBase;
     if (base && base.techLevel > 1) {
       const techLevel = Math.min(5, base.techLevel);
       this.maxHp *= techLevel;
       this.hp = this.maxHp;
-      this.damage *= techLevel;
+      if (this.damage > 0) this.damage *= techLevel;
       this.tier = Math.min(3, Math.ceil(techLevel / 2));
       this.scale = 1 + (this.tier - 1) * 0.35;
     }
     
-    // Apply difficulty multiplier ONLY to Enemy units
+    // Difficulty multiplier for Enemy units
     if (this.team === 'enemy') {
       const diff = this.game.difficulty || 1.0;
       const diffMultiplier = diff === 1.0 ? 1.0 : (1 + (diff - 1) * 0.5);
       this.maxHp *= diffMultiplier;
       this.hp = this.maxHp;
-      this.damage *= diffMultiplier;
+      if (this.damage > 0) this.damage *= diffMultiplier;
     }
   }
   
@@ -91,8 +93,9 @@ export class Unit {
       this.hp = 0;
       this.isAlive = false;
       
-      // Award Kill Bounty to opposing team!
-      const bounty = this.isBoss ? 100 : (this.type === 'tank' ? 20 : (this.type === 'ranged' ? 10 : 5));
+      // Award Kill Bounty to opposing team
+      const bountyMap = { melee: 5, ranged: 10, medic: 12, sniper: 15, tank: 20 };
+      const bounty = this.isBoss ? 100 : (bountyMap[this.type] || 10);
       if (this.team === 'enemy' && this.game.economy) {
         this.game.economy.minerals += bounty;
         this.game.entityManager.addEntity(new FloatingText(this.game, `+${bounty} 💎`, this.x, this.y - 55 * this.scale, '#f1c40f', true));
@@ -130,6 +133,31 @@ export class Unit {
   }
 
   findTarget() {
+    if (this.type === 'medic') {
+      // Medic targets injured allies!
+      const friends = this.game.entityManager.getEntitiesByTeam(this.team);
+      let injuredFriend = null;
+      let lowestHpRatio = 1.0;
+      
+      for (let i = 0; i < friends.length; i++) {
+        const f = friends[i];
+        if (f !== this && f.isAlive && f.hp < f.maxHp) {
+          const ratio = f.hp / f.maxHp;
+          if (ratio < lowestHpRatio) {
+            lowestHpRatio = ratio;
+            injuredFriend = f;
+          }
+        }
+      }
+      
+      if (injuredFriend) {
+        const dx = injuredFriend.x - this.x;
+        const dy = injuredFriend.y - this.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        return { target: injuredFriend, distance: dist };
+      }
+    }
+
     const enemyTeam = this.team === 'player' ? 'enemy' : 'player';
     const enemies = this.game.entityManager.getEntitiesByTeam(enemyTeam);
     
@@ -209,13 +237,53 @@ export class Unit {
   }
   
   performAttack(target) {
+    if (this.type === 'medic') {
+      // Medic Heal Pulse (+30 HP)
+      if (target && target.isAlive) {
+        const healAmt = 30 * this.tier;
+        target.hp = Math.min(target.maxHp, target.hp + healAmt);
+        
+        if (this.game.audio) this.game.audio.playMagic();
+        this.game.entityManager.addEntity(new FloatingText(this.game, `+${healAmt} HP`, target.x, target.y - 40, '#2ecc71', false));
+        
+        // Healing green shockwave
+        this.game.entityManager.addEntity(new Particle(
+          this.game, target.x, target.y, '#2ecc71', 0.4, 0, 0, 30, 'shockwave'
+        ));
+        for (let i = 0; i < 8; i++) {
+          this.game.entityManager.addEntity(new Particle(
+            this.game, target.x, target.y, '#2ecc71', 0.5, 40, Math.random() * Math.PI * 2, 3, 'spark'
+          ));
+        }
+      }
+      return;
+    }
+
     const currentDamage = this.hasAura ? this.damage * 1.4 : this.damage;
     
     if (this.game.audio) {
       this.game.audio.playShoot();
     }
     
-    if (this.type === 'ranged') {
+    if (this.type === 'sniper') {
+      // Sniper Ultra Long Range High Damage Shot!
+      this.game.entityManager.addEntity(new Projectile(
+        this.game, 
+        this.x + (this.dir * 24 * this.scale), 
+        this.y - 8 * this.scale, 
+        target, 
+        currentDamage * 1.2, 
+        '#e74c3c', 
+        this.team,
+        false
+      ));
+      
+      // Laser beam visual effect for Sniper
+      this.game.entityManager.addEntity(new Particle(
+        this.game, this.x + (this.dir * 24 * this.scale), this.y - 8 * this.scale, '#e74c3c', 0.2, 0, 0, 16, 'spark'
+      ));
+
+    } else if (this.type === 'ranged') {
       this.game.entityManager.addEntity(new Projectile(
         this.game, 
         this.x + (this.dir * 22 * this.scale), 
@@ -325,19 +393,6 @@ export class Unit {
       ctx.shadowBlur = 0;
     }
     
-    if (this.hasAura) {
-      ctx.beginPath();
-      ctx.arc(0, 0, 26, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(241, 196, 15, 0.3)';
-      ctx.fill();
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = '#f1c40f';
-      ctx.strokeStyle = '#f1c40f';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    }
-    
     if (this.dir === -1) {
       ctx.scale(-1, 1);
     }
@@ -345,16 +400,67 @@ export class Unit {
     ctx.scale(this.scale, this.scale);
     
     const mainColor = this.team === 'player' ? 
-      (this.tier === 1 ? '#00e5ff' : (this.tier === 2 ? '#0984e3' : '#6c5ce7')) : 
+      (this.type === 'medic' ? '#2ecc71' : (this.type === 'sniper' ? '#e74c3c' : (this.tier === 1 ? '#00e5ff' : (this.tier === 2 ? '#0984e3' : '#6c5ce7')))) : 
       (this.tier === 1 ? '#ff3333' : (this.tier === 2 ? '#d63031' : '#8e44ad'));
     
     const darkColor = this.team === 'player' ? 
-      (this.tier === 1 ? '#0083b0' : (this.tier === 2 ? '#005f73' : '#4a69bd')) : 
+      (this.type === 'medic' ? '#27ae60' : (this.type === 'sniper' ? '#c0392b' : (this.tier === 1 ? '#0083b0' : (this.tier === 2 ? '#005f73' : '#4a69bd')))) : 
       (this.tier === 1 ? '#b00000' : (this.tier === 2 ? '#c0392b' : '#5f27cd'));
     
     const goldColor = this.tier === 1 ? '#f1c40f' : (this.tier === 2 ? '#e67e22' : '#00ff00');
     
-    if (this.type === 'melee') {
+    if (this.type === 'medic') {
+      // MEDIC Visual (Green Shield Cross)
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(-8, 6, 6, 10);
+      ctx.fillRect(2, 6, 6, 10);
+      
+      ctx.fillStyle = '#2ecc71';
+      ctx.fillRect(-10, -10, 20, 16);
+      
+      // White Cross icon
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-3, -7, 6, 10);
+      ctx.fillRect(-6, -4, 12, 4);
+      
+      ctx.fillStyle = '#1e272e';
+      ctx.fillRect(-5, -20, 10, 10);
+      ctx.fillStyle = '#2ecc71';
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#2ecc71';
+      ctx.fillRect(-2, -17, 8, 4);
+      ctx.shadowBlur = 0;
+
+    } else if (this.type === 'sniper') {
+      // SNIPER Visual (Red Cloaked Assassin with Long Rifle)
+      ctx.fillStyle = '#111';
+      ctx.fillRect(-7, 6, 5, 12);
+      ctx.fillRect(2, 6, 5, 12);
+      
+      ctx.fillStyle = '#c0392b';
+      ctx.beginPath();
+      ctx.moveTo(-10, -12);
+      ctx.lineTo(10, -12);
+      ctx.lineTo(6, 6);
+      ctx.lineTo(-6, 6);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.fillStyle = '#1e272e';
+      ctx.fillRect(-5, -22, 10, 10);
+      ctx.fillStyle = '#e74c3c';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#e74c3c';
+      ctx.fillRect(-2, -19, 7, 3);
+      ctx.shadowBlur = 0;
+      
+      // Long Rifle Barrel
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(2, -8, 30, 4);
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(14, -11, 4, 3); // Scope
+
+    } else if (this.type === 'melee') {
       ctx.fillStyle = darkColor;
       ctx.fillRect(-10, 4, 6, 12);
       ctx.fillRect(2, 4, 6, 12);
@@ -436,13 +542,6 @@ export class Unit {
       ctx.fillRect(2, -4, 20, 6);
       ctx.fillStyle = '#1e272e';
       ctx.fillRect(18, -6, 6, 10);
-      
-      ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(24, -2);
-      ctx.lineTo(60, -2);
-      ctx.stroke();
 
     } else if (this.type === 'tank') {
       ctx.fillStyle = '#2c3e50';
@@ -504,25 +603,6 @@ export class Unit {
       ctx.textAlign = 'center';
       const stars = this.tier === 2 ? '★' : '★★';
       ctx.fillText(stars, this.x, barY - 4);
-    }
-    
-    if (this.state === 'attacking' && this.target && this.type === 'melee' && this.attackCooldown > this.attackSpeed - 0.2) {
-      ctx.beginPath();
-      ctx.moveTo(this.x + (this.dir * 18 * this.scale), this.y);
-      ctx.lineTo(this.target.x, this.target.y);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-      
-      ctx.beginPath();
-      ctx.moveTo(this.x + (this.dir * 18 * this.scale), this.y);
-      ctx.lineTo(this.target.x, this.target.y);
-      ctx.strokeStyle = this.color;
-      ctx.lineWidth = 6;
-      ctx.shadowBlur = 18;
-      ctx.shadowColor = this.color;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
     }
     
     ctx.restore();
