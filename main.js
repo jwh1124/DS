@@ -18,6 +18,7 @@ class Game {
     
     this.isRunning = false;
     this.screenShake = 0;
+    this.ultimateCooldown = 0; // Cooldown for Ultimate Ability
     
     this.audio = new AudioEngine();
     
@@ -118,6 +119,24 @@ class Game {
       this.screenShake = Math.max(0, this.screenShake - dt * 25);
     }
     
+    // Ultimate Cooldown Update
+    if (this.ultimateCooldown > 0) {
+      this.ultimateCooldown = Math.max(0, this.ultimateCooldown - scaledDt);
+    }
+    
+    // Update Ultimate Button UI
+    const ultBtn = document.querySelector('.build-btn[data-type="ultimate"]');
+    if (ultBtn) {
+      const nameSpan = ultBtn.querySelector('.name');
+      if (this.ultimateCooldown > 0) {
+        ultBtn.disabled = true;
+        if (nameSpan) nameSpan.textContent = `궤도 폭격 (${Math.ceil(this.ultimateCooldown)}s)`;
+      } else {
+        ultBtn.disabled = false;
+        if (nameSpan) nameSpan.textContent = `궤도 폭격 (광역기)`;
+      }
+    }
+    
     this.waveSystem.update(scaledDt);
     this.economy.update(scaledDt);
     this.entityManager.update(scaledDt);
@@ -137,7 +156,6 @@ class Game {
     if (qRanged) qRanged.textContent = `x${rangedCount}`;
     if (qTank) qTank.textContent = `x${tankCount}`;
     
-    // Camera Navigation
     if (this.moveCameraLeft) {
       this.cameraX -= this.cameraSpeed * dt;
     }
@@ -206,6 +224,10 @@ class Game {
   triggerAction(type, cost, btnElement) {
     if (!this.isRunning) return;
     
+    if (type === 'ultimate' && this.ultimateCooldown > 0) {
+      return; // On Cooldown
+    }
+    
     this.audio.playClick();
     
     if (type === 'income') {
@@ -239,6 +261,7 @@ class Game {
       }
     } else if (type === 'ultimate') {
       if (this.economy.spendMinerals(cost)) {
+        this.ultimateCooldown = 30; // 30 seconds cooldown
         this.triggerOrbitalStrike();
       }
     } else {
@@ -264,12 +287,12 @@ class Game {
     const ttRange = document.getElementById('tt-range');
 
     const unitStats = {
-      melee: { title: '질럿 (근접) [단축키 1]', desc: '플라즈마 검을 사용하는 최전방 근접 돌격자.', hp: 120, dmg: 25, range: '근접' },
-      ranged: { title: '마린 (원거리) [단축키 2]', desc: '가우스 소총으로 장거리 사격을 퍼붓는 딜러.', hp: 60, dmg: 35, range: '원거리' },
-      tank: { title: '골리앗 (헤비탱크) [단축키 3]', desc: '미사일 포트와 오토캐논을 장착한 중장갑 메카.', hp: 300, dmg: 60, range: '중거리' },
+      melee: { title: '질럿 (근접) [단축키 1]', desc: '체력이 높고 저렴한 최전방 방패 역할.', hp: 120, dmg: 25, range: '근접' },
+      ranged: { title: '마린 (원거리) [단축키 2]', desc: '사거리가 길지만 체력이 약한 딜러.', hp: 60, dmg: 35, range: '원거리' },
+      tank: { title: '골리앗 (헤비탱크) [단축키 3]', desc: '단단한 장갑과 강력한 한방 공격력.', hp: 300, dmg: 60, range: '중거리' },
       income: { title: '가스 채취기 [단축키 Q]', desc: '매 웨이브마다 추가 미네랄을 +10 획득.', hp: '-', dmg: '-', range: '-' },
       tech: { title: '시대 발전 [단축키 W]', desc: '본진 타워 개방 및 유닛 스탯/비주얼 티어 업그레이드.', hp: '-', dmg: '-', range: '-' },
-      ultimate: { title: '궤도 폭격 [단축키 E]', desc: '전장의 모든 적에게 500 피해를 입히는 광역기.', hp: '-', dmg: '500', range: '전체' }
+      ultimate: { title: '궤도 폭격 [단축키 E]', desc: '전장의 모든 적에게 150 피해 지원 사격 (쿨타임 30초).', hp: '-', dmg: '150', range: '전체' }
     };
 
     document.querySelectorAll('.build-btn').forEach(btn => {
@@ -333,7 +356,6 @@ class Game {
       });
     }
     
-    // Keybinds for Camera and Action Hotkeys (1, 2, 3, Q, W, E)
     window.addEventListener('keydown', (e) => {
       if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.moveCameraLeft = true;
       if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.moveCameraRight = true;
@@ -370,26 +392,26 @@ class Game {
   
   triggerOrbitalStrike() {
     this.audio.playExplosion();
-    this.addScreenShake(25);
+    this.addScreenShake(20);
 
     const enemies = this.entityManager.getEntitiesByTeam('enemy');
     enemies.forEach(enemy => {
-      for (let i = 0; i < 25; i++) {
+      for (let i = 0; i < 18; i++) {
         this.entityManager.addEntity(new Particle(
-          this, enemy.x + (Math.random()-0.5)*40, enemy.y - 100 - Math.random()*250, '#f1c40f', 0.9, 350, Math.PI/2, 6, 'spark'
+          this, enemy.x + (Math.random()-0.5)*30, enemy.y - 80 - Math.random()*200, '#f1c40f', 0.8, 300, Math.PI/2, 5, 'spark'
         ));
       }
       this.entityManager.addEntity(new Particle(
-        this, enemy.x, enemy.y, '#f1c40f', 0.5, 0, 0, 40, 'shockwave'
+        this, enemy.x, enemy.y, '#f1c40f', 0.4, 0, 0, 30, 'shockwave'
       ));
-      enemy.takeDamage(500, true); 
+      enemy.takeDamage(150, true); // Rebalanced damage: 150
     });
     
     if (this.enemyBase && this.enemyBase.isAlive) {
-      this.enemyBase.takeDamage(100);
-      for (let i = 0; i < 50; i++) {
+      this.enemyBase.takeDamage(25); // Rebalanced base damage: 25
+      for (let i = 0; i < 30; i++) {
         this.entityManager.addEntity(new Particle(
-          this.game || this, this.enemyBase.x + (Math.random()-0.5)*120, this.enemyBase.y - Math.random()*300, '#f1c40f', 1.1, 450, Math.PI/2, 8, 'spark'
+          this.game || this, this.enemyBase.x + (Math.random()-0.5)*100, this.enemyBase.y - Math.random()*250, '#f1c40f', 0.9, 350, Math.PI/2, 6, 'spark'
         ));
       }
     }

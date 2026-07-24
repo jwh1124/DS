@@ -5,7 +5,7 @@ import { WORLD_WIDTH } from '../../main.js';
 export class WaveSystem {
   constructor(game) {
     this.game = game;
-    this.waveInterval = 15; // 15 seconds per wave
+    this.waveInterval = 15;
     this.timeUntilWave = this.waveInterval;
     this.isActive = false;
     
@@ -48,15 +48,18 @@ export class WaveSystem {
     this.spawners.enemy = [];
     
     const difficultyMultiplier = this.game.difficulty || 1.0;
-    const maxEnemies = Math.floor(30 * difficultyMultiplier);
-    const numEnemies = Math.min(1 + Math.floor(this.aiWaveCount * 1.5 * difficultyMultiplier), maxEnemies);
+    const maxEnemies = Math.floor(18 * difficultyMultiplier);
+    // Smoother scaling formula so Normal difficulty is fun and manageable
+    const numEnemies = Math.min(1 + Math.floor(this.aiWaveCount * 0.9 * difficultyMultiplier), maxEnemies);
+    
     for(let i = 0; i < numEnemies; i++) {
       const randomType = types[Math.floor(Math.random() * types.length)];
       this.addSpawner('enemy', randomType);
     }
     
     let isBossWave = false;
-    if (this.aiWaveCount > 0 && this.aiWaveCount % 5 === 0) {
+    // Boss wave every 6 waves
+    if (this.aiWaveCount > 0 && this.aiWaveCount % 6 === 0) {
       isBossWave = true;
       this.addSpawner('enemy', 'tank');
       
@@ -67,12 +70,12 @@ export class WaveSystem {
         this.game.addScreenShake(8);
       }
       
-      this.game.entityManager.addEntity(new FloatingText(this.game, `⚠️ 경고: 보스 웨이브 출격! ⚠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
+      this.game.entityManager.addEntity(new FloatingText(this.game, `⚠️ 경고: 보스 출격! (Wave ${this.aiWaveCount}) ⚠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
     } else {
       this.game.entityManager.addEntity(new FloatingText(this.game, `WAVE ${this.aiWaveCount} 돌격!`, WORLD_WIDTH/2, 220, '#00e5ff', false));
     }
     
-    // Spawn player units near player base
+    // Spawn player units
     const pBaseY = this.game.canvas.height / 2;
     this.spawners.player.forEach((type, idx) => {
       const yOffset = (idx % 5 - 2) * 20;
@@ -80,7 +83,7 @@ export class WaveSystem {
       this.game.entityManager.addEntity(unit);
     });
 
-    // Spawn enemy units near enemy base
+    // Spawn enemy units
     const eBaseY = this.game.canvas.height / 2;
     this.spawners.enemy.forEach((type, idx) => {
       const yOffset = (idx % 5 - 2) * 20;
@@ -93,7 +96,7 @@ export class WaveSystem {
       this.game.entityManager.addEntity(unit);
     });
     
-    // Trigger income & floating text
+    // Trigger income
     this.game.economy.triggerIncome();
     if (this.game.playerBase) {
       const incomeAmt = this.game.economy.income;

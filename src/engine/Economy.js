@@ -1,8 +1,8 @@
 export class Economy {
   constructor(game) {
     this.game = game;
-    this.minerals = 150; // Starting minerals
-    this.income = 50;    // Starting income per wave
+    this.minerals = 200; // Boosted starting minerals for smoother opening
+    this.income = 60;    // Boosted starting income
     this.isActive = false;
   }
 
@@ -15,7 +15,6 @@ export class Economy {
   }
 
   update(dt) {
-    // Passive tick can go here, but in DS income usually comes at wave start
   }
   
   triggerIncome() {
