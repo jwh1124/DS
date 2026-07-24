@@ -7,7 +7,7 @@ const UNIT_STATS = {
   ranged: { hp: 60, damage: 35, range: 250, speed: 70, attackSpeed: 1.2, color: '#3498db' },
   medic: { hp: 100, damage: 0, range: 180, speed: 65, attackSpeed: 1.5, color: '#2ecc71' },
   sniper: { hp: 80, damage: 75, range: 450, speed: 55, attackSpeed: 2.0, color: '#e74c3c' },
-  tank: { hp: 300, damage: 60, range: 60, speed: 40, attackSpeed: 1.5, color: '#9b59b6' }
+  tank: { hp: 300, damage: 60, range: 360, speed: 40, attackSpeed: 1.5, color: '#9b59b6' } // FIXED: Long Range Siege Cannon (360px)
 };
 
 export class Unit {
