@@ -15,12 +15,14 @@ export class Projectile {
     this.targetLastY = target ? target.y : y;
     
     this.speed = isHeavy ? 480 : 400;
-    this.radius = isHeavy ? 6 : 4;
+    this.radius = isHeavy ? 8 : 5;
     this.isAlive = true;
+    this.animTime = 0;
   }
 
   update(dt) {
     if (!this.isAlive) return;
+    this.animTime += dt * 10;
 
     if (this.target) {
       if (this.target.x !== undefined) this.targetLastX = this.target.x;
@@ -46,18 +48,19 @@ export class Projectile {
       this.y += (dy / dist) * Math.min(moveDist, dist);
     }
     
-    // Dynamic trail particles
-    if (Math.random() > 0.3) {
+    // Holy Sparkle / Demon Flame trail particles
+    if (Math.random() > 0.2) {
+      const trailType = this.team === 'player' ? 'spark' : 'spark';
       this.game.entityManager.addEntity(new Particle(
         this.game, 
         this.x - (dx / Math.max(1, dist)) * 6, 
         this.y - (dy / Math.max(1, dist)) * 6, 
         this.color, 
-        0.25, 
-        15, 
+        0.3, 
+        20, 
         Math.atan2(-dy, -dx) + (Math.random() - 0.5) * 0.5, 
-        this.isHeavy ? 4 : 2,
-        'spark'
+        this.isHeavy ? 5 : 3,
+        trailType
       ));
     }
   }
@@ -65,24 +68,23 @@ export class Projectile {
   explode() {
     this.isAlive = false;
     
-    // Play impact audio
     if (this.game.audio) {
       this.game.audio.playHit();
     }
     
-    // Apply primary damage to direct target
+    // Apply direct damage
     if (this.target && this.target.isAlive) {
       const isCrit = Math.random() < 0.15;
       const finalDmg = isCrit ? this.damage * 1.5 : this.damage;
       this.target.takeDamage(finalDmg, isCrit);
     }
     
-    // AOE Splash Damage for Heavy Shells (Tanks / Heavy Turrets) to clear stacked armies!
+    // Heavy AOE Splash (Archangel Holy Cleave Wave / Balrog Magma Shockwave)
     if (this.isHeavy) {
       const enemyTeam = this.team === 'player' ? 'enemy' : 'player';
       const enemies = this.game.entityManager.getEntitiesByTeam(enemyTeam);
-      const splashRadius = 75;
-      const splashDmg = this.damage * 0.5; // 50% splash damage to nearby stacked units
+      const splashRadius = 80;
+      const splashDmg = this.damage * 0.5;
       
       enemies.forEach(enemy => {
         if (enemy !== this.target && enemy.isAlive) {
@@ -95,28 +97,19 @@ export class Projectile {
         }
       });
       
-      // Heavy Shockwave explosion visual
+      // Holy Shockwave explosion
+      const shockColor = this.team === 'player' ? '#f1c40f' : '#ff2d55';
       this.game.entityManager.addEntity(new Particle(
-        this.game, this.x, this.y, '#f1c40f', 0.45, 0, 0, splashRadius, 'shockwave'
+        this.game, this.x, this.y, shockColor, 0.45, 0, 0, splashRadius, 'shockwave'
       ));
-      
-      if (this.game.addScreenShake) {
-        this.game.addScreenShake(5);
+
+      for (let i = 0; i < 16; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 120 + 30;
+        this.game.entityManager.addEntity(new Particle(
+          this.game, this.x, this.y, shockColor, 0.5, speed, angle, Math.random() * 4 + 2, 'spark'
+        ));
       }
-    } else {
-      this.game.entityManager.addEntity(new Particle(
-        this.game, this.x, this.y, this.color, 0.3, 0, 0, 15, 'shockwave'
-      ));
-    }
-    
-    // Spark particles
-    const particleCount = this.isHeavy ? 14 : 6;
-    for (let i = 0; i < particleCount; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 90 + 30;
-      this.game.entityManager.addEntity(new Particle(
-        this.game, this.x, this.y, this.color, 0.35, speed, angle, Math.random() * 3 + 2, 'spark'
-      ));
     }
   }
 
@@ -124,21 +117,60 @@ export class Projectile {
     if (!this.isAlive) return;
     
     ctx.save();
+    ctx.translate(this.x, this.y);
     
-    ctx.shadowBlur = 15;
+    ctx.shadowBlur = 12;
     ctx.shadowColor = this.color;
     
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
+    if (this.team === 'player') {
+      if (this.isHeavy) {
+        // Archangel Flaming Holy Firewave
+        ctx.fillStyle = '#ffaa00';
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (this.color === '#ff4500') {
+        // Inquisitor Piercing Holy Fire Spear
+        ctx.fillStyle = '#ff4500';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 12, 4, Math.sin(this.animTime), 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Exorcist Holy Water Flask
+        ctx.fillStyle = '#f1c40f';
+        ctx.beginPath();
+        ctx.arc(0, 0, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-2, -8, 4, 3); // Flask stopper
+      }
+    } else {
+      if (this.isHeavy) {
+        // Balrog Magma Shell
+        ctx.fillStyle = '#ff2d55';
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (this.color === '#8b00ff') {
+        // Banshee Phantom Beam
+        ctx.fillStyle = '#8b00ff';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 12, 5, Math.sin(this.animTime), 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Succubus Hellfire Orb
+        ctx.fillStyle = '#9b59b6';
+        ctx.beginPath();
+        ctx.arc(0, 0, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
     
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius + 2, 0, Math.PI * 2);
-    ctx.strokeStyle = this.color;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    
+    ctx.shadowBlur = 0;
     ctx.restore();
   }
 }
