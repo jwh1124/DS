@@ -11,9 +11,19 @@ import { FloatingText } from './src/entities/FloatingText.js';
 
 export const WORLD_WIDTH = 2000;
 
-// Exorcism Theme: Unit Name Maps (Including 6th Unit Crusader / Pit Lord)
+// Exorcism Theme: Unit Name Maps
 const PLAYER_UNIT_NAMES = { melee: '수도승', ranged: '엑소시스트', medic: '사제', sniper: '심판관', tank: '대천사', crusader: '십자군' };
 const ENEMY_UNIT_NAMES = { melee: '임프', ranged: '서큐버스', medic: '리치', sniper: '밴시', tank: '발록', crusader: '핏로드' };
+
+// Tech Level Unit Unlock Requirements
+const UNIT_TECH_REQUIREMENTS = {
+  melee: 1,
+  ranged: 1,
+  medic: 2,
+  sniper: 3,
+  tank: 4,
+  crusader: 5
+};
 
 class Game {
   constructor() {
@@ -51,7 +61,6 @@ class Game {
     this.gameSpeed = 1;
     this.difficulty = 1.0;
     
-    // Dark occult dust particles (ash/embers)
     this.dustParticles = Array.from({length: 120}, () => ({
       x: Math.random() * WORLD_WIDTH,
       y: Math.random() * (this.canvas.height - 150),
@@ -130,11 +139,26 @@ class Game {
       this.ultimateCooldown = Math.max(0, this.ultimateCooldown - scaledDt);
     }
     
+    // Tech Level Unit Unlock Check & UI Lock Badges
+    const currentTech = this.playerBase ? this.playerBase.techLevel : 1;
+    document.querySelectorAll('.build-btn.unit-card-btn').forEach(btn => {
+      const type = btn.dataset.type;
+      const reqTech = UNIT_TECH_REQUIREMENTS[type] || 1;
+      if (currentTech < reqTech) {
+        btn.disabled = true;
+        btn.classList.add('locked-unit');
+      } else {
+        btn.disabled = false;
+        btn.classList.remove('locked-unit');
+      }
+    });
+
     // Auto-Spend
     if (this.autoSpend && this.economy.minerals >= 50 && this.waveSystem.spawners.player.length < 50) {
-      const pTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank', 'crusader'];
+      const allTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank', 'crusader'];
+      const unlockedTypes = allTypes.filter(t => (UNIT_TECH_REQUIREMENTS[t] || 1) <= currentTech);
       const pCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200, crusader: 250 };
-      const affordable = pTypes.filter(t => pCosts[t] <= this.economy.minerals);
+      const affordable = unlockedTypes.filter(t => pCosts[t] <= this.economy.minerals);
       if (affordable.length > 0) {
         const pick = affordable[Math.floor(Math.random() * affordable.length)];
         this.triggerAction(pick, pCosts[pick], null);
@@ -158,7 +182,7 @@ class Game {
     this.entityManager.update(scaledDt);
     this.hud.update();
     
-    // Update Build Queue Badges (Including Crusader)
+    // Update Build Queue Badges
     const playerSpawners = this.waveSystem.spawners.player;
     const pMelee = playerSpawners.filter(t => t === 'melee').length;
     const pRanged = playerSpawners.filter(t => t === 'ranged').length;
@@ -181,7 +205,7 @@ class Game {
     if (qTank) qTank.textContent = `x${pTank}`;
     if (qCrusader) qCrusader.textContent = `x${pCrusader}`;
     
-    // Update Debug Monitor - Exorcism Theme Names
+    // Update Debug Monitor
     const enemySpawners = this.waveSystem.spawners.enemy;
     const aiMelee = enemySpawners.filter(t => t === 'melee').length;
     const aiRanged = enemySpawners.filter(t => t === 'ranged').length;
@@ -234,7 +258,6 @@ class Game {
       this.drawFallbackBackground();
     }
     
-    // Occult ash/ember particles (reddish)
     this.dustParticles.forEach(p => {
       p.x -= p.speed;
       if (p.x < 0) p.x = WORLD_WIDTH;
@@ -246,7 +269,6 @@ class Game {
       this.ctx.fill();
     });
     
-    // Dark ground
     this.ctx.fillStyle = '#0a0508';
     this.ctx.fillRect(0, this.canvas.height - 150, WORLD_WIDTH, 150);
     
@@ -274,6 +296,15 @@ class Game {
     if (!this.isRunning) return;
     
     if (type === 'ultimate' && this.ultimateCooldown > 0) {
+      return;
+    }
+    
+    // Check Tech Requirement before purchasing unit
+    const reqTech = UNIT_TECH_REQUIREMENTS[type];
+    if (reqTech && this.playerBase && this.playerBase.techLevel < reqTech) {
+      this.entityManager.addEntity(new FloatingText(
+        this, `🔒 필요: 성서 계시 Lv.${reqTech}!`, this.playerBase.x, this.playerBase.y - 120, '#ff0055', true
+      ));
       return;
     }
     
@@ -372,14 +403,14 @@ class Game {
     const ttRange = document.getElementById('tt-range');
 
     const unitStats = {
-      melee: { title: '🙏 수도승 (근접) [1] | 우클릭: 환속+40✝️', desc: '성수 주먹으로 악마를 때려잡는 최전방 전위.', hp: 120, dmg: 25, range: '근접' },
-      ranged: { title: '✝️ 엑소시스트 (원거리) [2] | 우클릭: 환속+80✝️', desc: '성수탄을 발사하여 원거리에서 악마를 퇴마.', hp: 60, dmg: 35, range: '원거리' },
-      medic: { title: '⛪ 사제 (치유) [3] | 우클릭: 환속+96✝️', desc: '신성한 기도로 부상당한 아군의 상처를 치유.', hp: 100, dmg: '치유+30', range: '중거리' },
-      sniper: { title: '🔥 이단심판관 (저격) [4] | 우클릭: 환속+120✝️', desc: '은탄환으로 초장거리에서 악마를 처형하는 심판자.', hp: 80, dmg: 75, range: '초장거리' },
-      tank: { title: '👼 대천사 (광역심판) [5] | 우클릭: 환속+160✝️', desc: '신성한 불꽃으로 광역 심판을 내리는 천상의 존재.', hp: 300, dmg: '60(AOE)', range: '장거리' },
-      crusader: { title: '⚔️ 십자군 (수호탱커) [6] | 우클릭: 환속+200✝️', desc: '거대한 수호방패와 신성 방어 아우라로 아군을 보호.', hp: 450, dmg: '45(근접)', range: '근접' },
+      melee: { title: '🙏 수도승 (근접) [1] | 성서 계시 Lv.1', desc: '성수 주먹으로 악마를 때려잡는 최전방 전위.', hp: 120, dmg: 25, range: '근접' },
+      ranged: { title: '✝️ 엑소시스트 (원거리) [2] | 성서 계시 Lv.1', desc: '성수탄을 발사하여 원거리에서 악마를 퇴마.', hp: 60, dmg: 35, range: '원거리' },
+      medic: { title: '⛪ 사제 (치유) [3] | 🔒 필요: 성서 계시 Lv.2', desc: '신성한 기도로 부상당한 아군의 상처를 치유.', hp: 100, dmg: '치유+30', range: '중거리' },
+      sniper: { title: '🔥 이단심판관 (저격) [4] | 🔒 필요: 성서 계시 Lv.3', desc: '은탄환으로 초장거리에서 악마를 처형하는 심판자.', hp: 80, dmg: 75, range: '초장거리' },
+      tank: { title: '👼 대천사 (광역심판) [5] | 🔒 필요: 성서 계시 Lv.4', desc: '신성한 불꽃으로 광역 심판을 내리는 천상의 존재.', hp: 300, dmg: '60(AOE)', range: '장거리' },
+      crusader: { title: '⚔️ 십자군 (수호탱커) [6] | 🔒 필요: 성서 계시 Lv.5', desc: '거대한 수호방패와 신성 방어 아우라로 아군을 보호.', hp: 450, dmg: '45(근접)', range: '근접' },
       income: { title: '🕯️ 제단 봉헌 [Q]', desc: '매 웨이브마다 추가 신앙심을 +15 획득.', hp: '-', dmg: '-', range: '-' },
-      tech: { title: '📖 성서 계시 [W]', desc: '성당 방어탑 개방 및 성직자 능력 각성.', hp: '-', dmg: '-', range: '-' },
+      tech: { title: '📖 성서 계시 [W]', desc: '성당 방어탑 개방 및 상위 성직자 해금.', hp: '-', dmg: '-', range: '-' },
       ultimate: { title: '⚡ 천벌 [E]', desc: '전장의 모든 악마에게 150 신성 피해를 가하는 천상의 심판.', hp: '-', dmg: '150(부대)', range: '전체' }
     };
 

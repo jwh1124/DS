@@ -8,10 +8,10 @@ const UNIT_STATS = {
   medic: { hp: 100, damage: 0, range: 180, speed: 65, attackSpeed: 1.5, color: '#f1c40f' },      // Priest / Lich
   sniper: { hp: 80, damage: 75, range: 450, speed: 55, attackSpeed: 2.0, color: '#e74c3c' },     // Inquisitor / Banshee
   tank: { hp: 300, damage: 60, range: 360, speed: 40, attackSpeed: 1.5, color: '#f1c40f' },      // Archangel / Balrog
-  crusader: { hp: 450, damage: 45, range: 55, speed: 60, attackSpeed: 1.2, color: '#f1c40f' }   // NEW 6th Unit: Crusader / Pit Lord
+  crusader: { hp: 450, damage: 45, range: 55, speed: 60, attackSpeed: 1.2, color: '#f1c40f' }   // Crusader / Pit Lord
 };
 
-// Automatic Background Removal (누끼 따기) via Offscreen Canvas Chroma-Keying
+// Automatic High-Precision Chroma-Key Background Removal (완벽한 누끼 따기)
 const processedCanvasMap = new Map();
 
 function removeBlackBackground(img) {
@@ -36,9 +36,19 @@ function removeBlackBackground(img) {
       const g = data[i + 1];
       const b = data[i + 2];
       
-      // Chroma-key out dark/black background pixels (r, g, b < 38)
-      if (r < 38 && g < 38 && b < 38) {
-        data[i + 3] = 0; // Make 100% transparent!
+      // Calculate perceptual brightness & saturation for clean JPEG artifact removal
+      const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+      const colorDiff = Math.max(r, g, b) - Math.min(r, g, b);
+      
+      // Remove all dark background pixels & dark grey JPEG compression artifacts (r,g,b < 65)
+      if (brightness < 65 && colorDiff < 45) {
+        if (brightness < 40) {
+          data[i + 3] = 0; // 100% transparent
+        } else {
+          // Soft alpha edge feathering for smooth outline
+          const alphaFactor = (brightness - 40) / 25;
+          data[i + 3] = Math.floor(alphaFactor * 255);
+        }
       }
     }
     
@@ -260,7 +270,6 @@ export class Unit {
       this.recoil = Math.max(0, this.recoil - dt * 10);
     }
     
-    // Crusader Divine Armor Aura (+30% defense to nearby friendly units)
     if (this.type === 'crusader') {
       const friends = this.game.entityManager.getEntitiesByTeam(this.team);
       friends.forEach(f => {
@@ -410,7 +419,6 @@ export class Unit {
         true
       ));
     } else if (this.type === 'crusader') {
-      // ⚔️ Crusader Holy Shield Cleave (Melee AOE Shockwave)
       const isCrit = Math.random() < 0.25;
       const finalDmg = isCrit ? currentDamage * 1.6 : currentDamage;
       target.takeDamage(finalDmg, isCrit);
@@ -476,7 +484,7 @@ export class Unit {
     if (this.y > this.game.canvas.height - 150) this.y = this.game.canvas.height - 150;
   }
 
-  // Draw Routine with Automatic Chroma-Keying (누끼 따기) & HD Canvas Sprites
+  // Draw Routine with Automatic Precision Chroma-Keying (누끼 완벽 제거) & Vector Art
   draw(ctx) {
     if (!this.isAlive) return;
     
@@ -517,16 +525,15 @@ export class Unit {
     
     ctx.scale(this.scale, this.scale);
     
-    // Dynamic AI Sprite Image with Automatic Chroma-Keying (누끼)
     const imgGroup = SPRITE_IMAGES[this.team];
     const img = imgGroup ? imgGroup[this.type] : null;
     
     if (img && img.complete && img.naturalWidth > 0) {
-      // Run Automatic Background Removal (누끼 따기)
+      // High-precision Chroma-Key transparent canvas (누끼 따기)
       const transparentCanvas = removeBlackBackground(img);
       
-      const drawW = 56;
-      const drawH = 56;
+      const drawW = 58;
+      const drawH = 58;
       
       ctx.shadowBlur = 14;
       ctx.shadowColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
@@ -534,37 +541,59 @@ export class Unit {
       ctx.shadowBlur = 0;
 
     } else {
-      // Custom High-Detail Canvas Art (For 6th Unit Crusader & Fallbacks)
+      // High-Quality Vector Art for Crusader & Pit Lord
       if (this.type === 'crusader') {
-        // ⚔️ 십자군 (Crusader): Heavy Silver & Gold Plate Armor, Giant Tower Shield, Flaming Mace
-        ctx.fillStyle = '#2c3e50';
-        ctx.fillRect(-11, 4, 7, 12);
-        ctx.fillRect(4, 4, 7, 12);
-        
-        ctx.fillStyle = '#b8860b';
-        ctx.fillRect(-14, -14, 28, 22);
-        ctx.fillStyle = '#f1c40f';
-        ctx.fillRect(-10, -12, 20, 18);
-        
-        // Red Cross Chest Plate
-        ctx.fillStyle = '#c0392b';
-        ctx.fillRect(-3, -12, 6, 18);
-        ctx.fillRect(-8, -8, 16, 6);
-        
-        // Giant Tower Shield in Hand
-        ctx.fillStyle = '#dfe6e9';
-        ctx.fillRect(8, -16, 12, 28);
-        ctx.fillStyle = '#f1c40f';
-        ctx.fillRect(12, -12, 4, 20);
-        ctx.fillRect(10, -8, 8, 4);
+        if (this.team === 'player') {
+          // ⚔️ 십자군 (Crusader): Heavy Gold Armor, Tower Shield with Red Cross, Flaming Mace
+          ctx.fillStyle = '#1e272e';
+          ctx.fillRect(-11, 4, 7, 12);
+          ctx.fillRect(4, 4, 7, 12);
+          
+          ctx.fillStyle = '#b8860b';
+          ctx.fillRect(-15, -16, 30, 24);
+          ctx.fillStyle = '#f1c40f';
+          ctx.fillRect(-11, -14, 22, 20);
+          
+          // Red Cross Chest
+          ctx.fillStyle = '#c0392b';
+          ctx.fillRect(-4, -14, 8, 20);
+          ctx.fillRect(-10, -10, 20, 6);
+          
+          // Giant Shield
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(8, -18, 14, 30);
+          ctx.fillStyle = '#c0392b';
+          ctx.fillRect(13, -18, 4, 30);
+          ctx.fillRect(8, -8, 14, 4);
+          
+          // Flaming Mace
+          ctx.fillStyle = '#ffaa00';
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = '#ffaa00';
+          ctx.beginPath();
+          ctx.arc(-16, -10, 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        } else {
+          // 🐲 핏로드 (Pit Lord): Magma Armor, Double Blades
+          ctx.fillStyle = '#4a0000';
+          ctx.fillRect(-16, 4, 8, 14);
+          ctx.fillRect(8, 4, 8, 14);
+          ctx.fillStyle = '#800000';
+          ctx.fillRect(-18, -16, 36, 24);
+          ctx.fillStyle = '#ff0055';
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = '#ff0055';
+          ctx.fillRect(-10, -12, 6, 16);
+          ctx.fillRect(4, -12, 6, 16);
+          ctx.shadowBlur = 0;
+        }
       } else if (this.team === 'player') {
         if (this.type === 'melee') {
           ctx.fillStyle = '#8b5a2b';
           ctx.beginPath();
           ctx.arc(0, -10, 12, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = '#f1c40f';
-          ctx.fillRect(6, -22, 3, 26);
         } else if (this.type === 'ranged') {
           ctx.fillStyle = '#1e272e';
           ctx.fillRect(-10, -14, 20, 20);
