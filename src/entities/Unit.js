@@ -205,7 +205,7 @@ export class Unit {
     } else {
       // Hit flash spark impact
       this.game.entityManager.addEntity(new Particle(
-        this.game, this.x, this.y - 10, sparkColor, 0.25, 0, Math.random() * Math.PI, 18 * this.scale, 'cross_flash'
+        this.game, this.x, this.y - 10, sparkColor, 0.16, 0, Math.random() * Math.PI, 13 * this.scale, 'cross_flash'
       ));
     }
   }
@@ -459,10 +459,10 @@ export class Unit {
       
       const shockColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
       this.game.entityManager.addEntity(new Particle(
-        this.game, target.x, target.y, shockColor, 0.35, 0, this.dir > 0 ? 0 : Math.PI, 35, 'slash_arc'
+        this.game, target.x, target.y, shockColor, 0.22, 0, this.dir > 0 ? 0 : Math.PI, 24, 'slash_arc'
       ));
       this.game.entityManager.addEntity(new Particle(
-        this.game, target.x, target.y, shockColor, 0.25, 0, 0, 20, 'cross_flash'
+        this.game, target.x, target.y, shockColor, 0.16, 0, 0, 14, 'cross_flash'
       ));
     } else {
       const isCrit = Math.random() < 0.18;

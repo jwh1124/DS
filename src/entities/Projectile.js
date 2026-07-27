@@ -80,9 +80,9 @@ export class Projectile {
     
     const shockColor = this.team === 'player' ? '#f1c40f' : '#ff2d55';
     
-    // Impact Flash (Radiant Cross & Slash Arc replaces cheap circles)
+    // A direct hit is a quick cue. The larger arc is reserved for heavy projectiles.
     this.game.entityManager.addEntity(new Particle(
-      this.game, this.x, this.y, shockColor, 0.35, 0, Math.random() * Math.PI, this.isHeavy ? 45 : 22, 'cross_flash'
+      this.game, this.x, this.y, shockColor, this.isHeavy ? 0.22 : 0.16, 0, Math.random() * Math.PI, this.isHeavy ? 28 : 14, 'cross_flash'
     ));
     
     if (this.isHeavy) {
@@ -103,10 +103,10 @@ export class Projectile {
       });
       
       this.game.entityManager.addEntity(new Particle(
-        this.game, this.x, this.y, shockColor, 0.4, 0, Math.random() * Math.PI, 38, 'slash_arc'
+        this.game, this.x, this.y, shockColor, 0.24, 0, Math.random() * Math.PI, 26, 'slash_arc'
       ));
 
-      for (let i = 0; i < 14; i++) {
+      for (let i = 0; i < 8; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = Math.random() * 140 + 40;
         this.game.entityManager.addEntity(new Particle(
