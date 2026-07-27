@@ -200,6 +200,11 @@ export class Unit {
       }
       
       this.explode();
+    } else {
+      // Hit flash spark impact
+      this.game.entityManager.addEntity(new Particle(
+        this.game, this.x, this.y - 10, sparkColor, 0.25, 0, Math.random() * Math.PI, 18 * this.scale, 'cross_flash'
+      ));
     }
   }
 
@@ -215,7 +220,10 @@ export class Unit {
     const expColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
     
     this.game.entityManager.addEntity(new Particle(
-      this.game, this.x, this.y, expColor, 0.45, 0, 0, 22 * this.scale, 'shockwave'
+      this.game, this.x, this.y, expColor, 0.45, 0, Math.random() * Math.PI, 35 * this.scale, 'cross_flash'
+    ));
+    this.game.entityManager.addEntity(new Particle(
+      this.game, this.x, this.y, expColor, 0.4, 0, Math.random() * Math.PI, 28 * this.scale, 'slash_arc'
     ));
 
     const particleCount = this.isBoss ? 45 : 20;
@@ -377,7 +385,7 @@ export class Unit {
         this.game.entityManager.addEntity(new FloatingText(this.game, healText, target.x, target.y - 40, healColor, false));
         
         this.game.entityManager.addEntity(new Particle(
-          this.game, target.x, target.y, healColor, 0.4, 0, 0, 32, 'shockwave'
+          this.game, target.x, target.y, healColor, 0.4, 0, 0, 24, 'cross_flash'
         ));
         for (let i = 0; i < 8; i++) {
           this.game.entityManager.addEntity(new Particle(
@@ -449,7 +457,10 @@ export class Unit {
       
       const shockColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
       this.game.entityManager.addEntity(new Particle(
-        this.game, target.x, target.y, shockColor, 0.35, 0, 0, 50, 'shockwave'
+        this.game, target.x, target.y, shockColor, 0.35, 0, this.dir > 0 ? 0 : Math.PI, 35, 'slash_arc'
+      ));
+      this.game.entityManager.addEntity(new Particle(
+        this.game, target.x, target.y, shockColor, 0.25, 0, 0, 20, 'cross_flash'
       ));
     } else {
       const isCrit = Math.random() < 0.18;

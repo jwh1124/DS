@@ -613,7 +613,7 @@ class Game {
         ));
       }
       this.entityManager.addEntity(new Particle(
-        this, enemy.x, enemy.y, '#f1c40f', 0.4, 0, 0, 30, 'shockwave'
+        this, enemy.x, enemy.y, '#f1c40f', 0.4, 0, Math.random() * Math.PI, 35, 'cross_flash'
       ));
       enemy.takeDamage(150, true);
     });

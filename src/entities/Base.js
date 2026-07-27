@@ -44,7 +44,7 @@ export class Base {
     this.game.entityManager.addEntity(new FloatingText(this.game, upgradeText, this.x, this.y - 140, upgradeColor, true));
     
     this.game.entityManager.addEntity(new Particle(
-      this.game, this.x, this.y, upgradeColor, 0.6, 0, 0, 90, 'shockwave'
+      this.game, this.x, this.y, upgradeColor, 0.6, 0, Math.random() * Math.PI, 65, 'cross_flash'
     ));
     for (let i = 0; i < 35; i++) {
       const angle = Math.random() * Math.PI * 2;

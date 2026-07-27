@@ -14,15 +14,15 @@ export class Projectile {
     this.targetLastX = target ? target.x : x;
     this.targetLastY = target ? target.y : y;
     
-    this.speed = isHeavy ? 480 : 400;
-    this.radius = isHeavy ? 8 : 5;
+    this.speed = isHeavy ? 520 : 420;
+    this.radius = isHeavy ? 10 : 6;
     this.isAlive = true;
     this.animTime = 0;
   }
 
   update(dt) {
     if (!this.isAlive) return;
-    this.animTime += dt * 10;
+    this.animTime += dt * 12;
 
     if (this.target) {
       if (this.target.x !== undefined) this.targetLastX = this.target.x;
@@ -48,19 +48,18 @@ export class Projectile {
       this.y += (dy / dist) * Math.min(moveDist, dist);
     }
     
-    // Holy Sparkle / Demon Flame trail particles
-    if (Math.random() > 0.2) {
-      const trailType = this.team === 'player' ? 'spark' : 'spark';
+    // Trail particles
+    if (Math.random() > 0.25) {
       this.game.entityManager.addEntity(new Particle(
         this.game, 
-        this.x - (dx / Math.max(1, dist)) * 6, 
-        this.y - (dy / Math.max(1, dist)) * 6, 
+        this.x - (dx / Math.max(1, dist)) * 8, 
+        this.y - (dy / Math.max(1, dist)) * 8, 
         this.color, 
-        0.3, 
-        20, 
-        Math.atan2(-dy, -dx) + (Math.random() - 0.5) * 0.5, 
-        this.isHeavy ? 5 : 3,
-        trailType
+        0.25, 
+        30, 
+        Math.atan2(-dy, -dx) + (Math.random() - 0.5) * 0.4, 
+        this.isHeavy ? 4 : 2.5,
+        'spark'
       ));
     }
   }
@@ -72,18 +71,24 @@ export class Projectile {
       this.game.audio.playHit();
     }
     
-    // Apply direct damage
+    // Direct damage
     if (this.target && this.target.isAlive) {
       const isCrit = Math.random() < 0.15;
       const finalDmg = isCrit ? this.damage * 1.5 : this.damage;
       this.target.takeDamage(finalDmg, isCrit);
     }
     
-    // Heavy AOE Splash (Archangel Holy Cleave Wave / Balrog Magma Shockwave)
+    const shockColor = this.team === 'player' ? '#f1c40f' : '#ff2d55';
+    
+    // Impact Flash (Radiant Cross & Slash Arc replaces cheap circles)
+    this.game.entityManager.addEntity(new Particle(
+      this.game, this.x, this.y, shockColor, 0.35, 0, Math.random() * Math.PI, this.isHeavy ? 45 : 22, 'cross_flash'
+    ));
+    
     if (this.isHeavy) {
       const enemyTeam = this.team === 'player' ? 'enemy' : 'player';
       const enemies = this.game.entityManager.getEntitiesByTeam(enemyTeam);
-      const splashRadius = 80;
+      const splashRadius = 90;
       const splashDmg = this.damage * 0.5;
       
       enemies.forEach(enemy => {
@@ -97,17 +102,15 @@ export class Projectile {
         }
       });
       
-      // Holy Shockwave explosion
-      const shockColor = this.team === 'player' ? '#f1c40f' : '#ff2d55';
       this.game.entityManager.addEntity(new Particle(
-        this.game, this.x, this.y, shockColor, 0.45, 0, 0, splashRadius, 'shockwave'
+        this.game, this.x, this.y, shockColor, 0.4, 0, Math.random() * Math.PI, 38, 'slash_arc'
       ));
 
-      for (let i = 0; i < 16; i++) {
+      for (let i = 0; i < 14; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 120 + 30;
+        const speed = Math.random() * 140 + 40;
         this.game.entityManager.addEntity(new Particle(
-          this.game, this.x, this.y, shockColor, 0.5, speed, angle, Math.random() * 4 + 2, 'spark'
+          this.game, this.x, this.y, shockColor, 0.45, speed, angle, Math.random() * 4 + 2, 'spark'
         ));
       }
     }
@@ -119,53 +122,47 @@ export class Projectile {
     ctx.save();
     ctx.translate(this.x, this.y);
     
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 14;
     ctx.shadowColor = this.color;
     
     if (this.team === 'player') {
       if (this.isHeavy) {
-        // Archangel Flaming Holy Firewave
-        ctx.fillStyle = '#ffaa00';
+        // Archangel Holy Fire Star Cannon
+        ctx.fillStyle = '#f1c40f';
         ctx.beginPath();
-        ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        ctx.arc(0, 0, 8, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (this.color === '#ff4500') {
+        // Inquisitor Silver Spear
+        ctx.fillStyle = '#ff4500';
+        ctx.fillRect(-8, -2, 16, 4);
+      } else {
+        // Exorcist Holy Flask
+        ctx.fillStyle = '#f1c40f';
         ctx.beginPath();
         ctx.arc(0, 0, 5, 0, Math.PI * 2);
         ctx.fill();
-      } else if (this.color === '#ff4500') {
-        // Inquisitor Piercing Holy Fire Spear
-        ctx.fillStyle = '#ff4500';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 12, 4, Math.sin(this.animTime), 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        // Exorcist Holy Water Flask
-        ctx.fillStyle = '#f1c40f';
-        ctx.beginPath();
-        ctx.arc(0, 0, 6, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-2, -8, 4, 3); // Flask stopper
       }
     } else {
       if (this.isHeavy) {
-        // Balrog Magma Shell
+        // Balrog Magma Meteor
         ctx.fillStyle = '#ff2d55';
         ctx.beginPath();
-        ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        ctx.arc(0, 0, 9, 0, Math.PI * 2);
         ctx.fill();
       } else if (this.color === '#8b00ff') {
-        // Banshee Phantom Beam
+        // Banshee Wraith Beam
         ctx.fillStyle = '#8b00ff';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 12, 5, Math.sin(this.animTime), 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(-8, -2.5, 16, 5);
       } else {
-        // Succubus Hellfire Orb
+        // Succubus Demon Flame Orb
         ctx.fillStyle = '#9b59b6';
         ctx.beginPath();
-        ctx.arc(0, 0, 6, 0, Math.PI * 2);
+        ctx.arc(0, 0, 5, 0, Math.PI * 2);
         ctx.fill();
       }
     }
