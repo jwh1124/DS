@@ -82,7 +82,8 @@ const SPRITE_IMAGES = {
     ranged: new Image(),
     medic: new Image(),
     sniper: new Image(),
-    tank: new Image()
+    tank: new Image(),
+    crusader: new Image()
   },
   enemy: {
     melee: new Image(),
@@ -96,6 +97,7 @@ SPRITE_IMAGES.player.ranged.src = baseUrl + 'sprites/exorcist.png';
 SPRITE_IMAGES.player.medic.src = baseUrl + 'sprites/priest.png';
 SPRITE_IMAGES.player.sniper.src = baseUrl + 'sprites/inquisitor.png';
 SPRITE_IMAGES.player.tank.src = baseUrl + 'sprites/archangel.png';
+SPRITE_IMAGES.player.crusader.src = baseUrl + 'sprites/crusader.png';
 SPRITE_IMAGES.enemy.melee.src = baseUrl + 'sprites/imp.png';
 SPRITE_IMAGES.enemy.ranged.src = baseUrl + 'sprites/succubus.png';
 
