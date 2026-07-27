@@ -10,7 +10,7 @@ export class Base {
     this.team = team;
     this.maxHp = maxHp;
     this.hp = maxHp;
-    this.radius = 65; 
+    this.radius = 70; 
     this.isAlive = true;
     
     this.techLevel = 1;
@@ -38,17 +38,17 @@ export class Base {
       this.game.audio.playMagic();
     }
     
-    const upgradeText = this.team === 'player' ? `★ 성서 계시 Lv.${this.techLevel} 달성! ★` : `★ 지옥 각성 Lv.${this.techLevel} 완료! ★`;
-    const upgradeColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
+    const upgradeText = this.team === 'player' ? `★ 성당 증축 Lv.${this.techLevel} 진화! ★` : `★ 지옥 강림 Lv.${this.techLevel} 진화! ★`;
+    const upgradeColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
     
-    this.game.entityManager.addEntity(new FloatingText(this.game, upgradeText, this.x, this.y - 120, upgradeColor, true));
+    this.game.entityManager.addEntity(new FloatingText(this.game, upgradeText, this.x, this.y - 140, upgradeColor, true));
     
     this.game.entityManager.addEntity(new Particle(
-      this.game, this.x, this.y, upgradeColor, 0.6, 0, 0, 80, 'shockwave'
+      this.game, this.x, this.y, upgradeColor, 0.6, 0, 0, 90, 'shockwave'
     ));
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 35; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 140 + 40;
+      const speed = Math.random() * 150 + 50;
       this.game.entityManager.addEntity(new Particle(
         this.game, this.x, this.y, upgradeColor, 0.8, speed, angle, 4, 'spark'
       ));
@@ -71,7 +71,7 @@ export class Base {
       this.emergencyPhase1 = true;
       if (this.team === 'player' && this.game.economy) {
         this.game.economy.minerals += 300;
-        this.game.entityManager.addEntity(new FloatingText(this.game, `🆘 구원 비상 신앙심 +300 ✝️!`, this.x, this.y - 100, '#f1c40f', true));
+        this.game.entityManager.addEntity(new FloatingText(this.game, `🆘 구원 비상 지원 +300 ✝️!`, this.x, this.y - 100, '#f1c40f', true));
       } else if (this.team === 'enemy' && this.game.waveSystem) {
         this.game.waveSystem.aiMinerals += 300;
       }
@@ -96,7 +96,7 @@ export class Base {
       if (this.game.addScreenShake) {
         this.game.addScreenShake(20);
       }
-      const expColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
+      const expColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
       for (let i = 0; i < 60; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = Math.random() * 250 + 50;
@@ -143,7 +143,7 @@ export class Base {
         this.turretAngle = Math.atan2(closestEnemy.y - (this.y - 70), closestEnemy.x - this.x);
         
         if (this.turretCooldown <= 0) {
-          const turretColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
+          const turretColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
           this.game.entityManager.addEntity(new Projectile(
             this.game, 
             this.x + Math.cos(this.turretAngle) * 40, 
@@ -160,24 +160,25 @@ export class Base {
     }
   }
 
+  // Draw Routine with Tech Level Evolution (Cathedral Shrine vs Demonic Gate)
   draw(ctx) {
     if (!this.isAlive) return;
     
     ctx.save();
     
-    // 1. Base Drop Shadow
+    // 1. Drop Shadow
     ctx.beginPath();
-    ctx.ellipse(this.x, this.y + 55, 90, 22, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+    ctx.ellipse(this.x, this.y + 60, 100, 25, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fill();
     
-    // 2. Holy Shield / Demonic Barrier Dome
-    const shieldColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
-    const shieldAlpha = this.shieldHitTimer > 0 ? 0.55 : 0.15 + Math.sin(Date.now() * 0.004) * 0.06;
+    // 2. Shield / Barrier Aura Dome
+    const shieldColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
+    const shieldAlpha = this.shieldHitTimer > 0 ? 0.6 : 0.15 + Math.sin(Date.now() * 0.004) * 0.06;
     
     ctx.beginPath();
-    ctx.arc(this.x, this.y - 15, 90, Math.PI, 0, false);
-    ctx.fillStyle = this.team === 'player' ? `rgba(241, 196, 15, ${shieldAlpha})` : `rgba(139, 0, 255, ${shieldAlpha})`;
+    ctx.arc(this.x, this.y - 20, 100, Math.PI, 0, false);
+    ctx.fillStyle = this.team === 'player' ? `rgba(241, 196, 15, ${shieldAlpha})` : `rgba(255, 0, 85, ${shieldAlpha})`;
     ctx.fill();
     ctx.strokeStyle = shieldColor;
     ctx.lineWidth = this.shieldHitTimer > 0 ? 4 : 2;
@@ -186,77 +187,126 @@ export class Base {
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // 3. Custom Canvas Sprite Drawing (Cathedral Shrine vs Demonic Gate)
+    // 3. Render Base Structure Evolving by Tech Level (Lv 1 ~ 5)
     ctx.save();
     ctx.translate(this.x, this.y);
     
+    const lvl = Math.min(5, this.techLevel);
+    
     if (this.team === 'player') {
       // =====================================
-      // ⛪ PLAYER BASE: GOTHIC CATHEDRAL SHRINE
+      // ⛪ PLAYER BASE: GOTHIC CATHEDRAL SHRINE (Lv 1 ~ 5 EVOLUTION)
       // =====================================
-      // Dark Stone Cathedral Foundation Base
+      // Base Stone Foundation
       ctx.fillStyle = '#2c3e50';
-      ctx.fillRect(-70, -20, 140, 75);
+      ctx.fillRect(-75, -20, 150, 75);
       ctx.fillStyle = '#1e272e';
-      ctx.fillRect(-60, 10, 120, 45);
+      ctx.fillRect(-65, 10, 130, 45);
       
-      // Gothic Stone Arches & Pillars
+      // Cathedral Pillars
       ctx.fillStyle = '#34495e';
-      ctx.fillRect(-65, -60, 22, 90);
-      ctx.fillRect(43, -60, 22, 90);
-      ctx.fillRect(-35, -90, 70, 120);
+      ctx.fillRect(-70, -60, 24, 90);
+      ctx.fillRect(46, -60, 24, 90);
+      ctx.fillRect(-40, -95, 80, 125);
       
-      // Stained Glass Windows Glow
+      // Stained Glass Windows (Glows brighter with Tech Level)
       ctx.fillStyle = '#f1c40f';
-      ctx.shadowBlur = 15;
+      ctx.shadowBlur = 10 + lvl * 5;
       ctx.shadowColor = '#f1c40f';
       ctx.beginPath();
-      ctx.arc(0, -50, 16, 0, Math.PI * 2);
+      ctx.arc(0, -55, 16 + lvl * 2, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
       
       ctx.fillStyle = '#e67e22';
-      ctx.fillRect(-8, -40, 16, 25);
+      ctx.fillRect(-10, -42, 20, 30);
       
-      // Top Glowing Holy Cross Spire
-      ctx.fillStyle = '#f1c40f';
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = '#f1c40f';
-      ctx.fillRect(-4, -130, 8, 45);
-      ctx.fillRect(-16, -115, 32, 8);
-      ctx.shadowBlur = 0;
+      // Tech Lv 2+: Golden Bell Towers
+      if (lvl >= 2) {
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillRect(-68, -90, 20, 30);
+        ctx.fillRect(48, -90, 20, 30);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-62, -85, 8, 12);
+        ctx.fillRect(54, -85, 8, 12);
+      }
+      
+      // Tech Lv 3+: Sacred Gold Cross Spires & Braziers
+      if (lvl >= 3) {
+        ctx.fillStyle = '#f1c40f';
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#f1c40f';
+        ctx.fillRect(-5, -145, 10, 50);
+        ctx.fillRect(-20, -125, 40, 10);
+        ctx.shadowBlur = 0;
+      } else {
+        ctx.fillStyle = '#d4a017';
+        ctx.fillRect(-4, -125, 8, 30);
+        ctx.fillRect(-12, -115, 24, 6);
+      }
+      
+      // Tech Lv 4+: Angel Wings Aura behind Cathedral Roof
+      if (lvl >= 4) {
+        const wingFlap = Math.sin(Date.now() * 0.006) * 4;
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#f1c40f';
+        ctx.beginPath();
+        ctx.moveTo(-20, -60);
+        ctx.lineTo(-90 - wingFlap, -110 - wingFlap);
+        ctx.lineTo(-60, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(20, -60);
+        ctx.lineTo(90 + wingFlap, -110 - wingFlap);
+        ctx.lineTo(60, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      
+      // Tech Lv 5 (MAX): Heavenly Halo Crest Above Spire
+      if (lvl >= 5) {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 4;
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = '#f1c40f';
+        ctx.beginPath();
+        ctx.arc(0, -150, 25, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
 
     } else {
       // =====================================
-      // ☠️ ENEMY BASE: DEMONIC HELLFIRE GATE
+      // ☠️ ENEMY BASE: DEMONIC HELLFIRE GATE (Lv 1 ~ 5 EVOLUTION)
       // =====================================
-      // Obsidian Jagged Foundation
+      // Obsidian Base Foundation
       ctx.fillStyle = '#1a0518';
-      ctx.fillRect(-70, -20, 140, 75);
+      ctx.fillRect(-75, -20, 150, 75);
       ctx.fillStyle = '#2d002b';
-      ctx.fillRect(-60, 10, 120, 45);
+      ctx.fillRect(-65, 10, 130, 45);
       
-      // Jagged Demon Horn Spires
+      // Horn Spires
       ctx.fillStyle = '#4a0040';
-      // Left Spire
       ctx.beginPath();
-      ctx.moveTo(-65, 35);
-      ctx.lineTo(-75, -90);
+      ctx.moveTo(-70, 35);
+      ctx.lineTo(-85, -95);
       ctx.lineTo(-45, -20);
       ctx.closePath();
       ctx.fill();
-      // Right Spire
       ctx.beginPath();
-      ctx.moveTo(65, 35);
-      ctx.lineTo(75, -90);
+      ctx.moveTo(70, 35);
+      ctx.lineTo(85, -95);
       ctx.lineTo(45, -20);
       ctx.closePath();
       ctx.fill();
       
-      // Swirling Crimson Hellfire Portal Core
-      const portalPulse = Math.sin(Date.now() * 0.008) * 4;
+      // Swirling Hellfire Portal Core
+      const portalPulse = Math.sin(Date.now() * 0.008) * (4 + lvl);
       ctx.fillStyle = '#ff0055';
-      ctx.shadowBlur = 22;
+      ctx.shadowBlur = 20 + lvl * 5;
       ctx.shadowColor = '#ff0055';
       ctx.beginPath();
       ctx.arc(0, -35, 24 + portalPulse, 0, Math.PI * 2);
@@ -268,17 +318,52 @@ export class Base {
       ctx.arc(0, -35, 14 + portalPulse * 0.5, 0, Math.PI * 2);
       ctx.fill();
       
-      // Demonic Skull Arch Top
-      ctx.fillStyle = '#2d002b';
-      ctx.beginPath();
-      ctx.arc(0, -85, 14, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#ff0055';
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = '#ff0055';
-      ctx.fillRect(-6, -88, 4, 4);
-      ctx.fillRect(2, -88, 4, 4);
-      ctx.shadowBlur = 0;
+      // Tech Lv 2+: Magma Lava Channels
+      if (lvl >= 2) {
+        ctx.fillStyle = '#ff4500';
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#ff4500';
+        ctx.fillRect(-50, -10, 12, 55);
+        ctx.fillRect(38, -10, 12, 55);
+        ctx.shadowBlur = 0;
+      }
+      
+      // Tech Lv 3+: Glowing Demon Eye Spires
+      if (lvl >= 3) {
+        ctx.fillStyle = '#ff0055';
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#ff0055';
+        ctx.beginPath();
+        ctx.arc(-72, -70, 8, 0, Math.PI * 2);
+        ctx.arc(72, -70, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      
+      // Tech Lv 4+: Dragon Skull Gate Crown
+      if (lvl >= 4) {
+        ctx.fillStyle = '#2d002b';
+        ctx.beginPath();
+        ctx.arc(0, -90, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ff0055';
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#ff0055';
+        ctx.fillRect(-8, -94, 5, 5);
+        ctx.fillRect(3, -94, 5, 5);
+        ctx.shadowBlur = 0;
+      }
+      
+      // Tech Lv 5 (MAX): Giant Balrog Magma Head Core
+      if (lvl >= 5) {
+        ctx.fillStyle = '#ff2d55';
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = '#ff0055';
+        ctx.beginPath();
+        ctx.arc(0, -135, 22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
     }
     
     ctx.restore();
@@ -289,7 +374,6 @@ export class Base {
       ctx.translate(this.x, this.y - 70);
       ctx.rotate(this.turretAngle);
       
-      // Turret base
       ctx.fillStyle = this.team === 'player' ? '#2c3e50' : '#1a0518';
       ctx.beginPath();
       ctx.arc(0, 0, 16, 0, Math.PI * 2);
@@ -298,8 +382,7 @@ export class Base {
       ctx.lineWidth = 2.5;
       ctx.stroke();
       
-      // Turret Barrel
-      ctx.fillStyle = this.team === 'player' ? '#d4a017' : '#8b00ff';
+      ctx.fillStyle = this.team === 'player' ? '#d4a017' : '#ff0055';
       ctx.fillRect(0, -5, 26, 10);
       
       ctx.fillStyle = shieldColor;

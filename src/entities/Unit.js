@@ -3,14 +3,54 @@ import { Projectile } from './Projectile.js';
 import { FloatingText } from './FloatingText.js';
 
 const UNIT_STATS = {
-  melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#f1c40f' },   // Monk / Imp
-  ranged: { hp: 60, damage: 35, range: 250, speed: 70, attackSpeed: 1.2, color: '#dfe6e9' },   // Exorcist / Succubus
-  medic: { hp: 100, damage: 0, range: 180, speed: 65, attackSpeed: 1.5, color: '#f1c40f' },    // Priest / Lich
-  sniper: { hp: 80, damage: 75, range: 450, speed: 55, attackSpeed: 2.0, color: '#e74c3c' },   // Inquisitor / Banshee
-  tank: { hp: 300, damage: 60, range: 360, speed: 40, attackSpeed: 1.5, color: '#f1c40f' }     // Archangel / Balrog
+  melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#f1c40f' },     // Monk / Imp
+  ranged: { hp: 60, damage: 35, range: 250, speed: 70, attackSpeed: 1.2, color: '#dfe6e9' },     // Exorcist / Succubus
+  medic: { hp: 100, damage: 0, range: 180, speed: 65, attackSpeed: 1.5, color: '#f1c40f' },      // Priest / Lich
+  sniper: { hp: 80, damage: 75, range: 450, speed: 55, attackSpeed: 2.0, color: '#e74c3c' },     // Inquisitor / Banshee
+  tank: { hp: 300, damage: 60, range: 360, speed: 40, attackSpeed: 1.5, color: '#f1c40f' },      // Archangel / Balrog
+  crusader: { hp: 450, damage: 45, range: 55, speed: 60, attackSpeed: 1.2, color: '#f1c40f' }   // NEW 6th Unit: Crusader / Pit Lord
 };
 
-// Preload HD AI Sprite Images
+// Automatic Background Removal (누끼 따기) via Offscreen Canvas Chroma-Keying
+const processedCanvasMap = new Map();
+
+function removeBlackBackground(img) {
+  if (processedCanvasMap.has(img.src)) {
+    return processedCanvasMap.get(img.src);
+  }
+  
+  const canvas = document.createElement('canvas');
+  const w = img.naturalWidth || img.width || 64;
+  const h = img.naturalHeight || img.height || 64;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  
+  try {
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+    
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      
+      // Chroma-key out dark/black background pixels (r, g, b < 38)
+      if (r < 38 && g < 38 && b < 38) {
+        data[i + 3] = 0; // Make 100% transparent!
+      }
+    }
+    
+    ctx.putImageData(imgData, 0, 0);
+    processedCanvasMap.set(img.src, canvas);
+    return canvas;
+  } catch (e) {
+    return img;
+  }
+}
+
+// Preload AI Sprite Images
 const SPRITE_IMAGES = {
   player: {
     melee: new Image(),
@@ -51,7 +91,7 @@ export class Unit {
     this.attackSpeed = stats.attackSpeed;
     this.color = team === 'player' ? (stats.color || '#f1c40f') : '#8b00ff';
     
-    this.radius = type === 'tank' ? 28 : 20;
+    this.radius = (type === 'tank' || type === 'crusader') ? 30 : 20;
     this.isAlive = true;
     
     this.isFloating = (type === 'medic' || type === 'tank' || (team === 'enemy' && (type === 'ranged' || type === 'sniper')));
@@ -118,7 +158,7 @@ export class Unit {
       this.hp = 0;
       this.isAlive = false;
       
-      const bountyMap = { melee: 5, ranged: 10, medic: 12, sniper: 15, tank: 20 };
+      const bountyMap = { melee: 5, ranged: 10, medic: 12, sniper: 15, tank: 20, crusader: 25 };
       const bounty = this.isBoss ? 100 : (bountyMap[this.type] || 10);
       if (this.team === 'enemy' && this.game.economy) {
         this.game.economy.minerals += bounty;
@@ -136,7 +176,7 @@ export class Unit {
       this.game.audio.playExplosion();
     }
     
-    if ((this.isBoss || this.type === 'tank') && this.game.addScreenShake) {
+    if ((this.isBoss || this.type === 'tank' || this.type === 'crusader') && this.game.addScreenShake) {
       this.game.addScreenShake(this.isBoss ? 14 : 6);
     }
     
@@ -218,6 +258,20 @@ export class Unit {
     }
     if (this.recoil > 0) {
       this.recoil = Math.max(0, this.recoil - dt * 10);
+    }
+    
+    // Crusader Divine Armor Aura (+30% defense to nearby friendly units)
+    if (this.type === 'crusader') {
+      const friends = this.game.entityManager.getEntitiesByTeam(this.team);
+      friends.forEach(f => {
+        if (f !== this && f.isAlive && f.radius) {
+          const fdx = f.x - this.x;
+          const fdy = f.y - this.y;
+          if (fdx*fdx + fdy*fdy < 140*140) {
+            f.hasAura = true;
+          }
+        }
+      });
     }
     
     const currentSpeed = this.hasAura ? this.speed * 1.4 : this.speed;
@@ -355,6 +409,16 @@ export class Unit {
         this.team,
         true
       ));
+    } else if (this.type === 'crusader') {
+      // ⚔️ Crusader Holy Shield Cleave (Melee AOE Shockwave)
+      const isCrit = Math.random() < 0.25;
+      const finalDmg = isCrit ? currentDamage * 1.6 : currentDamage;
+      target.takeDamage(finalDmg, isCrit);
+      
+      const shockColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
+      this.game.entityManager.addEntity(new Particle(
+        this.game, target.x, target.y, shockColor, 0.35, 0, 0, 50, 'shockwave'
+      ));
     } else {
       const isCrit = Math.random() < 0.18;
       const finalDmg = isCrit ? currentDamage * 1.5 : currentDamage;
@@ -412,7 +476,7 @@ export class Unit {
     if (this.y > this.game.canvas.height - 150) this.y = this.game.canvas.height - 150;
   }
 
-  // Draw Routine with AI Image Sprites & High-Detail Fallbacks
+  // Draw Routine with Automatic Chroma-Keying (누끼 따기) & HD Canvas Sprites
   draw(ctx) {
     if (!this.isAlive) return;
     
@@ -437,7 +501,7 @@ export class Unit {
     if (this.isBoss) {
       ctx.beginPath();
       ctx.arc(0, 0, 34 + Math.sin(Date.now() * 0.008) * 5, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(139, 0, 255, 0.25)';
+      ctx.fillStyle = 'rgba(255, 0, 85, 0.25)';
       ctx.fill();
       ctx.strokeStyle = '#ff0055';
       ctx.lineWidth = 3;
@@ -453,23 +517,47 @@ export class Unit {
     
     ctx.scale(this.scale, this.scale);
     
-    // Check if dynamic AI Sprite Image is available
+    // Dynamic AI Sprite Image with Automatic Chroma-Keying (누끼)
     const imgGroup = SPRITE_IMAGES[this.team];
     const img = imgGroup ? imgGroup[this.type] : null;
     
     if (img && img.complete && img.naturalWidth > 0) {
-      // Render AI Sprite Image!
-      const drawW = 54;
-      const drawH = 54;
+      // Run Automatic Background Removal (누끼 따기)
+      const transparentCanvas = removeBlackBackground(img);
       
-      ctx.shadowBlur = 12;
+      const drawW = 56;
+      const drawH = 56;
+      
+      ctx.shadowBlur = 14;
       ctx.shadowColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
-      ctx.drawImage(img, -drawW / 2, -drawH / 2 - 6, drawW, drawH);
+      ctx.drawImage(transparentCanvas, -drawW / 2, -drawH / 2 - 6, drawW, drawH);
       ctx.shadowBlur = 0;
 
     } else {
-      // Fallback High-Detail Canvas Vector Art
-      if (this.team === 'player') {
+      // Custom High-Detail Canvas Art (For 6th Unit Crusader & Fallbacks)
+      if (this.type === 'crusader') {
+        // ⚔️ 십자군 (Crusader): Heavy Silver & Gold Plate Armor, Giant Tower Shield, Flaming Mace
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(-11, 4, 7, 12);
+        ctx.fillRect(4, 4, 7, 12);
+        
+        ctx.fillStyle = '#b8860b';
+        ctx.fillRect(-14, -14, 28, 22);
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillRect(-10, -12, 20, 18);
+        
+        // Red Cross Chest Plate
+        ctx.fillStyle = '#c0392b';
+        ctx.fillRect(-3, -12, 6, 18);
+        ctx.fillRect(-8, -8, 16, 6);
+        
+        // Giant Tower Shield in Hand
+        ctx.fillStyle = '#dfe6e9';
+        ctx.fillRect(8, -16, 12, 28);
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillRect(12, -12, 4, 20);
+        ctx.fillRect(10, -8, 8, 4);
+      } else if (this.team === 'player') {
         if (this.type === 'melee') {
           ctx.fillStyle = '#8b5a2b';
           ctx.beginPath();
@@ -477,37 +565,16 @@ export class Unit {
           ctx.fill();
           ctx.fillStyle = '#f1c40f';
           ctx.fillRect(6, -22, 3, 26);
-          ctx.fillRect(2, -18, 11, 3);
         } else if (this.type === 'ranged') {
           ctx.fillStyle = '#1e272e';
           ctx.fillRect(-10, -14, 20, 20);
-          ctx.fillStyle = '#dfe6e9';
-          ctx.fillRect(4, -8, 16, 5);
         } else if (this.type === 'medic') {
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(-12, -14, 24, 20);
-          ctx.strokeStyle = '#f1c40f';
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.ellipse(0, -30, 10, 4, 0, 0, Math.PI * 2);
-          ctx.stroke();
         } else if (this.type === 'sniper') {
           ctx.fillStyle = '#c0392b';
           ctx.fillRect(-10, -14, 20, 20);
-          ctx.fillStyle = '#ff4500';
-          ctx.fillRect(2, -9, 30, 4);
         } else if (this.type === 'tank') {
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.moveTo(-10, -10);
-          ctx.lineTo(-30, -30);
-          ctx.lineTo(-20, 5);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.moveTo(10, -10);
-          ctx.lineTo(30, -30);
-          ctx.lineTo(20, 5);
-          ctx.fill();
           ctx.fillStyle = '#f1c40f';
           ctx.fillRect(-12, -12, 24, 20);
         }
@@ -517,18 +584,12 @@ export class Unit {
           ctx.beginPath();
           ctx.arc(0, -6, 11, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = '#8b0000';
-          ctx.fillRect(6, -20, 3, 28);
         } else if (this.type === 'ranged') {
           ctx.fillStyle = '#8b00ff';
           ctx.fillRect(-10, -13, 20, 21);
         } else if (this.type === 'medic') {
           ctx.fillStyle = '#2c003e';
           ctx.fillRect(-12, -13, 24, 25);
-          ctx.fillStyle = '#00ff88';
-          ctx.beginPath();
-          ctx.arc(0, -20, 7, 0, Math.PI * 2);
-          ctx.fill();
         } else if (this.type === 'sniper') {
           ctx.fillStyle = 'rgba(139, 0, 255, 0.7)';
           ctx.beginPath();
@@ -537,8 +598,6 @@ export class Unit {
         } else if (this.type === 'tank') {
           ctx.fillStyle = '#800000';
           ctx.fillRect(-18, -16, 36, 24);
-          ctx.fillStyle = '#ff4500';
-          ctx.fillRect(-10, -12, 6, 16);
         }
       }
     }

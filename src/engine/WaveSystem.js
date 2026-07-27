@@ -75,8 +75,8 @@ export class WaveSystem {
     // AI Income addition
     this.aiMinerals += this.aiIncome;
     
-    const unitCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
-    const unitNames = { melee: '임프', ranged: '서큐버스', medic: '리치', sniper: '밴시', tank: '발록' };
+    const unitCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200, crusader: 250 };
+    const unitNames = { melee: '임프', ranged: '서큐버스', medic: '리치', sniper: '밴시', tank: '발록', crusader: '핏로드' };
     
     // AI Tactical Orbital Strike Check
     const playerUnits = this.game.entityManager.getEntitiesByTeam('player').filter(e => e.radius && e.type);
@@ -98,14 +98,15 @@ export class WaveSystem {
       const pRanged = this.spawners.player.filter(t => t === 'ranged').length;
       const pSniper = this.spawners.player.filter(t => t === 'sniper').length;
       const pTank = this.spawners.player.filter(t => t === 'tank').length;
+      const pCrusader = this.spawners.player.filter(t => t === 'crusader').length;
       
       let preferredUnit = 'melee';
-      if (pTank > 2) {
+      if (pTank + pCrusader > 2) {
         preferredUnit = 'sniper';
       } else if (pMelee >= pRanged && pMelee >= pTank) {
         preferredUnit = 'ranged';
       } else if (pRanged >= pMelee && pRanged >= pTank) {
-        preferredUnit = 'tank';
+        preferredUnit = 'crusader';
       } else if (this.spawners.enemy.length > 5 && !this.spawners.enemy.includes('medic')) {
         preferredUnit = 'medic';
       } else {
@@ -121,7 +122,7 @@ export class WaveSystem {
         
         let chosen = preferredUnit;
         if (unitCosts[chosen] > this.aiMinerals) {
-          const unitTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank'];
+          const unitTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank', 'crusader'];
           const affordable = unitTypes.filter(t => unitCosts[t] <= this.aiMinerals);
           if (affordable.length === 0) break;
           chosen = affordable[Math.floor(Math.random() * affordable.length)];

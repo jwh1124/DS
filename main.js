@@ -11,9 +11,9 @@ import { FloatingText } from './src/entities/FloatingText.js';
 
 export const WORLD_WIDTH = 2000;
 
-// Exorcism Theme: Unit Name Maps
-const PLAYER_UNIT_NAMES = { melee: '수도승', ranged: '엑소시스트', medic: '사제', sniper: '심판관', tank: '대천사' };
-const ENEMY_UNIT_NAMES = { melee: '임프', ranged: '서큐버스', medic: '리치', sniper: '밴시', tank: '발록' };
+// Exorcism Theme: Unit Name Maps (Including 6th Unit Crusader / Pit Lord)
+const PLAYER_UNIT_NAMES = { melee: '수도승', ranged: '엑소시스트', medic: '사제', sniper: '심판관', tank: '대천사', crusader: '십자군' };
+const ENEMY_UNIT_NAMES = { melee: '임프', ranged: '서큐버스', medic: '리치', sniper: '밴시', tank: '발록', crusader: '핏로드' };
 
 class Game {
   constructor() {
@@ -132,8 +132,8 @@ class Game {
     
     // Auto-Spend
     if (this.autoSpend && this.economy.minerals >= 50 && this.waveSystem.spawners.player.length < 50) {
-      const pTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank'];
-      const pCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
+      const pTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank', 'crusader'];
+      const pCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200, crusader: 250 };
       const affordable = pTypes.filter(t => pCosts[t] <= this.economy.minerals);
       if (affordable.length > 0) {
         const pick = affordable[Math.floor(Math.random() * affordable.length)];
@@ -158,25 +158,28 @@ class Game {
     this.entityManager.update(scaledDt);
     this.hud.update();
     
-    // Update Build Queue Badges
+    // Update Build Queue Badges (Including Crusader)
     const playerSpawners = this.waveSystem.spawners.player;
     const pMelee = playerSpawners.filter(t => t === 'melee').length;
     const pRanged = playerSpawners.filter(t => t === 'ranged').length;
     const pMedic = playerSpawners.filter(t => t === 'medic').length;
     const pSniper = playerSpawners.filter(t => t === 'sniper').length;
     const pTank = playerSpawners.filter(t => t === 'tank').length;
+    const pCrusader = playerSpawners.filter(t => t === 'crusader').length;
     
     const qMelee = document.getElementById('queue-melee');
     const qRanged = document.getElementById('queue-ranged');
     const qMedic = document.getElementById('queue-medic');
     const qSniper = document.getElementById('queue-sniper');
     const qTank = document.getElementById('queue-tank');
+    const qCrusader = document.getElementById('queue-crusader');
     
     if (qMelee) qMelee.textContent = `x${pMelee}`;
     if (qRanged) qRanged.textContent = `x${pRanged}`;
     if (qMedic) qMedic.textContent = `x${pMedic}`;
     if (qSniper) qSniper.textContent = `x${pSniper}`;
     if (qTank) qTank.textContent = `x${pTank}`;
+    if (qCrusader) qCrusader.textContent = `x${pCrusader}`;
     
     // Update Debug Monitor - Exorcism Theme Names
     const enemySpawners = this.waveSystem.spawners.enemy;
@@ -185,6 +188,7 @@ class Game {
     const aiMedic = enemySpawners.filter(t => t === 'medic').length;
     const aiSniper = enemySpawners.filter(t => t === 'sniper').length;
     const aiTank = enemySpawners.filter(t => t === 'tank').length;
+    const aiCrusader = enemySpawners.filter(t => t === 'crusader').length;
     
     const dbgAiMinerals = document.getElementById('debug-ai-minerals');
     const dbgAiIncome = document.getElementById('debug-ai-income');
@@ -194,8 +198,8 @@ class Game {
     
     if (dbgAiMinerals) dbgAiMinerals.textContent = `${Math.floor(this.waveSystem.aiMinerals)} 🔥`;
     if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 🔥`;
-    if (dbgAiUnits) dbgAiUnits.textContent = `임프${aiMelee} 서큐${aiRanged} 리치${aiMedic} 밴시${aiSniper} 발록${aiTank} (${enemySpawners.length}/50)`;
-    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `수도승${pMelee} 퇴마${pRanged} 사제${pMedic} 심판${pSniper} 천사${pTank} (${playerSpawners.length}/50)`;
+    if (dbgAiUnits) dbgAiUnits.textContent = `임프${aiMelee} 서큐${aiRanged} 리치${aiMedic} 밴시${aiSniper} 발록${aiTank} 핏로드${aiCrusader} (${enemySpawners.length}/50)`;
+    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `수도승${pMelee} 퇴마${pRanged} 사제${pMedic} 심판${pSniper} 천사${pTank} 십자군${pCrusader} (${playerSpawners.length}/50)`;
     if (dbgLastAction && this.waveSystem.lastActionLog) dbgLastAction.textContent = this.waveSystem.lastActionLog;
     
     if (this.moveCameraLeft) {
@@ -333,7 +337,7 @@ class Game {
   triggerRefundAction(type) {
     if (!this.isRunning) return;
     
-    const unitCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200 };
+    const unitCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200, crusader: 250 };
     
     if (!unitCosts[type]) return;
     
@@ -373,6 +377,7 @@ class Game {
       medic: { title: '⛪ 사제 (치유) [3] | 우클릭: 환속+96✝️', desc: '신성한 기도로 부상당한 아군의 상처를 치유.', hp: 100, dmg: '치유+30', range: '중거리' },
       sniper: { title: '🔥 이단심판관 (저격) [4] | 우클릭: 환속+120✝️', desc: '은탄환으로 초장거리에서 악마를 처형하는 심판자.', hp: 80, dmg: 75, range: '초장거리' },
       tank: { title: '👼 대천사 (광역심판) [5] | 우클릭: 환속+160✝️', desc: '신성한 불꽃으로 광역 심판을 내리는 천상의 존재.', hp: 300, dmg: '60(AOE)', range: '장거리' },
+      crusader: { title: '⚔️ 십자군 (수호탱커) [6] | 우클릭: 환속+200✝️', desc: '거대한 수호방패와 신성 방어 아우라로 아군을 보호.', hp: 450, dmg: '45(근접)', range: '근접' },
       income: { title: '🕯️ 제단 봉헌 [Q]', desc: '매 웨이브마다 추가 신앙심을 +15 획득.', hp: '-', dmg: '-', range: '-' },
       tech: { title: '📖 성서 계시 [W]', desc: '성당 방어탑 개방 및 성직자 능력 각성.', hp: '-', dmg: '-', range: '-' },
       ultimate: { title: '⚡ 천벌 [E]', desc: '전장의 모든 악마에게 150 신성 피해를 가하는 천상의 심판.', hp: '-', dmg: '150(부대)', range: '전체' }
@@ -408,7 +413,7 @@ class Game {
       btn.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         const type = btn.dataset.type;
-        if (['melee', 'ranged', 'medic', 'sniper', 'tank'].includes(type)) {
+        if (['melee', 'ranged', 'medic', 'sniper', 'tank', 'crusader'].includes(type)) {
           this.triggerRefundAction(type);
         }
       });
@@ -473,6 +478,7 @@ class Game {
         else if (key === '#' || key === '3') this.triggerRefundAction('medic');
         else if (key === '$' || key === '4') this.triggerRefundAction('sniper');
         else if (key === '%' || key === '5') this.triggerRefundAction('tank');
+        else if (key === '^' || key === '6') this.triggerRefundAction('crusader');
         return;
       }
       
@@ -491,6 +497,9 @@ class Game {
       } else if (key === '5') {
         const btn = document.querySelector('.build-btn[data-type="tank"]');
         if (btn) this.triggerAction('tank', parseInt(btn.dataset.cost), btn);
+      } else if (key === '6') {
+        const btn = document.querySelector('.build-btn[data-type="crusader"]');
+        if (btn) this.triggerAction('crusader', parseInt(btn.dataset.cost), btn);
       } else if (key === 'q') {
         const btn = document.querySelector('.build-btn[data-type="income"]');
         if (btn) this.triggerAction('income', parseInt(btn.dataset.cost), btn);
