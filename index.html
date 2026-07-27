@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="./style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Noto+Sans+KR:wght@400;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="game-container">
@@ -106,11 +106,11 @@
           <div class="debug-header">☠️ 악마 군단 정보</div>
           <div class="debug-row">
             <span class="lbl">악마 군단 사악한 힘:</span>
-            <span id="debug-ai-minerals" class="val gold">250 💎</span>
+            <span id="debug-ai-minerals" class="val gold">250 🔥</span>
           </div>
           <div class="debug-row">
             <span class="lbl">악마 군단 증원 속도:</span>
-            <span id="debug-ai-income" class="val green">+60 💎</span>
+            <span id="debug-ai-income" class="val green">+60 🔥</span>
           </div>
           <div class="debug-row border-top">
             <span class="lbl">악마 군단 소환진:</span>
@@ -133,72 +133,62 @@
 
         <!-- Bottom Controls -->
         <div class="bottom-controls">
-          <!-- Building Menu -->
+          <!-- Building Menu with High-Quality Custom Unit Illustrations -->
           <div class="panel build-menu">
             <div class="menu-title">✝️ 성직자 소환 (좌클릭: 소환 | ♻️ 우클릭: 80% 환속)</div>
             <div class="build-buttons">
-              <button class="build-btn" data-type="melee" data-cost="50">
+              <button class="build-btn unit-card-btn" data-type="melee" data-cost="50">
                 <span class="hotkey-badge">[1]</span>
                 <span class="queue-badge" id="queue-melee">x0</span>
-                <div class="icon melee-icon">
-                  <svg viewBox="0 0 24 24" class="svg-icon">
-                    <path fill="currentColor" d="M6.92 5.08L5.5 6.5l4.5 4.5-2.25 2.25L4 9.5 2.5 11l4.5 4.5 2.75-2.75L12.5 15.5l1.42-1.42-2.75-2.75 4.5-4.5-1.42-1.42-4.5 4.5-2.83-2.83zM19 14.5l-3 3 1.5 1.5 3-3L19 14.5z"/>
-                  </svg>
+                <div class="unit-illustration-container">
+                  <img src="./icons/monk.png" alt="수도승" class="unit-card-img" />
                 </div>
                 <div class="info">
-                  <span class="name">🙏 수도승 (근접)</span>
+                  <span class="name">🙏 수도승</span>
                   <span class="cost"><div class="mineral-icon small"></div> 50</span>
                 </div>
               </button>
-              <button class="build-btn" data-type="ranged" data-cost="100">
+              <button class="build-btn unit-card-btn" data-type="ranged" data-cost="100">
                 <span class="hotkey-badge">[2]</span>
                 <span class="queue-badge" id="queue-ranged">x0</span>
-                <div class="icon ranged-icon">
-                  <svg viewBox="0 0 24 24" class="svg-icon">
-                    <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 13v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                  </svg>
+                <div class="unit-illustration-container">
+                  <img src="./icons/exorcist.png" alt="엑소시스트" class="unit-card-img" />
                 </div>
                 <div class="info">
-                  <span class="name">✝️ 엑소시스트 (원거리)</span>
+                  <span class="name">✝️ 엑소시스트</span>
                   <span class="cost"><div class="mineral-icon small"></div> 100</span>
                 </div>
               </button>
-              <button class="build-btn" data-type="medic" data-cost="120">
+              <button class="build-btn unit-card-btn" data-type="medic" data-cost="120">
                 <span class="hotkey-badge">[3]</span>
                 <span class="queue-badge" id="queue-medic">x0</span>
-                <div class="icon medic-icon">
-                  <svg viewBox="0 0 24 24" class="svg-icon">
-                    <path fill="currentColor" d="M19 10.5h-5.5V5h-3v5.5H5v3h5.5V19h3v-5.5H19v-3z"/>
-                  </svg>
+                <div class="unit-illustration-container">
+                  <img src="./icons/priest.png" alt="사제" class="unit-card-img" />
                 </div>
                 <div class="info">
-                  <span class="name">⛪ 사제 (치유)</span>
+                  <span class="name">⛪ 사제</span>
                   <span class="cost"><div class="mineral-icon small"></div> 120</span>
                 </div>
               </button>
-              <button class="build-btn" data-type="sniper" data-cost="150">
+              <button class="build-btn unit-card-btn" data-type="sniper" data-cost="150">
                 <span class="hotkey-badge">[4]</span>
                 <span class="queue-badge" id="queue-sniper">x0</span>
-                <div class="icon sniper-icon">
-                  <svg viewBox="0 0 24 24" class="svg-icon">
-                    <path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 17.93V18h-2v1.93A8 8 0 0 1 4.07 13H6v-2H4.07A8 8 0 0 1 11 4.07V6h2V4.07A8 8 0 0 1 19.93 11H18v2h1.93A8 8 0 0 1 13 19.93z"/>
-                  </svg>
+                <div class="unit-illustration-container">
+                  <img src="./icons/inquisitor.png" alt="이단심판관" class="unit-card-img" />
                 </div>
                 <div class="info">
-                  <span class="name">🔥 이단심판관 (저격)</span>
+                  <span class="name">🔥 이단심판관</span>
                   <span class="cost"><div class="mineral-icon small"></div> 150</span>
                 </div>
               </button>
-              <button class="build-btn" data-type="tank" data-cost="200">
+              <button class="build-btn unit-card-btn" data-type="tank" data-cost="200">
                 <span class="hotkey-badge">[5]</span>
                 <span class="queue-badge" id="queue-tank">x0</span>
-                <div class="icon tank-icon">
-                  <svg viewBox="0 0 24 24" class="svg-icon">
-                    <path fill="currentColor" d="M20 12c0-1.1-.9-2-2-2h-3L13 6h-2l-2 4H6c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4zM7 15c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm5 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm5 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
-                  </svg>
+                <div class="unit-illustration-container">
+                  <img src="./icons/archangel.png" alt="대천사" class="unit-card-img" />
                 </div>
                 <div class="info">
-                  <span class="name">👼 대천사 (광역심판)</span>
+                  <span class="name">👼 대천사</span>
                   <span class="cost"><div class="mineral-icon small"></div> 200</span>
                 </div>
               </button>
@@ -207,7 +197,7 @@
           
           <!-- Economy Menu -->
           <div class="panel economy-menu">
-            <div class="menu-title">💎 교단 경제 & 성물 (FAITH)</div>
+            <div class="menu-title">💎 교단 경제 & 성물</div>
             <div class="build-buttons">
               <button class="build-btn income-btn" data-type="income" data-cost="120">
                 <span class="hotkey-badge">[Q]</span>
@@ -238,7 +228,7 @@
           
           <!-- Special Menu -->
           <div class="panel special-menu">
-            <div class="menu-title">⚡ 신성 기적 (MIRACLE)</div>
+            <div class="menu-title">⚡ 신성 기적</div>
             <div class="build-buttons">
               <button class="build-btn ultimate-btn" data-type="ultimate" data-cost="500">
                 <span class="hotkey-badge">[E]</span>

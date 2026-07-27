@@ -30,6 +30,9 @@ export class Unit {
     this.radius = type === 'tank' ? 28 : 20;
     this.isAlive = true;
     
+    // Ethereal Floating Units (Priest, Archangel, Succubus, Lich, Banshee)
+    this.isFloating = (type === 'medic' || type === 'tank' || (team === 'enemy' && (type === 'ranged' || type === 'sniper')));
+    
     this.state = 'moving';
     this.target = null;
     this.attackCooldown = 0;
@@ -94,7 +97,6 @@ export class Unit {
       this.hp = 0;
       this.isAlive = false;
       
-      // Award Kill Bounty to opposing team
       const bountyMap = { melee: 5, ranged: 10, medic: 12, sniper: 15, tank: 20 };
       const bounty = this.isBoss ? 100 : (bountyMap[this.type] || 10);
       if (this.team === 'enemy' && this.game.economy) {
@@ -188,7 +190,8 @@ export class Unit {
   update(dt) {
     if (!this.isAlive) return;
     
-    this.animTime += dt * 8;
+    // Animation timing - smooth float frequency
+    this.animTime += dt * (this.isFloating ? 4 : 8);
     
     if (this.attackCooldown > 0) {
       this.attackCooldown -= dt;
@@ -220,7 +223,22 @@ export class Unit {
       this.x += currentSpeed * this.dir * dt;
     }
     
-    if (this.state === 'moving' && Math.random() > 0.5) {
+    // Ethereal floating light / shadow trail particles for airborne units
+    if (this.isFloating && Math.random() > 0.4) {
+      const pColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
+      const floatOffsetY = Math.sin(this.animTime) * 6 - 12;
+      this.game.entityManager.addEntity(new Particle(
+        this.game, 
+        this.x - this.dir * 12, 
+        this.y + floatOffsetY + (Math.random() - 0.5) * 8, 
+        pColor, 
+        0.4, 
+        25, 
+        Math.PI / 2 + (Math.random() - 0.5) * 0.5, 
+        Math.random() * 3 + 1.5,
+        'spark'
+      ));
+    } else if (this.state === 'moving' && Math.random() > 0.5) {
       const trailAngle = this.dir === 1 ? Math.PI + (Math.random()-0.5)*0.5 : (Math.random()-0.5)*0.5;
       const pColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
       this.game.entityManager.addEntity(new Particle(
@@ -241,7 +259,6 @@ export class Unit {
   
   performAttack(target) {
     if (this.type === 'medic') {
-      // Priest (Player) / Lich (Enemy) Healing / Curse Pulse
       if (target && target.isAlive && target.type !== undefined) {
         const healAmt = 30 * this.tier;
         target.hp = Math.min(target.maxHp, target.hp + healAmt);
@@ -253,7 +270,6 @@ export class Unit {
         
         this.game.entityManager.addEntity(new FloatingText(this.game, healText, target.x, target.y - 40, healColor, false));
         
-        // Holy Cross / Dark Soul Ring shockwave
         this.game.entityManager.addEntity(new Particle(
           this.game, target.x, target.y, healColor, 0.4, 0, 0, 32, 'shockwave'
         ));
@@ -268,7 +284,6 @@ export class Unit {
 
     let currentDamage = this.hasAura ? this.damage * 1.4 : this.damage;
     
-    // 2x Siege Damage Multiplier when attacking Base structures!
     if (target.maxHp && target.techLevel !== undefined) {
       currentDamage *= 2.0;
     }
@@ -278,7 +293,6 @@ export class Unit {
     }
     
     if (this.type === 'sniper') {
-      // Inquisitor (Player): Purifying Holy Fire Spear / Banshee (Enemy): Phantom Screamer Beam
       const projColor = this.team === 'player' ? '#ff4500' : '#8b00ff';
       this.game.entityManager.addEntity(new Projectile(
         this.game, 
@@ -296,7 +310,6 @@ export class Unit {
       ));
 
     } else if (this.type === 'ranged') {
-      // Exorcist (Player): Holy Water Flask / Succubus (Enemy): Hellfire Energy Orb
       const projColor = this.team === 'player' ? '#f1c40f' : '#9b59b6';
       this.game.entityManager.addEntity(new Projectile(
         this.game, 
@@ -312,7 +325,6 @@ export class Unit {
         this.game, this.x + (this.dir * 26 * this.scale), this.y - 6 * this.scale, projColor, 0.2, 0, 0, 12, 'spark'
       ));
     } else if (this.type === 'tank') {
-      // Archangel (Player): Divine Judgement Holy Cleave / Balrog (Enemy): Magma Smash
       const projColor = this.team === 'player' ? '#f1c40f' : '#ff2d55';
       this.game.entityManager.addEntity(new Projectile(
         this.game, 
@@ -325,7 +337,6 @@ export class Unit {
         true
       ));
     } else {
-      // Monk (Player): Holy Fist / Imp (Enemy): Hellfire Claw
       const isCrit = Math.random() < 0.18;
       const finalDmg = isCrit ? currentDamage * 1.5 : currentDamage;
       target.takeDamage(finalDmg, isCrit);
@@ -382,25 +393,29 @@ export class Unit {
     if (this.y > this.game.canvas.height - 150) this.y = this.game.canvas.height - 150;
   }
 
-  // Visual Sprite Drawing Overhaul: Exorcism Clergy vs Demon Legion
+  // Visual Sprite & Movement Physics Overhaul: Ethereal Hover vs Ground Walking
   draw(ctx) {
     if (!this.isAlive) return;
     
     ctx.save();
     
-    // Ground Shadow
+    // Ethereal Flight Elevation / Bobbing
+    const floatY = this.isFloating ? Math.sin(this.animTime) * 6 - 14 : 0;
+    
+    // Ground Shadow (smaller & lighter when floating higher)
+    const shadowScale = this.isFloating ? 0.7 : 1.0;
     ctx.beginPath();
-    ctx.ellipse(this.x, this.y + (16 * this.scale), 18 * this.scale, 7 * this.scale, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.ellipse(this.x, this.y + (16 * this.scale), 18 * this.scale * shadowScale, 7 * this.scale * shadowScale, 0, 0, Math.PI * 2);
+    ctx.fillStyle = this.isFloating ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.45)';
     ctx.fill();
     
     const recoilX = this.recoil * 6 * this.dir;
-    ctx.translate(this.x - recoilX, this.y);
+    ctx.translate(this.x - recoilX, this.y + floatY);
     
-    const bobY = this.state === 'moving' ? Math.sin(this.animTime) * 2.5 : 0;
-    ctx.translate(0, bobY);
+    const walkBobY = (!this.isFloating && this.state === 'moving') ? Math.sin(this.animTime) * 2.5 : 0;
+    ctx.translate(0, walkBobY);
     
-    // Boss Demon Aura
+    // Boss Aura
     if (this.isBoss) {
       ctx.beginPath();
       ctx.arc(0, 0, 32 + Math.sin(Date.now() * 0.008) * 5, 0, Math.PI * 2);
@@ -422,15 +437,14 @@ export class Unit {
     
     if (this.team === 'player') {
       // =====================================
-      // ⛪ CLERGY (PLAYER) OCCULT SPRITES
+      // ⛪ CLERGY (PLAYER) SPRITES & WINGS
       // =====================================
       if (this.type === 'melee') {
-        // 🙏 수도승 (Monk): Hooded robe, rosary cross staff, holy aura
-        ctx.fillStyle = '#6e4726'; // Brown robe legs
+        // 🙏 수도승 (Monk)
+        ctx.fillStyle = '#6e4726';
         ctx.fillRect(-8, 6, 6, 10);
         ctx.fillRect(2, 6, 6, 10);
         
-        // Brown Robe Body
         ctx.fillStyle = '#8b5a2b';
         ctx.beginPath();
         ctx.moveTo(-11, -12);
@@ -440,17 +454,14 @@ export class Unit {
         ctx.closePath();
         ctx.fill();
         
-        // Golden Belt
         ctx.fillStyle = '#f1c40f';
         ctx.fillRect(-8, -2, 16, 4);
         
-        // Hood & Head
         ctx.fillStyle = '#6e4726';
         ctx.beginPath();
         ctx.arc(0, -18, 9, 0, Math.PI * 2);
         ctx.fill();
         
-        // Glowing Holy Face Under Hood
         ctx.fillStyle = '#f1c40f';
         ctx.shadowBlur = 10;
         ctx.shadowColor = '#f1c40f';
@@ -459,10 +470,9 @@ export class Unit {
         ctx.fill();
         ctx.shadowBlur = 0;
         
-        // Holy Rosary Cross Staff in Hand
         ctx.fillStyle = '#d4a017';
         ctx.fillRect(8, -26, 3, 32);
-        ctx.fillRect(4, -22, 11, 3); // Crossbar
+        ctx.fillRect(4, -22, 11, 3);
         ctx.shadowBlur = 12;
         ctx.shadowColor = '#f1c40f';
         ctx.fillStyle = '#ffffff';
@@ -470,97 +480,87 @@ export class Unit {
         ctx.shadowBlur = 0;
 
       } else if (this.type === 'ranged') {
-        // ✝️ 엑소시스트 (Exorcist): Black coat, clerical collar, wide brim hat, silver cross pistol
-        ctx.fillStyle = '#111'; // Black pants
+        // ✝️ 엑소시스트 (Exorcist)
+        ctx.fillStyle = '#111';
         ctx.fillRect(-8, 6, 5, 11);
         ctx.fillRect(2, 6, 5, 11);
         
-        // Black Priest Coat
         ctx.fillStyle = '#1e272e';
         ctx.fillRect(-10, -12, 20, 18);
         
-        // White Clerical Collar
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(-3, -13, 6, 3);
         
-        // Head & Priest Hat
         ctx.fillStyle = '#2c3e50';
         ctx.beginPath();
         ctx.arc(0, -20, 7, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#1e272e';
-        ctx.fillRect(-12, -23, 24, 3); // Hat brim
-        ctx.fillRect(-6, -29, 12, 6);  // Hat crown
+        ctx.fillRect(-12, -23, 24, 3);
+        ctx.fillRect(-6, -29, 12, 6);
         
-        // Silver Holy Pistol / Flask
         ctx.fillStyle = '#dfe6e9';
         ctx.fillRect(4, -8, 16, 5);
         ctx.fillStyle = '#f1c40f';
         ctx.shadowBlur = 8;
         ctx.shadowColor = '#f1c40f';
-        ctx.fillRect(10, -10, 4, 3); // Holy flask glowing top
+        ctx.fillRect(10, -10, 4, 3);
         ctx.shadowBlur = 0;
 
       } else if (this.type === 'medic') {
-        // ⛪ 사제 (Priest): White & Gold cassock, glowing golden halo above head, holy book
-        ctx.fillStyle = '#dcdde1'; // White robe legs
+        // ⛪ 사제 (Priest) - Floating Ethereal Cleric
+        ctx.fillStyle = '#dcdde1';
         ctx.fillRect(-8, 6, 6, 10);
         ctx.fillRect(2, 6, 6, 10);
         
-        // White & Gold Ceremonial Robe
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(-12, -14, 24, 20);
-        ctx.fillStyle = '#f1c40f'; // Golden stole
+        ctx.fillStyle = '#f1c40f';
         ctx.fillRect(-4, -14, 8, 20);
         
-        // Head
         ctx.fillStyle = '#f5f6fa';
         ctx.beginPath();
         ctx.arc(0, -20, 8, 0, Math.PI * 2);
         ctx.fill();
         
-        // Glowing Golden Halo above head
+        // Halo Floating & Pulsing
+        const haloPulse = Math.sin(Date.now() * 0.008) * 1.5;
         ctx.strokeStyle = '#f1c40f';
         ctx.lineWidth = 2.5;
-        ctx.shadowBlur = 14;
+        ctx.shadowBlur = 16;
         ctx.shadowColor = '#f1c40f';
         ctx.beginPath();
-        ctx.ellipse(0, -32, 10, 4, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, -32 + haloPulse, 11, 4, 0, 0, Math.PI * 2);
         ctx.stroke();
         ctx.shadowBlur = 0;
         
-        // Holy Bible in Hand
         ctx.fillStyle = '#8b5a2b';
         ctx.fillRect(6, -6, 10, 12);
         ctx.fillStyle = '#f1c40f';
-        ctx.fillRect(10, -4, 2, 8); // Golden cross on book
+        ctx.fillRect(10, -4, 2, 8);
 
       } else if (this.type === 'sniper') {
-        // 🔥 이단심판관 (Inquisitor): Crimson coat, executioner mask, flaming holy musket
+        // 🔥 이단심판관 (Inquisitor)
         ctx.fillStyle = '#2c3e50';
         ctx.fillRect(-8, 6, 5, 11);
         ctx.fillRect(2, 6, 5, 11);
         
-        // Crimson Coat
         ctx.fillStyle = '#c0392b';
         ctx.fillRect(-10, -14, 20, 20);
         ctx.fillStyle = '#900c3f';
         ctx.fillRect(-6, -14, 12, 20);
         
-        // Masked Head
         ctx.fillStyle = '#2c3e50';
         ctx.beginPath();
         ctx.arc(0, -21, 8, 0, Math.PI * 2);
         ctx.fill();
         
-        // Glowing Red Visor
         ctx.fillStyle = '#e74c3c';
         ctx.shadowBlur = 10;
         ctx.shadowColor = '#e74c3c';
         ctx.fillRect(-2, -22, 8, 3);
         ctx.shadowBlur = 0;
         
-        // Long Holy Musket with Flaming Tip
         ctx.fillStyle = '#2d3436';
         ctx.fillRect(2, -9, 32, 4);
         ctx.fillStyle = '#ff4500';
@@ -572,35 +572,32 @@ export class Unit {
         ctx.shadowBlur = 0;
 
       } else if (this.type === 'tank') {
-        // 👼 대천사 (Archangel): Giant golden holy wings, golden armor, flaming holy sword
-        // Holy Wings Behind
-        const wingFlicker = Math.sin(Date.now() * 0.006) * 3;
+        // 👼 대천사 (Archangel) - Majestic Divine Wing Flight
+        const wingFlap = Math.sin(Date.now() * 0.008) * 6;
         ctx.fillStyle = '#ffffff';
-        ctx.shadowBlur = 16;
+        ctx.shadowBlur = 20;
         ctx.shadowColor = '#f1c40f';
-        // Left Wing
+        // Left Wing Flap
         ctx.beginPath();
         ctx.moveTo(-10, -10);
-        ctx.lineTo(-32 - wingFlicker, -32);
-        ctx.lineTo(-24, 4);
+        ctx.lineTo(-34 - wingFlap, -34 - wingFlap);
+        ctx.lineTo(-24, 6);
         ctx.closePath();
         ctx.fill();
-        // Right Wing
+        // Right Wing Flap
         ctx.beginPath();
         ctx.moveTo(10, -10);
-        ctx.lineTo(32 + wingFlicker, -32);
-        ctx.lineTo(24, 4);
+        ctx.lineTo(34 + wingFlap, -34 - wingFlap);
+        ctx.lineTo(24, 6);
         ctx.closePath();
         ctx.fill();
         ctx.shadowBlur = 0;
         
-        // Golden Armor Body
         ctx.fillStyle = '#b8860b';
         ctx.fillRect(-14, -14, 28, 22);
         ctx.fillStyle = '#f1c40f';
         ctx.fillRect(-10, -12, 20, 18);
         
-        // Head & Golden Crown Helmet
         ctx.fillStyle = '#f1c40f';
         ctx.beginPath();
         ctx.arc(0, -22, 9, 0, Math.PI * 2);
@@ -608,10 +605,9 @@ export class Unit {
         ctx.fillStyle = '#ffffff';
         ctx.shadowBlur = 10;
         ctx.shadowColor = '#ffffff';
-        ctx.fillRect(-4, -24, 8, 4); // Glowing eyes
+        ctx.fillRect(-4, -24, 8, 4);
         ctx.shadowBlur = 0;
         
-        // Flaming Greatsword
         ctx.fillStyle = '#ffaa00';
         ctx.shadowBlur = 18;
         ctx.shadowColor = '#ffaa00';
@@ -626,21 +622,19 @@ export class Unit {
       }
     } else {
       // =====================================
-      // ☠️ DEMONS (ENEMY) OCCULT SPRITES
+      // ☠️ DEMONS (ENEMY) SPRITES & FLIGHT
       // =====================================
       if (this.type === 'melee') {
-        // 👿 임프 (Imp): Small red horned demon, bat wings, pitchfork
+        // 👿 임프 (Imp)
         ctx.fillStyle = '#4a0080';
         ctx.fillRect(-7, 6, 5, 9);
         ctx.fillRect(2, 6, 5, 9);
         
-        // Red Demon Body
         ctx.fillStyle = '#c0392b';
         ctx.beginPath();
         ctx.arc(0, -6, 10, 0, Math.PI * 2);
         ctx.fill();
         
-        // Curved Horns
         ctx.fillStyle = '#111';
         ctx.beginPath();
         ctx.moveTo(-6, -14);
@@ -655,7 +649,6 @@ export class Unit {
         ctx.closePath();
         ctx.fill();
         
-        // Pitchfork
         ctx.fillStyle = '#8b0000';
         ctx.fillRect(6, -20, 2, 28);
         ctx.fillRect(3, -20, 8, 2);
@@ -663,27 +656,24 @@ export class Unit {
         ctx.fillRect(9, -24, 2, 5);
 
       } else if (this.type === 'ranged') {
-        // 💃 서큐버스 (Succubus): Purple demonic dress, wings, horns, shadow orb
-        // Bat Wings
+        // 💃 서큐버스 (Succubus) - Flying Demon Wings
+        const batFlap = Math.sin(Date.now() * 0.01) * 4;
         ctx.fillStyle = '#4a0080';
         ctx.beginPath();
         ctx.moveTo(0, -10);
-        ctx.lineTo(-24, -20);
-        ctx.lineTo(-16, 2);
+        ctx.lineTo(-26 - batFlap, -22 - batFlap);
+        ctx.lineTo(-16, 4);
         ctx.closePath();
         ctx.fill();
         
-        // Dark Purple Body
         ctx.fillStyle = '#8b00ff';
         ctx.fillRect(-9, -12, 18, 20);
         
-        // Head & Horns
         ctx.fillStyle = '#9b59b6';
         ctx.beginPath();
         ctx.arc(0, -18, 7, 0, Math.PI * 2);
         ctx.fill();
         
-        // Glowing Crimson Eyes
         ctx.fillStyle = '#ff0055';
         ctx.shadowBlur = 8;
         ctx.shadowColor = '#ff0055';
@@ -691,8 +681,7 @@ export class Unit {
         ctx.shadowBlur = 0;
 
       } else if (this.type === 'medic') {
-        // 💀 리치 (Lich): Skeletal floating sorcerer, skull staff
-        // Floating Dark Robe
+        // 💀 리치 (Lich) - Floating Sorcerer Miasma
         ctx.fillStyle = '#2c003e';
         ctx.beginPath();
         ctx.moveTo(-11, -12);
@@ -702,13 +691,11 @@ export class Unit {
         ctx.closePath();
         ctx.fill();
         
-        // Skeletal Skull Head
         ctx.fillStyle = '#e0e0e0';
         ctx.beginPath();
         ctx.arc(0, -20, 7, 0, Math.PI * 2);
         ctx.fill();
         
-        // Green Eye Sockets
         ctx.fillStyle = '#00ff88';
         ctx.shadowBlur = 8;
         ctx.shadowColor = '#00ff88';
@@ -716,7 +703,6 @@ export class Unit {
         ctx.fillRect(2, -21, 3, 3);
         ctx.shadowBlur = 0;
         
-        // Skull Staff
         ctx.fillStyle = '#4a0080';
         ctx.fillRect(8, -24, 3, 30);
         ctx.fillStyle = '#00ff88';
@@ -728,21 +714,20 @@ export class Unit {
         ctx.shadowBlur = 0;
 
       } else if (this.type === 'sniper') {
-        // 👻 밴시 (Banshee): Floating ghost shadow veil, red glowing eyes
-        const ghostFloat = Math.sin(Date.now() * 0.008) * 3;
-        ctx.fillStyle = 'rgba(139, 0, 255, 0.6)';
-        ctx.shadowBlur = 14;
+        // 👻 밴시 (Banshee) - Ethereal Ghost Glide
+        const ghostFloat = Math.sin(Date.now() * 0.008) * 4;
+        ctx.fillStyle = 'rgba(139, 0, 255, 0.65)';
+        ctx.shadowBlur = 16;
         ctx.shadowColor = '#8b00ff';
         ctx.beginPath();
         ctx.moveTo(0, -24 + ghostFloat);
-        ctx.lineTo(-16, 12 + ghostFloat);
+        ctx.lineTo(-18, 14 + ghostFloat);
         ctx.lineTo(0, 4 + ghostFloat);
-        ctx.lineTo(16, 12 + ghostFloat);
+        ctx.lineTo(18, 14 + ghostFloat);
         ctx.closePath();
         ctx.fill();
         ctx.shadowBlur = 0;
         
-        // Glowing Red Eyes
         ctx.fillStyle = '#ff0055';
         ctx.shadowBlur = 12;
         ctx.shadowColor = '#ff0055';
@@ -751,19 +736,17 @@ export class Unit {
         ctx.shadowBlur = 0;
 
       } else if (this.type === 'tank') {
-        // 🔥 발록 (Balrog): Magma demon lord, huge horns, flaming whip
+        // 🔥 발록 (Balrog)
         ctx.fillStyle = '#4a0000';
         ctx.fillRect(-16, 6, 10, 14);
         ctx.fillRect(4, 6, 10, 14);
         
-        // Magma Body
         ctx.fillStyle = '#800000';
         ctx.fillRect(-18, -16, 36, 24);
-        ctx.fillStyle = '#ff4500'; // Magma cracks
+        ctx.fillStyle = '#ff4500';
         ctx.fillRect(-10, -12, 6, 16);
         ctx.fillRect(4, -8, 6, 12);
         
-        // Giant Horns
         ctx.fillStyle = '#111';
         ctx.beginPath();
         ctx.moveTo(-10, -20);
@@ -778,7 +761,6 @@ export class Unit {
         ctx.closePath();
         ctx.fill();
         
-        // Flaming Whip
         ctx.fillStyle = '#ff2d55';
         ctx.shadowBlur = 16;
         ctx.shadowColor = '#ff2d55';
@@ -800,7 +782,7 @@ export class Unit {
     const barW = Math.max(34, 34 * this.scale);
     const barH = this.isBoss ? 7 : 5;
     const barX = this.x - barW / 2;
-    const barY = this.y - (this.radius * this.scale) - 18;
+    const barY = this.y - (this.radius * this.scale) - 18 + floatY;
     
     ctx.fillStyle = 'rgba(10, 15, 20, 0.85)';
     ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
