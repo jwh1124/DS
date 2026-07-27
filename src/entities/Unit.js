@@ -15,10 +15,8 @@ const UNIT_STATS = {
 const processedCanvasMap = new Map();
 
 function removeBackground(img) {
-  if (processedCanvasMap.has(img.src)) {
-    return processedCanvasMap.get(img.src);
-  }
-  
+  if (processedCanvasMap.has(img.src)) return processedCanvasMap.get(img.src);
+
   const canvas = document.createElement('canvas');
   const w = img.naturalWidth || img.width || 64;
   const h = img.naturalHeight || img.height || 64;
@@ -26,51 +24,68 @@ function removeBackground(img) {
   canvas.height = h;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(img, 0, 0);
-  
+
   try {
     const imgData = ctx.getImageData(0, 0, w, h);
     const data = imgData.data;
-    
-    // Sample the 4 corners to detect the image background color palette
-    const corners = [
-      [0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]
-    ];
-    let bgR = 0, bgG = 0, bgB = 0;
-    corners.forEach(([cx, cy]) => {
-      const idx = (cy * w + cx) * 4;
-      bgR += data[idx];
-      bgG += data[idx + 1];
-      bgB += data[idx + 2];
+    const samples = [];
+    const step = Math.max(1, Math.floor(Math.min(w, h) / 64));
+    for (let x = 0; x < w; x += step) samples.push([x, 0], [x, h - 1]);
+    for (let y = step; y < h - 1; y += step) samples.push([0, y], [w - 1, y]);
+
+    let bgR = 0;
+    let bgG = 0;
+    let bgB = 0;
+    samples.forEach(([x, y]) => {
+      const index = (y * w + x) * 4;
+      bgR += data[index];
+      bgG += data[index + 1];
+      bgB += data[index + 2];
     });
-    bgR = Math.round(bgR / 4);
-    bgG = Math.round(bgG / 4);
-    bgB = Math.round(bgB / 4);
-    
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
+    bgR /= samples.length;
+    bgG /= samples.length;
+    bgB /= samples.length;
 
-      // Calculate color distance to sampled background color
-      const dist = Math.sqrt((r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2);
-      const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
-      const colorDiff = Math.max(r, g, b) - Math.min(r, g, b);
+    const backgroundDistance = (pixel) => {
+      const index = pixel * 4;
+      return Math.hypot(data[index] - bgR, data[index + 1] - bgG, data[index + 2] - bgB);
+    };
+    const visited = new Uint8Array(w * h);
+    const queue = new Int32Array(w * h);
+    const threshold = 52;
+    let head = 0;
+    let tail = 0;
+    const queuePixel = (pixel) => {
+      if (visited[pixel] || backgroundDistance(pixel) > threshold) return;
+      visited[pixel] = 1;
+      queue[tail++] = pixel;
+    };
 
-      // Cut out matching background color OR dark/black compression artifacts
-      if (dist < 75 || (brightness < 60 && colorDiff < 40)) {
-        if (dist < 50 || brightness < 35) {
-          data[i + 3] = 0; // 100% Transparent
-        } else {
-          // Feathered transparent edge
-          data[i + 3] = Math.floor(((dist - 50) / 25) * 255);
-        }
-      }
+    for (let x = 0; x < w; x++) {
+      queuePixel(x);
+      queuePixel((h - 1) * w + x);
     }
-    
+    for (let y = 1; y < h - 1; y++) {
+      queuePixel(y * w);
+      queuePixel(y * w + w - 1);
+    }
+    while (head < tail) {
+      const pixel = queue[head++];
+      const x = pixel % w;
+      const y = Math.floor(pixel / w);
+      if (x > 0) queuePixel(pixel - 1);
+      if (x < w - 1) queuePixel(pixel + 1);
+      if (y > 0) queuePixel(pixel - w);
+      if (y < h - 1) queuePixel(pixel + w);
+    }
+
+    for (let pixel = 0; pixel < visited.length; pixel++) {
+      if (visited[pixel]) data[pixel * 4 + 3] = 0;
+    }
     ctx.putImageData(imgData, 0, 0);
     processedCanvasMap.set(img.src, canvas);
     return canvas;
-  } catch (e) {
+  } catch {
     return img;
   }
 }
@@ -87,7 +102,8 @@ const SPRITE_IMAGES = {
   },
   enemy: {
     melee: new Image(),
-    ranged: new Image()
+    ranged: new Image(),
+    tank: new Image()
   }
 };
 
@@ -100,6 +116,13 @@ SPRITE_IMAGES.player.tank.src = baseUrl + 'sprites/archangel.jpg';
 SPRITE_IMAGES.player.crusader.src = baseUrl + 'sprites/crusader.jpg';
 SPRITE_IMAGES.enemy.melee.src = baseUrl + 'sprites/imp.jpg';
 SPRITE_IMAGES.enemy.ranged.src = baseUrl + 'sprites/succubus.jpg';
+SPRITE_IMAGES.enemy.tank.src = baseUrl + 'sprites/balrog-warlord-v2.png';
+SPRITE_IMAGES.enemy.tank.hasNativeAlpha = true;
+
+const SPRITE_FACING = {
+  player: { melee: 1, ranged: 1, medic: 1, sniper: 1, tank: 1, crusader: 1 },
+  enemy: { melee: -1, ranged: 1, medic: -1, sniper: -1, tank: -1, crusader: -1 }
+};
 
 export class Unit {
   constructor(game, x, y, team, type) {
@@ -163,6 +186,7 @@ export class Unit {
   
   makeBoss() {
     this.isBoss = true;
+    this.isAirUnit = false;
     this.scale = 2.5;
     this.maxHp *= 5;
     this.hp = this.maxHp;
@@ -564,7 +588,8 @@ export class Unit {
       ctx.shadowBlur = 0;
     }
     
-    if (this.dir === -1) {
+    const nativeFacing = SPRITE_FACING[this.team]?.[this.type] ?? this.dir;
+    if (this.dir !== nativeFacing) {
       ctx.scale(-1, 1);
     }
     
@@ -575,10 +600,10 @@ export class Unit {
     
     if (img && img.complete && img.naturalWidth > 0) {
       // Guaranteed 100% Transparent Background Removal (누끼 따기)
-      const transparentCanvas = removeBackground(img);
+      const transparentCanvas = img.hasNativeAlpha ? img : removeBackground(img);
       
-      const drawW = 58;
-      const drawH = 58;
+      const drawH = this.isBoss ? 62 : 58;
+      const drawW = drawH * ((img.naturalWidth || drawH) / (img.naturalHeight || drawH));
       
       ctx.shadowBlur = 14;
       ctx.shadowColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
