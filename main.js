@@ -98,12 +98,57 @@ class Game {
   
   start() {
     this.isRunning = true;
-    document.getElementById('game-over-screen').classList.add('hidden');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    if (gameOverScreen) gameOverScreen.classList.add('hidden');
     this.loop.start();
     this.waveSystem.start();
     this.economy.start();
   }
   
+  resetGame() {
+    this.isRunning = false;
+    this.loop.stop();
+    this.waveSystem.stop();
+    this.economy.stop();
+    
+    // Clear all entities
+    this.entityManager.clear();
+    
+    // Re-create bases
+    this.playerBase = new Base(this, 150, this.canvas.height / 2, 'player', 10000);
+    this.enemyBase = new Base(this, WORLD_WIDTH - 150, this.canvas.height / 2, 'enemy', 10000);
+    this.entityManager.addEntity(this.playerBase);
+    this.entityManager.addEntity(this.enemyBase);
+    
+    // Reset economy & wave system
+    this.economy.minerals = 250;
+    this.economy.income = 60;
+    this.waveSystem.spawners = { player: [], enemy: [] };
+    this.waveSystem.aiMinerals = 250;
+    this.waveSystem.aiIncome = 60;
+    this.waveSystem.waveTimer = 15;
+    this.waveSystem.waveCount = 1;
+    this.ultimateCooldown = 0;
+    
+    // Reset Tech button UI
+    const techBtn = document.querySelector('.build-btn[data-type="tech"]');
+    if (techBtn) {
+      techBtn.dataset.cost = 800;
+      techBtn.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> 800`;
+      techBtn.querySelector('.name').innerHTML = `📖 성서 계시 (Lv.2)`;
+      techBtn.style.opacity = '1';
+    }
+    
+    // Hide game over screen & show UI
+    const gameOverScreen = document.getElementById('game-over-screen');
+    if (gameOverScreen) gameOverScreen.classList.add('hidden');
+    
+    document.getElementById('title-screen').style.display = 'none';
+    document.getElementById('ui-layer').style.display = 'block';
+    
+    this.start();
+  }
+
   stop(winner) {
     this.isRunning = false;
     this.loop.stop();
@@ -114,16 +159,16 @@ class Game {
     const title = document.getElementById('game-over-title');
     
     if (winner === 'player') {
-      title.textContent = '✝️ 악마를 퇴마했습니다!';
+      title.textContent = '✝️ 승리!';
       title.style.color = '#f1c40f';
-      title.style.textShadow = '0 0 30px #f1c40f';
+      title.style.textShadow = '0 0 35px #f1c40f';
     } else {
-      title.textContent = '☠️ 성당이 함락되었습니다...';
+      title.textContent = '☠️ 패배...';
       title.style.color = '#ff3333';
-      title.style.textShadow = '0 0 30px #ff3333';
+      title.style.textShadow = '0 0 35px #ff3333';
     }
     
-    gameOverScreen.classList.remove('hidden');
+    if (gameOverScreen) gameOverScreen.classList.remove('hidden');
   }
   
   update(dt) {
@@ -450,9 +495,14 @@ class Game {
       });
     });
     
-    document.getElementById('restart-btn').addEventListener('click', () => {
-      location.reload();
-    });
+    const restartBtn = document.getElementById('restart-btn');
+    if (restartBtn) {
+      restartBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.resetGame();
+      });
+    }
     
     document.querySelectorAll('.cheat-btn[data-speed]').forEach(btn => {
       btn.addEventListener('click', (e) => {

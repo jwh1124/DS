@@ -15,6 +15,10 @@ export class EntityManager {
     }
   }
 
+  clear() {
+    this.entities = [];
+  }
+
   getEntities() {
     return this.entities;
   }

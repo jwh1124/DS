@@ -6,6 +6,13 @@
   user-select: none;
 }
 
+.hidden {
+  display: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 body, html {
   width: 100%;
   height: 100%;
@@ -545,6 +552,8 @@ body, html {
 }
 .tooltip.hidden {
   opacity: 0;
+  display: none !important;
+  pointer-events: none !important;
 }
 .tt-title {
   font-size: 12px;
@@ -681,6 +690,14 @@ body, html {
   justify-content: center;
   align-items: center;
   z-index: 60;
+  pointer-events: auto;
+}
+
+#game-over-screen.hidden {
+  display: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 #game-over-title {
@@ -701,6 +718,7 @@ body, html {
   cursor: pointer;
   box-shadow: 0 0 20px rgba(241, 196, 15, 0.5);
   transition: all 0.2s ease;
+  pointer-events: auto;
 }
 
 #restart-btn:hover {
