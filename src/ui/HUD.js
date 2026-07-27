@@ -38,19 +38,22 @@ export class HUD {
       this.eHealthBar.style.width = `${(eBase.hp / eBase.maxHp) * 100}%`;
     }
     
-    // Update button states (disabled if not enough minerals or on ultimate cooldown)
+    // Keep affordability and rule locks in one place so a locked card can never look purchasable.
     const currentMinerals = this.game.economy.minerals;
+    const currentTech = this.game.playerBase?.techLevel ?? 1;
+    const queueIsFull = this.game.waveSystem.spawners.player.length >= MAX_SPAWNERS;
     this.buildButtons.forEach(btn => {
       const type = btn.dataset.type;
-      const cost = parseInt(btn.dataset.cost);
-      
-      if (type === 'ultimate' && this.game.ultimateCooldown > 0) {
-        btn.disabled = true;
-      } else if (currentMinerals >= cost) {
-        btn.disabled = false;
-      } else {
-        btn.disabled = true;
-      }
+      const cost = Number(btn.dataset.cost);
+      const requiredTech = UNIT_TECH_REQUIREMENTS[type] ?? 1;
+      const isLocked = requiredTech > currentTech;
+      const isMaxTech = type === 'tech' && currentTech >= MAX_TECH_LEVEL;
+      const isUnit = Object.hasOwn(UNIT_TECH_REQUIREMENTS, type);
+      const isCoolingDown = type === 'ultimate' && this.game.ultimateCooldown > 0;
+
+      btn.classList.toggle('locked-unit', isLocked);
+      btn.disabled = isLocked || isMaxTech || isCoolingDown || currentMinerals < cost || (isUnit && queueIsFull);
     });
   }
 }
+import { MAX_SPAWNERS, MAX_TECH_LEVEL, UNIT_TECH_REQUIREMENTS } from '../gameConfig.js';

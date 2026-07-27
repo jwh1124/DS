@@ -50,12 +50,12 @@ function removeBackground(img) {
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
-      
+
       // Calculate color distance to sampled background color
       const dist = Math.sqrt((r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2);
       const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
       const colorDiff = Math.max(r, g, b) - Math.min(r, g, b);
-      
+
       // Cut out matching background color OR dark/black compression artifacts
       if (dist < 75 || (brightness < 60 && colorDiff < 40)) {
         if (dist < 50 || brightness < 35) {
@@ -92,14 +92,14 @@ const SPRITE_IMAGES = {
 };
 
 const baseUrl = import.meta.env.BASE_URL || './';
-SPRITE_IMAGES.player.melee.src = baseUrl + 'sprites/monk.png';
-SPRITE_IMAGES.player.ranged.src = baseUrl + 'sprites/exorcist.png';
-SPRITE_IMAGES.player.medic.src = baseUrl + 'sprites/priest.png';
-SPRITE_IMAGES.player.sniper.src = baseUrl + 'sprites/inquisitor.png';
-SPRITE_IMAGES.player.tank.src = baseUrl + 'sprites/archangel.png';
-SPRITE_IMAGES.player.crusader.src = baseUrl + 'sprites/crusader.png';
-SPRITE_IMAGES.enemy.melee.src = baseUrl + 'sprites/imp.png';
-SPRITE_IMAGES.enemy.ranged.src = baseUrl + 'sprites/succubus.png';
+SPRITE_IMAGES.player.melee.src = baseUrl + 'sprites/monk.jpg';
+SPRITE_IMAGES.player.ranged.src = baseUrl + 'sprites/exorcist.jpg';
+SPRITE_IMAGES.player.medic.src = baseUrl + 'sprites/priest.jpg';
+SPRITE_IMAGES.player.sniper.src = baseUrl + 'sprites/inquisitor.jpg';
+SPRITE_IMAGES.player.tank.src = baseUrl + 'sprites/archangel.jpg';
+SPRITE_IMAGES.player.crusader.src = baseUrl + 'sprites/crusader.jpg';
+SPRITE_IMAGES.enemy.melee.src = baseUrl + 'sprites/imp.jpg';
+SPRITE_IMAGES.enemy.ranged.src = baseUrl + 'sprites/succubus.jpg';
 
 export class Unit {
   constructor(game, x, y, team, type) {
@@ -191,7 +191,7 @@ export class Unit {
     if (this.hp <= 0) {
       this.hp = 0;
       this.isAlive = false;
-      
+
       const bountyMap = { melee: 5, ranged: 10, medic: 12, sniper: 15, tank: 20, crusader: 25 };
       const bounty = this.isBoss ? 100 : (bountyMap[this.type] || 10);
       if (this.team === 'enemy' && this.game.economy) {
@@ -200,7 +200,7 @@ export class Unit {
       } else if (this.team === 'player' && this.game.waveSystem) {
         this.game.waveSystem.aiMinerals += bounty;
       }
-      
+
       this.explode();
     } else {
       // Hit flash spark impact
@@ -680,34 +680,35 @@ export class Unit {
     
     ctx.restore();
     
-    // HP Bar Overlay
-    ctx.save();
     const hpPercent = Math.max(0, this.hp / this.maxHp);
-    const barW = Math.max(34, 34 * this.scale);
-    const barH = this.isBoss ? 7 : 5;
-    const barX = this.x - barW / 2;
-    const barY = this.y - (this.radius * this.scale) - 18 + airOffsetY;
-    
-    ctx.fillStyle = 'rgba(10, 15, 20, 0.85)';
-    ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
-    
-    ctx.fillStyle = 'rgba(231, 76, 60, 0.8)';
-    ctx.fillRect(barX, barY, barW, barH);
-    
-    ctx.fillStyle = this.team === 'player' ? '#f1c40f' : '#8b00ff';
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = ctx.fillStyle;
-    ctx.fillRect(barX, barY, barW * hpPercent, barH);
-    ctx.shadowBlur = 0;
-    
-    if (this.tier > 1) {
-      ctx.fillStyle = '#f1c40f';
-      ctx.font = '700 11px Orbitron';
-      ctx.textAlign = 'center';
-      const stars = this.tier === 2 ? '★' : '★★';
-      ctx.fillText(stars, this.x, barY - 4);
+    // Healthy regular units do not need a permanent label. This keeps late waves readable.
+    if (this.isBoss || hpPercent < 0.995) {
+      ctx.save();
+      const barW = Math.max(34, 34 * this.scale);
+      const barH = this.isBoss ? 7 : 5;
+      const barX = this.x - barW / 2;
+      const barY = this.y - (this.radius * this.scale) - 18 + airOffsetY;
+
+      ctx.fillStyle = 'rgba(10, 15, 20, 0.85)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+
+      ctx.fillStyle = 'rgba(231, 76, 60, 0.8)';
+      ctx.fillRect(barX, barY, barW, barH);
+
+      ctx.fillStyle = this.team === 'player' ? '#f1c40f' : '#8b00ff';
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.fillRect(barX, barY, barW * hpPercent, barH);
+      ctx.shadowBlur = 0;
+
+      if (this.tier > 1) {
+        ctx.fillStyle = '#f1c40f';
+        ctx.font = '700 11px Orbitron';
+        ctx.textAlign = 'center';
+        const stars = this.tier === 2 ? '★' : '★★';
+        ctx.fillText(stars, this.x, barY - 4);
+      }
+      ctx.restore();
     }
-    
-    ctx.restore();
   }
 }

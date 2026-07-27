@@ -2,33 +2,42 @@ import { Unit } from '../entities/Unit.js';
 import { Particle } from '../entities/Particle.js';
 import { FloatingText } from '../entities/FloatingText.js';
 import { WORLD_WIDTH } from '../../main.js';
+import {
+  AI_STARTING_INCOME,
+  AI_STARTING_MINERALS,
+  chooseAffordableUnit,
+  FIRST_WAVE_DELAY,
+  getTechUpgradeCost,
+  MAX_SPAWNERS,
+  UNIT_COSTS,
+  WAVE_INTERVAL
+} from '../gameConfig.js';
 
 export class WaveSystem {
   constructor(game) {
     this.game = game;
-    this.waveInterval = 15;
-    this.timeUntilWave = this.waveInterval;
+    this.reset();
+  }
+
+  reset() {
+    this.waveInterval = WAVE_INTERVAL;
+    this.timeUntilWave = FIRST_WAVE_DELAY;
     this.isActive = false;
-    
-    this.spawners = {
-      player: [],
-      enemy: []
-    };
-    
+    this.spawners = { player: [], enemy: [] };
     this.aiWaveCount = 0;
-    this.aiMinerals = 250;
-    this.aiIncome = 60;
+    this.aiMinerals = AI_STARTING_MINERALS;
+    this.aiIncome = AI_STARTING_INCOME;
     this.aiUltimateCooldown = 0;
-    this.lastActionLog = '[교단]: 악마의 침공에 대비하라!';
+    this.lastActionLog = '[교단]: 첫 악마 웨이브에 대비하십시오.';
   }
 
   start() {
     this.isActive = true;
-    this.timeUntilWave = 3;
+    this.timeUntilWave = FIRST_WAVE_DELAY;
     
     const diff = this.game.difficulty || 1.0;
-    this.aiMinerals = Math.floor(250 * diff);
-    this.aiIncome = Math.floor(60 * diff);
+    this.aiMinerals = Math.floor(AI_STARTING_MINERALS * diff);
+    this.aiIncome = Math.floor(AI_STARTING_INCOME * diff);
     this.aiUltimateCooldown = 20;
     this.lastActionLog = `[지옥문]: 악마 군단 소환력 ${this.aiMinerals}🔥 / 증원 +${this.aiIncome}🔥`;
   }
@@ -38,7 +47,7 @@ export class WaveSystem {
   }
   
   addSpawner(team, type) {
-    if (this.spawners[team].length < 50) {
+    if (this.spawners[team].length < MAX_SPAWNERS) {
       this.spawners[team].push(type);
       return true;
     }
@@ -75,7 +84,6 @@ export class WaveSystem {
     // AI Income addition
     this.aiMinerals += this.aiIncome;
     
-    const unitCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200, crusader: 250 };
     const unitNames = { melee: '임프', ranged: '서큐버스', medic: '리치', sniper: '밴시', tank: '발록', crusader: '핏로드' };
     
     // AI Tactical Orbital Strike Check
@@ -87,10 +95,11 @@ export class WaveSystem {
       this.lastActionLog = `[☠️ 악마의 저주]: 성직자 부대에 저주 폭격! (-300🔥, 쿨타임 35s)`;
     } else {
       // Smart AI Tech Upgrade Decision
-      if (this.aiMinerals >= 800 && this.game.enemyBase && this.game.enemyBase.techLevel < 5) {
+      const enemyTechCost = this.game.enemyBase ? getTechUpgradeCost(this.game.enemyBase.techLevel) : Infinity;
+      if (this.aiMinerals >= enemyTechCost && this.game.enemyBase) {
         this.game.enemyBase.upgradeTech();
-        this.aiMinerals -= 800;
-        this.lastActionLog = `[지옥 각성]: 악마 군단 강화 (Lv.${this.game.enemyBase.techLevel})! (-800🔥)`;
+        this.aiMinerals -= enemyTechCost;
+        this.lastActionLog = `[지옥 각성]: 악마 군단 강화 (Lv.${this.game.enemyBase.techLevel})! (-${enemyTechCost}🔥)`;
       }
       
       // Smart Counter-Pick AI Logic
@@ -117,20 +126,16 @@ export class WaveSystem {
       let lastBoughtType = '';
       let attempts = 0;
       
-      while (this.aiMinerals >= 50 && attempts < 6 && this.spawners.enemy.length < 50) {
+      const enemyTechLevel = this.game.enemyBase ? this.game.enemyBase.techLevel : 1;
+      while (this.aiMinerals >= UNIT_COSTS.melee && attempts < 6 && this.spawners.enemy.length < MAX_SPAWNERS) {
         attempts++;
-        
-        let chosen = preferredUnit;
-        if (unitCosts[chosen] > this.aiMinerals) {
-          const unitTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank', 'crusader'];
-          const affordable = unitTypes.filter(t => unitCosts[t] <= this.aiMinerals);
-          if (affordable.length === 0) break;
-          chosen = affordable[Math.floor(Math.random() * affordable.length)];
-        }
+
+        const chosen = chooseAffordableUnit(preferredUnit, this.aiMinerals, enemyTechLevel);
+        if (!chosen) break;
         
         const success = this.addSpawner('enemy', chosen);
         if (success) {
-          this.aiMinerals -= unitCosts[chosen];
+          this.aiMinerals -= UNIT_COSTS[chosen];
           purchasedCount++;
           lastBoughtType = chosen;
         } else {
@@ -138,10 +143,10 @@ export class WaveSystem {
         }
       }
       
-      if (this.spawners.enemy.length >= 50) {
+      if (this.spawners.enemy.length >= MAX_SPAWNERS) {
         this.lastActionLog = `[지옥문 만원]: 악마 소환진 50/50 최대 가동!`;
       } else if (purchasedCount > 0) {
-        this.lastActionLog = `[악마 소환]: ${unitNames[lastBoughtType]} 강림! (-${unitCosts[lastBoughtType]}🔥, 잔여 ${Math.floor(this.aiMinerals)}🔥)`;
+        this.lastActionLog = `[악마 소환]: ${unitNames[lastBoughtType]} 강림! (-${UNIT_COSTS[lastBoughtType]}🔥, 잔여 ${Math.floor(this.aiMinerals)}🔥)`;
       } else if (!this.lastActionLog.includes('시대 발전') && !this.lastActionLog.includes('궤도 폭격')) {
         this.lastActionLog = `[악마 축적]: 소환 보류 (잔여 ${Math.floor(this.aiMinerals)}🔥, 증원 +${this.aiIncome}🔥)`;
       }

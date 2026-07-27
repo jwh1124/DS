@@ -1,4 +1,8 @@
 /* Gothic Dark Fantasy Theme for EXORCISM: Holy War */
+:root {
+  --game-scale: 1;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -20,15 +24,18 @@ body, html {
   background-color: #050208;
   font-family: 'Noto Sans KR', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #f1c40f;
+  position: relative;
 }
 
 #game-container {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 1280px;
   height: 720px;
-  margin: 0 auto;
-  top: 50%;
-  transform: translateY(-50%);
+  margin: 0;
+  transform: translate(-50%, -50%) scale(var(--game-scale));
+  transform-origin: center;
   border: 2px solid #8b0000;
   box-shadow: 0 0 50px rgba(139, 0, 0, 0.6), inset 0 0 30px rgba(0, 0, 0, 0.9);
   border-radius: 8px;
@@ -59,6 +66,14 @@ body, html {
   border-radius: 20px;
   z-index: 40;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+}
+
+.developer-only {
+  display: none !important;
+}
+
+body.developer-mode .developer-only {
+  display: flex !important;
 }
 
 .cheat-title {
@@ -206,6 +221,28 @@ body, html {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+}
+
+.utility-controls {
+  position: absolute;
+  left: 50%;
+  top: 76px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 31;
+}
+
+.utility-btn {
+  width: 34px;
+  height: 30px;
+  border: 1px solid rgba(241, 196, 15, 0.6);
+  border-radius: 8px;
+  background: rgba(15, 10, 20, 0.92);
+  color: #f1c40f;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 900;
 }
 
 .base-health {
@@ -639,6 +676,16 @@ body, html {
   box-shadow: 0 0 40px rgba(241, 196, 15, 0.9);
 }
 
+.start-hint {
+  max-width: 620px;
+  margin-top: 18px;
+  padding: 0 22px;
+  color: #c9c1d1;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+}
+
 /* Difficulty Buttons */
 .diff-btn {
   background: rgba(20, 15, 30, 0.8);
@@ -693,6 +740,88 @@ body, html {
   pointer-events: auto;
 }
 
+#pause-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: rgba(5, 2, 8, 0.88);
+  backdrop-filter: blur(12px);
+  color: #f1c40f;
+  text-align: center;
+}
+
+#pause-screen h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 52px;
+}
+
+#pause-screen p {
+  color: #ddd;
+}
+
+.pause-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.secondary-btn {
+  border: 1px solid rgba(241, 196, 15, 0.65);
+  border-radius: 25px;
+  padding: 14px 28px;
+  background: rgba(15, 10, 20, 0.92);
+  color: #f1c40f;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+#viewport-warning {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px;
+  background: #09040c;
+  color: #f1c40f;
+  text-align: center;
+}
+
+#viewport-warning strong {
+  font-family: 'Cinzel', serif;
+  font-size: 24px;
+}
+
+#viewport-warning span {
+  max-width: 320px;
+  color: #ddd;
+  line-height: 1.6;
+}
+
+button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+@media (max-width: 899px), (max-height: 599px) {
+  #game-container {
+    opacity: 0.12;
+    pointer-events: none;
+  }
+
+  #viewport-warning {
+    display: flex;
+  }
+}
+
 #game-over-screen.hidden {
   display: none !important;
   pointer-events: none !important;
@@ -705,6 +834,12 @@ body, html {
   font-size: 64px;
   font-weight: 900;
   margin-bottom: 30px;
+}
+
+#game-over-summary {
+  margin: -14px 0 24px;
+  color: #ddd;
+  font-size: 16px;
 }
 
 #restart-btn {

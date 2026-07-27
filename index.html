@@ -30,6 +30,7 @@
         </div>
         
         <button id="start-btn" class="glow-btn">⛪ 엑소시즘 개시</button>
+        <p class="start-hint">첫 웨이브까지 10초 · [1]~[6] 소환 · [Q] 헌금 · [W] 계시 · [E] 천벌 · [Esc] 일시정지</p>
         <div class="credits">개발: Antigravity</div>
       </div>
       
@@ -45,13 +46,13 @@
       </div>
       
       <!-- Cheat Menu (Test Mode) -->
-      <div id="cheat-menu" class="cheat-panel">
+      <div id="cheat-menu" class="cheat-panel developer-only" aria-label="개발자 도구">
         <span class="cheat-title">옵션 & 치트:</span>
         <button class="cheat-btn" data-speed="1">1x</button>
         <button class="cheat-btn" data-speed="2">2x</button>
         <button class="cheat-btn" data-speed="3">3x</button>
         <button class="cheat-btn" id="cheat-money-btn">💰 신앙심 +10000</button>
-        <button class="cheat-btn" id="audio-toggle-btn">🔊 사운드 켬</button>
+        <button class="cheat-btn" data-audio-toggle>🔊 사운드 켬</button>
         <button class="cheat-btn" id="auto-spend-btn">🤖 자동 소환: 끔</button>
       </div>
 
@@ -80,6 +81,10 @@
             </div>
             <span id="enemy-health-text" class="health-text">10000 / 10000</span>
           </div>
+          <div class="utility-controls">
+            <button id="sound-btn" class="utility-btn" data-audio-toggle data-compact-audio type="button" aria-label="사운드 켜기">🔊</button>
+            <button id="pause-btn" class="utility-btn" type="button" aria-label="게임 일시정지">Ⅱ</button>
+          </div>
         </div>
 
         <!-- Economy HUD (Left Side) -->
@@ -101,7 +106,7 @@
         </div>
 
         <!-- Live Real-Time Debugging Monitor (Right Side) -->
-        <div id="debug-monitor" class="debug-panel">
+        <div id="debug-monitor" class="debug-panel developer-only" aria-label="개발자 전투 정보">
           <div class="debug-header">☠️ 악마 군단 정보</div>
           <div class="debug-row">
             <span class="lbl">악마 군단 사악한 힘:</span>
@@ -140,7 +145,7 @@
                 <span class="hotkey-badge">[1]</span>
                 <span class="queue-badge" id="queue-melee">x0</span>
                 <div class="unit-illustration-container">
-                  <img src="./icons/monk.png" alt="수도승" class="unit-card-img" />
+                  <img src="./icons/monk.jpg" alt="수도승" class="unit-card-img" />
                 </div>
                 <div class="info">
                   <span class="name">🙏 수도승</span>
@@ -151,7 +156,7 @@
                 <span class="hotkey-badge">[2]</span>
                 <span class="queue-badge" id="queue-ranged">x0</span>
                 <div class="unit-illustration-container">
-                  <img src="./icons/exorcist.png" alt="엑소시스트" class="unit-card-img" />
+                  <img src="./icons/exorcist.jpg" alt="엑소시스트" class="unit-card-img" />
                 </div>
                 <div class="info">
                   <span class="name">✝️ 엑소시스트</span>
@@ -162,7 +167,7 @@
                 <span class="hotkey-badge">[3]</span>
                 <span class="queue-badge" id="queue-medic">x0</span>
                 <div class="unit-illustration-container">
-                  <img src="./icons/priest.png" alt="사제" class="unit-card-img" />
+                  <img src="./icons/priest.jpg" alt="사제" class="unit-card-img" />
                 </div>
                 <div class="info">
                   <span class="name">⛪ 사제</span>
@@ -173,7 +178,7 @@
                 <span class="hotkey-badge">[4]</span>
                 <span class="queue-badge" id="queue-sniper">x0</span>
                 <div class="unit-illustration-container">
-                  <img src="./icons/inquisitor.png" alt="이단심판관" class="unit-card-img" />
+                  <img src="./icons/inquisitor.jpg" alt="이단심판관" class="unit-card-img" />
                 </div>
                 <div class="info">
                   <span class="name">🔥 이단심판관</span>
@@ -184,7 +189,7 @@
                 <span class="hotkey-badge">[5]</span>
                 <span class="queue-badge" id="queue-tank">x0</span>
                 <div class="unit-illustration-container">
-                  <img src="./icons/archangel.png" alt="대천사" class="unit-card-img" />
+                  <img src="./icons/archangel.jpg" alt="대천사" class="unit-card-img" />
                 </div>
                 <div class="info">
                   <span class="name">👼 대천사</span>
@@ -196,7 +201,7 @@
                 <span class="hotkey-badge">[6]</span>
                 <span class="queue-badge" id="queue-crusader">x0</span>
                 <div class="unit-illustration-container">
-                  <img src="./icons/crusader.png" alt="십자군" class="unit-card-img" />
+                  <img src="./icons/crusader.jpg" alt="십자군" class="unit-card-img" />
                 </div>
                 <div class="info">
                   <span class="name">⚔️ 십자군</span>
@@ -230,7 +235,7 @@
                   </svg>
                 </div>
                 <div class="info">
-                  <span class="name">📖 성서 계시</span>
+                  <span class="name">📖 성서 계시 (Lv.2)</span>
                   <span class="cost"><div class="mineral-icon small"></div> 800</span>
                 </div>
               </button>
@@ -261,8 +266,22 @@
       <!-- Game Over Screen -->
       <div id="game-over-screen" class="hidden">
         <h1 id="game-over-title">승리!</h1>
+        <p id="game-over-summary"></p>
         <button id="restart-btn">다시 엑소시즘</button>
       </div>
+
+      <div id="pause-screen" class="hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+        <h1 id="pause-title">일시정지</h1>
+        <p>전장은 멈췄습니다. 준비가 되면 전투를 재개하세요.</p>
+        <div class="pause-actions">
+          <button id="resume-btn" class="glow-btn" type="button">전투 재개</button>
+          <button id="pause-restart-btn" class="secondary-btn" type="button">처음부터 다시</button>
+        </div>
+      </div>
+    </div>
+    <div id="viewport-warning" role="alert">
+      <strong>가로 화면이 필요합니다</strong>
+      <span>EXORCISM은 키보드·마우스로 즐기는 PC 전략 게임입니다. 900×600 이상 가로 화면에서 플레이해 주세요.</span>
     </div>
     <script type="module" src="./main.js"></script>
   </body>

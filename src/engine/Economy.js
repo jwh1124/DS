@@ -1,8 +1,16 @@
+import { PLAYER_STARTING_INCOME, PLAYER_STARTING_MINERALS } from '../gameConfig.js';
+
 export class Economy {
   constructor(game) {
     this.game = game;
-    this.minerals = 250; // Standard starting minerals (250)
-    this.income = 60;    // Standard starting income (60)
+    this.minerals = PLAYER_STARTING_MINERALS;
+    this.income = PLAYER_STARTING_INCOME;
+    this.isActive = false;
+  }
+
+  reset() {
+    this.minerals = PLAYER_STARTING_MINERALS;
+    this.income = PLAYER_STARTING_INCOME;
     this.isActive = false;
   }
 

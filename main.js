@@ -8,22 +8,20 @@ import { Economy } from './src/engine/Economy.js';
 import { Particle } from './src/entities/Particle.js';
 import { AudioEngine } from './src/engine/AudioEngine.js';
 import { FloatingText } from './src/entities/FloatingText.js';
+import {
+  getTechUpgradeCost,
+  getUnlockedUnitTypes,
+  MAX_SPAWNERS,
+  MAX_TECH_LEVEL,
+  UNIT_COSTS,
+  UNIT_TECH_REQUIREMENTS
+} from './src/gameConfig.js';
 
 export const WORLD_WIDTH = 2000;
 
 // Exorcism Theme: Unit Name Maps
 const PLAYER_UNIT_NAMES = { melee: '수도승', ranged: '엑소시스트', medic: '사제', sniper: '심판관', tank: '대천사', crusader: '십자군' };
 const ENEMY_UNIT_NAMES = { melee: '임프', ranged: '서큐버스', medic: '리치', sniper: '밴시', tank: '발록', crusader: '핏로드' };
-
-// Tech Level Unit Unlock Requirements
-const UNIT_TECH_REQUIREMENTS = {
-  melee: 1,
-  ranged: 1,
-  medic: 2,
-  sniper: 3,
-  tank: 4,
-  crusader: 5
-};
 
 class Game {
   constructor() {
@@ -32,9 +30,12 @@ class Game {
     this.ctx.imageSmoothingEnabled = false;
     
     this.isRunning = false;
+    this.isPaused = false;
     this.screenShake = 0;
+    this.shakeTime = 0;
     this.ultimateCooldown = 0;
     this.autoSpend = false;
+    this.isDeveloperMode = new URLSearchParams(window.location.search).has('dev');
     
     this.audio = new AudioEngine();
     
@@ -51,7 +52,7 @@ class Game {
     this.entityManager.addEntity(this.enemyBase);
     
     this.bgImage = new Image();
-    this.bgImage.src = import.meta.env.BASE_URL + 'bg.png';
+    this.bgImage.src = import.meta.env.BASE_URL + 'bg.jpg';
     
     this.cameraX = 0;
     this.cameraSpeed = 650;
@@ -70,6 +71,8 @@ class Game {
     }));
     
     this.setupInput();
+    this.setupViewportPolicy();
+    document.body.classList.toggle('developer-mode', this.isDeveloperMode);
     
     document.getElementById('ui-layer').style.display = 'none';
     
@@ -93,13 +96,15 @@ class Game {
   }
   
   addScreenShake(intensity) {
-    this.screenShake = Math.max(this.screenShake, intensity);
+    this.screenShake = Math.max(this.screenShake, Math.min(1, intensity / 20));
   }
   
   start() {
     this.isRunning = true;
+    this.isPaused = false;
     const gameOverScreen = document.getElementById('game-over-screen');
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
+    document.getElementById('pause-screen')?.classList.add('hidden');
     this.loop.start();
     this.waveSystem.start();
     this.economy.start();
@@ -107,6 +112,7 @@ class Game {
   
   resetGame() {
     this.isRunning = false;
+    this.isPaused = false;
     this.loop.stop();
     this.waveSystem.stop();
     this.economy.stop();
@@ -120,28 +126,37 @@ class Game {
     this.entityManager.addEntity(this.playerBase);
     this.entityManager.addEntity(this.enemyBase);
     
-    // Reset economy & wave system
-    this.economy.minerals = 250;
-    this.economy.income = 60;
-    this.waveSystem.spawners = { player: [], enemy: [] };
-    this.waveSystem.aiMinerals = 250;
-    this.waveSystem.aiIncome = 60;
-    this.waveSystem.waveTimer = 15;
-    this.waveSystem.waveCount = 1;
+    // Reset economy, waves and player-facing session controls.
+    this.economy.reset();
+    this.waveSystem.reset();
     this.ultimateCooldown = 0;
+    this.screenShake = 0;
+    this.cameraX = 0;
+    this.gameSpeed = 1;
+    this.autoSpend = false;
     
     // Reset Tech button UI
     const techBtn = document.querySelector('.build-btn[data-type="tech"]');
     if (techBtn) {
-      techBtn.dataset.cost = 800;
-      techBtn.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> 800`;
+      techBtn.dataset.cost = getTechUpgradeCost(1);
+      techBtn.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> ${getTechUpgradeCost(1)}`;
       techBtn.querySelector('.name').innerHTML = `📖 성서 계시 (Lv.2)`;
       techBtn.style.opacity = '1';
+    }
+
+    document.querySelectorAll('.cheat-btn[data-speed]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.speed === '1');
+    });
+    const autoSpendBtn = document.getElementById('auto-spend-btn');
+    if (autoSpendBtn) {
+      autoSpendBtn.textContent = '🤖 자동 소환: 끔';
+      autoSpendBtn.classList.remove('active');
     }
     
     // Hide game over screen & show UI
     const gameOverScreen = document.getElementById('game-over-screen');
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
+    document.getElementById('pause-screen')?.classList.add('hidden');
     
     document.getElementById('title-screen').style.display = 'none';
     document.getElementById('ui-layer').style.display = 'block';
@@ -151,12 +166,14 @@ class Game {
 
   stop(winner) {
     this.isRunning = false;
+    this.isPaused = false;
     this.loop.stop();
     this.waveSystem.stop();
     this.economy.stop();
     
     const gameOverScreen = document.getElementById('game-over-screen');
     const title = document.getElementById('game-over-title');
+    const summary = document.getElementById('game-over-summary');
     
     if (winner === 'player') {
       title.textContent = '✝️ 승리!';
@@ -169,58 +186,60 @@ class Game {
     }
     
     if (gameOverScreen) gameOverScreen.classList.remove('hidden');
+    if (summary) {
+      const wave = Math.max(1, this.waveSystem.aiWaveCount);
+      summary.textContent = winner === 'player'
+        ? `${wave} 웨이브 만에 지옥문을 정화했습니다.`
+        : `${wave} 웨이브에서 성당이 무너졌습니다. 조합을 바꿔 다시 도전하세요.`;
+    }
+  }
+
+  togglePause() {
+    if (!this.isRunning) return;
+    this.isPaused = !this.isPaused;
+    document.getElementById('pause-screen')?.classList.toggle('hidden', !this.isPaused);
+  }
+
+  setupViewportPolicy() {
+    const updateScale = () => {
+      const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720, 1);
+      document.documentElement.style.setProperty('--game-scale', Math.max(scale, 0.1).toFixed(4));
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
   }
   
   update(dt) {
-    if (!this.isRunning) return;
+    if (!this.isRunning || this.isPaused) return;
     
     const scaledDt = dt * this.gameSpeed;
     
     if (this.screenShake > 0) {
-      this.screenShake = Math.max(0, this.screenShake - dt * 25);
+      this.screenShake = Math.max(0, this.screenShake - dt * 1.8);
+      this.shakeTime += dt;
     }
     
     if (this.ultimateCooldown > 0) {
       this.ultimateCooldown = Math.max(0, this.ultimateCooldown - scaledDt);
     }
     
-    // Tech Level Unit Unlock Check & UI Lock Badges
     const currentTech = this.playerBase ? this.playerBase.techLevel : 1;
-    document.querySelectorAll('.build-btn.unit-card-btn').forEach(btn => {
-      const type = btn.dataset.type;
-      const reqTech = UNIT_TECH_REQUIREMENTS[type] || 1;
-      if (currentTech < reqTech) {
-        btn.disabled = true;
-        btn.classList.add('locked-unit');
-      } else {
-        btn.disabled = false;
-        btn.classList.remove('locked-unit');
-      }
-    });
 
     // Auto-Spend
-    if (this.autoSpend && this.economy.minerals >= 50 && this.waveSystem.spawners.player.length < 50) {
-      const allTypes = ['melee', 'ranged', 'medic', 'sniper', 'tank', 'crusader'];
-      const unlockedTypes = allTypes.filter(t => (UNIT_TECH_REQUIREMENTS[t] || 1) <= currentTech);
-      const pCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200, crusader: 250 };
-      const affordable = unlockedTypes.filter(t => pCosts[t] <= this.economy.minerals);
+    if (this.autoSpend && this.economy.minerals >= UNIT_COSTS.melee && this.waveSystem.spawners.player.length < MAX_SPAWNERS) {
+      const unlockedTypes = getUnlockedUnitTypes(currentTech);
+      const affordable = unlockedTypes.filter(type => UNIT_COSTS[type] <= this.economy.minerals);
       if (affordable.length > 0) {
         const pick = affordable[Math.floor(Math.random() * affordable.length)];
-        this.triggerAction(pick, pCosts[pick], null);
+        this.triggerAction(pick, UNIT_COSTS[pick], null);
       }
     }
     
     const ultBtn = document.querySelector('.build-btn[data-type="ultimate"]');
-    if (ultBtn) {
-      const nameSpan = ultBtn.querySelector('.name');
-      if (this.ultimateCooldown > 0) {
-        ultBtn.disabled = true;
-        if (nameSpan) nameSpan.textContent = `⚡ 천벌 (${Math.ceil(this.ultimateCooldown)}s)`;
-      } else {
-        ultBtn.disabled = false;
-        if (nameSpan) nameSpan.textContent = `⚡ 천벌 (부대 타격)`;
-      }
-    }
+    const ultName = ultBtn?.querySelector('.name');
+    if (ultName) ultName.textContent = this.ultimateCooldown > 0
+      ? `⚡ 천벌 (${Math.ceil(this.ultimateCooldown)}s)`
+      : '⚡ 천벌 (부대 타격)';
     
     this.waveSystem.update(scaledDt);
     this.economy.update(scaledDt);
@@ -290,8 +309,9 @@ class Game {
     let shakeX = 0;
     let shakeY = 0;
     if (this.screenShake > 0) {
-      shakeX = (Math.random() - 0.5) * this.screenShake;
-      shakeY = (Math.random() - 0.5) * this.screenShake;
+      const shakeAmount = 14 * this.screenShake * this.screenShake;
+      shakeX = Math.sin(this.shakeTime * 43) * shakeAmount;
+      shakeY = Math.sin(this.shakeTime * 61) * shakeAmount * 0.7;
     }
     
     this.ctx.translate(-Math.floor(this.cameraX) + shakeX, shakeY);
@@ -365,19 +385,19 @@ class Game {
         }
       }
     } else if (type === 'tech') {
-      if (this.playerBase.techLevel >= 5) return;
+      if (this.playerBase.techLevel >= MAX_TECH_LEVEL) return;
       
       if (this.economy.spendMinerals(cost)) {
         this.playerBase.upgradeTech();
         
         if (btnElement) {
-          if (this.playerBase.techLevel >= 5) {
+          if (this.playerBase.techLevel >= MAX_TECH_LEVEL) {
             btnElement.dataset.cost = Infinity;
             btnElement.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> -`;
             btnElement.querySelector('.name').innerHTML = `📖 성서 계시 (MAX)`;
             btnElement.style.opacity = 0.5;
           } else {
-            const nextCost = cost * 2;
+            const nextCost = getTechUpgradeCost(this.playerBase.techLevel);
             btnElement.dataset.cost = nextCost;
             btnElement.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> ${nextCost}`;
             btnElement.querySelector('.name').innerHTML = `📖 성서 계시 (Lv.${this.playerBase.techLevel + 1})`;
@@ -390,7 +410,7 @@ class Game {
         this.triggerOrbitalStrike();
       }
     } else {
-      if (this.waveSystem.spawners.player.length >= 50) {
+      if (this.waveSystem.spawners.player.length >= MAX_SPAWNERS) {
         this.entityManager.addEntity(new FloatingText(
           this, `⚠️ 교단 소환 한도 (50/50 MAX)!`, this.playerBase.x, this.playerBase.y - 120, '#ff0055', true
         ));
@@ -413,13 +433,11 @@ class Game {
   triggerRefundAction(type) {
     if (!this.isRunning) return;
     
-    const unitCosts = { melee: 50, ranged: 100, medic: 120, sniper: 150, tank: 200, crusader: 250 };
-    
-    if (!unitCosts[type]) return;
+    if (!UNIT_COSTS[type]) return;
     
     const removed = this.waveSystem.removeSpawner('player', type);
     if (removed) {
-      const refundAmount = Math.floor(unitCosts[type] * 0.8);
+      const refundAmount = Math.floor(UNIT_COSTS[type] * 0.8);
       this.economy.minerals += refundAmount;
       this.audio.playMagic();
       
@@ -503,6 +521,10 @@ class Game {
         this.resetGame();
       });
     }
+
+    document.getElementById('pause-btn')?.addEventListener('click', () => this.togglePause());
+    document.getElementById('resume-btn')?.addEventListener('click', () => this.togglePause());
+    document.getElementById('pause-restart-btn')?.addEventListener('click', () => this.resetGame());
     
     document.querySelectorAll('.cheat-btn[data-speed]').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -519,18 +541,19 @@ class Game {
       this.audio.playMagic();
     });
 
-    const audioBtn = document.getElementById('audio-toggle-btn');
-    if (audioBtn) {
+    const audioButtons = document.querySelectorAll('[data-audio-toggle]');
+    audioButtons.forEach(audioBtn => {
       audioBtn.addEventListener('click', () => {
         const isMuted = this.audio.toggleMute();
-        audioBtn.textContent = isMuted ? '🔇 사운드 끔' : '🔊 사운드 켬';
-        if (isMuted) {
-          audioBtn.classList.remove('active');
-        } else {
-          audioBtn.classList.add('active');
-        }
+        audioButtons.forEach(button => {
+          button.textContent = button.hasAttribute('data-compact-audio')
+            ? (isMuted ? '🔇' : '🔊')
+            : (isMuted ? '🔇 사운드 끔' : '🔊 사운드 켬');
+          button.setAttribute('aria-label', isMuted ? '사운드 켜기' : '사운드 끄기');
+          button.classList.toggle('active', !isMuted);
+        });
       });
-    }
+    });
 
     const autoSpendBtn = document.getElementById('auto-spend-btn');
     if (autoSpendBtn) {
@@ -546,10 +569,15 @@ class Game {
     }
     
     window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.togglePause();
+        return;
+      }
+
+      if (!this.isRunning || this.isPaused) return;
+
       if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.moveCameraLeft = true;
       if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.moveCameraRight = true;
-      
-      if (!this.isRunning) return;
       
       const key = e.key.toLowerCase();
       
@@ -594,6 +622,7 @@ class Game {
     });
     
     window.addEventListener('keyup', (e) => {
+      if (this.isPaused) return;
       if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.moveCameraLeft = false;
       if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.moveCameraRight = false;
     });
