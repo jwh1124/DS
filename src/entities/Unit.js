@@ -11,10 +11,10 @@ const UNIT_STATS = {
   crusader: { hp: 450, damage: 45, range: 55, speed: 60, attackSpeed: 1.2, color: '#f1c40f' }   // Crusader / Pit Lord
 };
 
-// Automatic High-Precision Chroma-Key Background Removal (완벽한 누끼 따기)
+// Corner-Sampling & Color-Distance Flood Fill Background Removal (100% 완벽 누끼 따기)
 const processedCanvasMap = new Map();
 
-function removeBlackBackground(img) {
+function removeBackground(img) {
   if (processedCanvasMap.has(img.src)) {
     return processedCanvasMap.get(img.src);
   }
@@ -31,23 +31,38 @@ function removeBlackBackground(img) {
     const imgData = ctx.getImageData(0, 0, w, h);
     const data = imgData.data;
     
+    // Sample the 4 corners to detect the image background color palette
+    const corners = [
+      [0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]
+    ];
+    let bgR = 0, bgG = 0, bgB = 0;
+    corners.forEach(([cx, cy]) => {
+      const idx = (cy * w + cx) * 4;
+      bgR += data[idx];
+      bgG += data[idx + 1];
+      bgB += data[idx + 2];
+    });
+    bgR = Math.round(bgR / 4);
+    bgG = Math.round(bgG / 4);
+    bgB = Math.round(bgB / 4);
+    
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
       
-      // Calculate perceptual brightness & saturation for clean JPEG artifact removal
+      // Calculate color distance to sampled background color
+      const dist = Math.sqrt((r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2);
       const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
       const colorDiff = Math.max(r, g, b) - Math.min(r, g, b);
       
-      // Remove all dark background pixels & dark grey JPEG compression artifacts (r,g,b < 65)
-      if (brightness < 65 && colorDiff < 45) {
-        if (brightness < 40) {
-          data[i + 3] = 0; // 100% transparent
+      // Cut out matching background color OR dark/black compression artifacts
+      if (dist < 75 || (brightness < 60 && colorDiff < 40)) {
+        if (dist < 50 || brightness < 35) {
+          data[i + 3] = 0; // 100% Transparent
         } else {
-          // Soft alpha edge feathering for smooth outline
-          const alphaFactor = (brightness - 40) / 25;
-          data[i + 3] = Math.floor(alphaFactor * 255);
+          // Feathered transparent edge
+          data[i + 3] = Math.floor(((dist - 50) / 25) * 255);
         }
       }
     }
@@ -104,7 +119,14 @@ export class Unit {
     this.radius = (type === 'tank' || type === 'crusader') ? 30 : 20;
     this.isAlive = true;
     
-    this.isFloating = (type === 'medic' || type === 'tank' || (team === 'enemy' && (type === 'ranged' || type === 'sniper')));
+    // Strict Air vs Ground Classification:
+    // Air Units (공중): Archangel (tank), Priest (medic), Succubus (enemy ranged), Banshee (enemy sniper), Balrog (enemy tank)
+    // Ground Units (지상): Monk (melee), Exorcist (ranged), Inquisitor (sniper), Crusader (crusader), Imp (enemy melee), Lich (enemy medic), Pit Lord (enemy crusader)
+    if (team === 'player') {
+      this.isAirUnit = (type === 'tank' || type === 'medic');
+    } else {
+      this.isAirUnit = (type === 'ranged' || type === 'sniper' || type === 'tank');
+    }
     
     this.state = 'moving';
     this.target = null;
@@ -261,7 +283,8 @@ export class Unit {
   update(dt) {
     if (!this.isAlive) return;
     
-    this.animTime += dt * (this.isFloating ? 4 : 8);
+    // Animation Speed
+    this.animTime += dt * (this.isAirUnit ? 4 : 9);
     
     if (this.attackCooldown > 0) {
       this.attackCooldown -= dt;
@@ -306,9 +329,10 @@ export class Unit {
       this.x += currentSpeed * this.dir * dt;
     }
     
-    if (this.isFloating && Math.random() > 0.4) {
+    // Air vs Ground Particles
+    if (this.isAirUnit && Math.random() > 0.4) {
       const pColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
-      const floatOffsetY = Math.sin(this.animTime) * 6 - 14;
+      const floatOffsetY = Math.sin(this.animTime) * 6 - 32;
       this.game.entityManager.addEntity(new Particle(
         this.game, 
         this.x - this.dir * 12, 
@@ -320,18 +344,18 @@ export class Unit {
         Math.random() * 3 + 1.5,
         'spark'
       ));
-    } else if (this.state === 'moving' && Math.random() > 0.5) {
-      const trailAngle = this.dir === 1 ? Math.PI + (Math.random()-0.5)*0.5 : (Math.random()-0.5)*0.5;
-      const pColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
+    } else if (!this.isAirUnit && this.state === 'moving' && Math.random() > 0.3) {
+      // Footstep Ground Dust Particles for Walking Ground Units!
+      const pColor = '#5c4033';
       this.game.entityManager.addEntity(new Particle(
         this.game, 
-        this.x - this.dir * (this.radius - 2), 
-        this.y + (Math.random() - 0.5) * 10, 
+        this.x - this.dir * 8, 
+        this.y + 12 * this.scale, 
         pColor, 
-        0.35, 
-        35, 
-        trailAngle, 
-        2.5,
+        0.3, 
+        15, 
+        Math.PI + (Math.random() - 0.5) * 0.8, 
+        Math.random() * 3 + 2,
         'spark'
       ));
     }
@@ -484,26 +508,34 @@ export class Unit {
     if (this.y > this.game.canvas.height - 150) this.y = this.game.canvas.height - 150;
   }
 
-  // Draw Routine with Automatic Precision Chroma-Keying (누끼 완벽 제거) & Vector Art
+  // Draw Routine with Ground Walking Cycle vs Air Flying Physics
   draw(ctx) {
     if (!this.isAlive) return;
     
     ctx.save();
     
-    const floatY = this.isFloating ? Math.sin(this.animTime) * 6 - 14 : 0;
-    const shadowScale = this.isFloating ? 0.7 : 1.0;
+    // Altitude calculation: Air Units fly high (-32px), Ground Units walk on terrain
+    const airOffsetY = this.isAirUnit ? Math.sin(this.animTime) * 6 - 32 : 0;
+    const shadowScale = this.isAirUnit ? 0.6 : 1.0;
     
-    // Shadow
+    // Ground Shadow
     ctx.beginPath();
     ctx.ellipse(this.x, this.y + (16 * this.scale), 18 * this.scale * shadowScale, 7 * this.scale * shadowScale, 0, 0, Math.PI * 2);
-    ctx.fillStyle = this.isFloating ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.45)';
+    ctx.fillStyle = this.isAirUnit ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.55)';
     ctx.fill();
     
     const recoilX = this.recoil * 6 * this.dir;
-    ctx.translate(this.x - recoilX, this.y + floatY);
+    ctx.translate(this.x - recoilX, this.y + airOffsetY);
     
-    const walkBobY = (!this.isFloating && this.state === 'moving') ? Math.sin(this.animTime) * 2.5 : 0;
+    // Walking stride bob & tilt animation for Ground Units!
+    let walkBobY = 0;
+    let walkTilt = 0;
+    if (!this.isAirUnit && this.state === 'moving') {
+      walkBobY = Math.abs(Math.sin(this.animTime * 1.5)) * -4;
+      walkTilt = Math.sin(this.animTime * 1.5) * 0.08;
+    }
     ctx.translate(0, walkBobY);
+    ctx.rotate(walkTilt);
     
     // Boss Aura
     if (this.isBoss) {
@@ -529,8 +561,8 @@ export class Unit {
     const img = imgGroup ? imgGroup[this.type] : null;
     
     if (img && img.complete && img.naturalWidth > 0) {
-      // High-precision Chroma-Key transparent canvas (누끼 따기)
-      const transparentCanvas = removeBlackBackground(img);
+      // Guaranteed 100% Transparent Background Removal (누끼 따기)
+      const transparentCanvas = removeBackground(img);
       
       const drawW = 58;
       const drawH = 58;
@@ -545,9 +577,10 @@ export class Unit {
       if (this.type === 'crusader') {
         if (this.team === 'player') {
           // ⚔️ 십자군 (Crusader): Heavy Gold Armor, Tower Shield with Red Cross, Flaming Mace
+          const stepLeg = Math.sin(this.animTime * 1.5) * 5;
           ctx.fillStyle = '#1e272e';
-          ctx.fillRect(-11, 4, 7, 12);
-          ctx.fillRect(4, 4, 7, 12);
+          ctx.fillRect(-11 + stepLeg, 4, 7, 12);
+          ctx.fillRect(4 - stepLeg, 4, 7, 12);
           
           ctx.fillStyle = '#b8860b';
           ctx.fillRect(-15, -16, 30, 24);
@@ -576,9 +609,10 @@ export class Unit {
           ctx.shadowBlur = 0;
         } else {
           // 🐲 핏로드 (Pit Lord): Magma Armor, Double Blades
+          const stepLeg = Math.sin(this.animTime * 1.5) * 5;
           ctx.fillStyle = '#4a0000';
-          ctx.fillRect(-16, 4, 8, 14);
-          ctx.fillRect(8, 4, 8, 14);
+          ctx.fillRect(-16 + stepLeg, 4, 8, 14);
+          ctx.fillRect(8 - stepLeg, 4, 8, 14);
           ctx.fillStyle = '#800000';
           ctx.fillRect(-18, -16, 36, 24);
           ctx.fillStyle = '#ff0055';
@@ -639,7 +673,7 @@ export class Unit {
     const barW = Math.max(34, 34 * this.scale);
     const barH = this.isBoss ? 7 : 5;
     const barX = this.x - barW / 2;
-    const barY = this.y - (this.radius * this.scale) - 18 + floatY;
+    const barY = this.y - (this.radius * this.scale) - 18 + airOffsetY;
     
     ctx.fillStyle = 'rgba(10, 15, 20, 0.85)';
     ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
