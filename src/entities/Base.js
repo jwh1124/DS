@@ -6,6 +6,7 @@ const BASE_ART = {
   player: `${import.meta.env.BASE_URL}bases/holy-cathedral-v2.png`,
   enemy: `${import.meta.env.BASE_URL}bases/infernal-gate-v2.png`,
 };
+const HOLY_TURRET_ART = `${import.meta.env.BASE_URL}sprites/holy-reliquary-cannon-v1.png`;
 
 export class Base {
   constructor(game, x, y, team, maxHp = 10000) {
@@ -24,16 +25,25 @@ export class Base {
     this.turretRange = 1000;
     this.shieldHitTimer = 0;
     this.turretAngle = team === 'player' ? 0 : Math.PI;
+    this.turretRecoil = 0;
     this.emergencyPhase1 = false;
     this.emergencyPhase2 = false;
     this.animTime = Math.random() * 10;
     this.artReady = false;
+    this.turretArtReady = false;
 
     if (typeof Image !== 'undefined') {
       this.art = new Image();
       this.art.onload = () => { this.artReady = true; };
       this.art.onerror = () => { this.artReady = false; };
       this.art.src = BASE_ART[team];
+
+      if (team === 'player') {
+        this.turretArt = new Image();
+        this.turretArt.onload = () => { this.turretArtReady = true; };
+        this.turretArt.onerror = () => { this.turretArtReady = false; };
+        this.turretArt.src = HOLY_TURRET_ART;
+      }
     }
   }
 
@@ -109,10 +119,104 @@ export class Base {
     }
   }
 
+  getTurretMount() {
+    // Keep the artillery bolted to a side tower instead of hovering in front of the base art.
+    const side = this.team === 'player' ? 1 : -1;
+    return { x: this.x + side * 84, y: this.y - 82 };
+  }
+
+  drawTurret(ctx, level) {
+    const mount = this.getTurretMount();
+    const isHoly = this.team === 'player';
+
+    if (isHoly && this.turretArtReady) {
+      // Full sprite keeps the level-up artillery legible against the dense cathedral texture.
+      ctx.save();
+      ctx.translate(mount.x - this.turretRecoil * 4, mount.y);
+      ctx.drawImage(this.turretArt, -83, -80, 160, 160);
+      ctx.restore();
+      return;
+    }
+
+    const stone = isHoly ? '#393a3e' : '#321b2f';
+    const stoneLight = isHoly ? '#73706a' : '#6e405d';
+    const iron = isHoly ? '#1a2026' : '#25101f';
+    const ironLight = isHoly ? '#4a5258' : '#65354f';
+    const metal = isHoly ? '#b79a67' : '#a96865';
+
+    ctx.save();
+    ctx.translate(mount.x, mount.y);
+
+    // Fixed stone socket: it makes the gun feel built into the cathedral, not pasted over it.
+    ctx.fillStyle = stone;
+    ctx.beginPath();
+    ctx.moveTo(-20, 12);
+    ctx.lineTo(-14, -3);
+    ctx.lineTo(14, -3);
+    ctx.lineTo(20, 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = stoneLight;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#111217';
+    ctx.fillRect(-22, 11, 44, 6);
+
+    ctx.rotate(this.turretAngle);
+    ctx.translate(-this.turretRecoil * 6, 0);
+
+    // Armoured swivel and recoil housing.
+    ctx.fillStyle = iron;
+    ctx.fillRect(-12, -9, 21, 18);
+    ctx.strokeStyle = ironLight;
+    ctx.lineWidth = 1.25;
+    ctx.strokeRect(-12, -9, 21, 18);
+    ctx.fillStyle = '#0c0d11';
+    ctx.beginPath();
+    ctx.arc(-4, 0, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = metal;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Reliquary cannon: dark iron barrel, warm brass bands, no permanent light or range marker.
+    ctx.fillStyle = iron;
+    ctx.beginPath();
+    ctx.moveTo(2, -8);
+    ctx.lineTo(37, -6);
+    ctx.lineTo(44, -9);
+    ctx.lineTo(50, -9);
+    ctx.lineTo(50, 9);
+    ctx.lineTo(44, 9);
+    ctx.lineTo(37, 6);
+    ctx.lineTo(2, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = ironLight;
+    ctx.lineWidth = 1.25;
+    ctx.stroke();
+    ctx.fillStyle = metal;
+    ctx.fillRect(11, -8, 3, 16);
+    ctx.fillRect(33, -7, 3, 14);
+    ctx.fillStyle = '#090a0d';
+    ctx.fillRect(45, -6, 6, 12);
+
+    // A small sight and counterweight keep the silhouette readable at the game's scale.
+    ctx.fillStyle = metal;
+    ctx.fillRect(18, -11, 2, 5);
+    ctx.fillRect(-18, -3, 8, 6);
+    if (level >= 4) {
+      ctx.fillRect(21, -10, 2, 4);
+      ctx.fillRect(21, 6, 2, 4);
+    }
+    ctx.restore();
+  }
+
   update(dt) {
     if (!this.isAlive) return;
     this.animTime += dt * 4;
     if (this.shieldHitTimer > 0) this.shieldHitTimer -= dt;
+    this.turretRecoil = Math.max(0, this.turretRecoil - dt * 8);
 
     if (this.techLevel > 1 || this.emergencyPhase2) {
       if (this.turretCooldown > 0) this.turretCooldown -= dt;
@@ -132,13 +236,14 @@ export class Base {
       }
 
       if (closestEnemy) {
-        this.turretAngle = Math.atan2(closestEnemy.y - (this.y - 70), closestEnemy.x - this.x);
+        const mount = this.getTurretMount();
+        this.turretAngle = Math.atan2(closestEnemy.y - mount.y, closestEnemy.x - mount.x);
         if (this.turretCooldown <= 0) {
           const turretColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
           this.game.entityManager.addEntity(new Projectile(
             this.game,
-            this.x + Math.cos(this.turretAngle) * 40,
-            (this.y - 70) + Math.sin(this.turretAngle) * 40,
+            mount.x + Math.cos(this.turretAngle) * 44,
+            mount.y + Math.sin(this.turretAngle) * 44,
             closestEnemy,
             this.turretDamage,
             turretColor,
@@ -146,6 +251,7 @@ export class Base {
             true
           ));
           this.turretCooldown = this.turretAttackSpeed;
+          this.turretRecoil = 1;
         }
       }
     }
@@ -172,7 +278,7 @@ export class Base {
     const shieldColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
     const shieldAlpha = this.shieldHitTimer > 0
       ? 0.36
-      : 0.07 + Math.sin(this.animTime * 1.2) * 0.025;
+      : 0.025 + Math.sin(this.animTime * 1.2) * 0.01;
 
     ctx.save();
     ctx.beginPath();
@@ -187,9 +293,11 @@ export class Base {
       ? `rgba(241, 196, 15, ${shieldAlpha})`
       : `rgba(255, 0, 85, ${shieldAlpha})`;
     ctx.fill();
-    ctx.strokeStyle = shieldColor;
+    ctx.strokeStyle = this.shieldHitTimer > 0
+      ? shieldColor
+      : (this.team === 'player' ? 'rgba(183, 154, 103, 0.28)' : 'rgba(169, 104, 101, 0.28)');
     ctx.lineWidth = this.shieldHitTimer > 0 ? 3 : 1.25;
-    ctx.shadowBlur = this.shieldHitTimer > 0 ? 18 : 5;
+    ctx.shadowBlur = this.shieldHitTimer > 0 ? 18 : 0;
     ctx.shadowColor = shieldColor;
     ctx.stroke();
     ctx.shadowBlur = 0;
@@ -204,22 +312,7 @@ export class Base {
     }
 
     if (this.techLevel > 1 || this.emergencyPhase2) {
-      ctx.save();
-      ctx.translate(this.x, this.y - 70);
-      ctx.rotate(this.turretAngle);
-      ctx.fillStyle = this.team === 'player' ? '#253746' : '#200d24';
-      ctx.beginPath();
-      ctx.arc(0, 0, 14, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = shieldColor;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = shieldColor;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = shieldColor;
-      ctx.fillRect(4, -3.5, 26, 7);
-      ctx.shadowBlur = 0;
-      ctx.restore();
+      this.drawTurret(ctx, level);
     }
 
     ctx.restore();
