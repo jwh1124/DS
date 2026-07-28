@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import {
+  BASE_TECH_HP_GAIN,
   BASE_TURRET_BALANCE,
   chooseAffordableUnit,
   getBaseTurretStats,
   getTechUpgradeCost,
   getUnlockedUnitTypes,
+  getUnitVsBaseDamageMultiplier,
   MAX_SPAWNERS,
   MAX_WAVES,
   PLAYER_STARTING_INCOME,
@@ -29,6 +31,9 @@ assert.equal(PLAYER_STARTING_MINERALS, 400);
 assert.equal(PLAYER_STARTING_INCOME, 90);
 assert.equal(AI_STARTING_MINERALS, 180);
 assert.equal(AI_STARTING_INCOME, 50);
+assert.equal(BASE_TECH_HP_GAIN, 2000);
+assert.equal(getUnitVsBaseDamageMultiplier('player'), 2);
+assert.equal(getUnitVsBaseDamageMultiplier('enemy'), 1);
 
 const levelTwoTurret = getBaseTurretStats(2);
 const levelThreeTurret = getBaseTurretStats(3);

@@ -34,6 +34,19 @@ export const AI_STARTING_INCOME = 50;
 // A full twelve-wave campaign is roughly eight minutes without early starts.
 export const FIRST_WAVE_DELAY = 15;
 export const WAVE_INTERVAL = 40;
+export const BASE_TECH_HP_GAIN = 2000;
+
+// The enemy gate is sealed until wave 12, while the cathedral has no matching
+// protection. Holy units keep their exorcism bonus; demons deal normal damage
+// to the cathedral so one leaked wave does not erase an entire run.
+export const UNIT_VS_BASE_DAMAGE_MULTIPLIERS = Object.freeze({
+  player: 2,
+  enemy: 1
+});
+
+export function getUnitVsBaseDamageMultiplier(attackerTeam) {
+  return UNIT_VS_BASE_DAMAGE_MULTIPLIERS[attackerTeam] ?? 1;
+}
 
 // Base artillery should protect the final approach, not control half the map.
 // Level 2 is 38 DPS and level 3 is 58 DPS before the reduced splash damage.

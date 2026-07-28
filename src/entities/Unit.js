@@ -1,6 +1,7 @@
 import { Particle } from './Particle.js';
 import { Projectile } from './Projectile.js';
 import { FloatingText } from './FloatingText.js';
+import { getUnitVsBaseDamageMultiplier } from '../gameConfig.js';
 
 const UNIT_STATS = {
   melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#f1c40f' },     // Monk / Imp
@@ -428,7 +429,7 @@ export class Unit {
     let currentDamage = this.hasAura ? this.damage * 1.4 : this.damage;
     
     if (target.maxHp && target.techLevel !== undefined) {
-      currentDamage *= 2.0;
+      currentDamage *= getUnitVsBaseDamageMultiplier(this.team);
     }
     
     if (this.game.audio) {

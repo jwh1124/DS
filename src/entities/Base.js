@@ -1,7 +1,7 @@
 import { FloatingText } from './FloatingText.js';
 import { Particle } from './Particle.js';
 import { Projectile } from './Projectile.js';
-import { BASE_TURRET_BALANCE, getBaseTurretStats } from '../gameConfig.js';
+import { BASE_TECH_HP_GAIN, BASE_TURRET_BALANCE, getBaseTurretStats } from '../gameConfig.js';
 
 const BASE_ART = {
   player: `${import.meta.env.BASE_URL}bases/holy-cathedral-v2.png`,
@@ -50,8 +50,8 @@ export class Base {
 
   upgradeTech() {
     this.techLevel++;
-    this.maxHp += 3000;
-    this.hp += 3000;
+    this.maxHp += BASE_TECH_HP_GAIN;
+    this.hp += BASE_TECH_HP_GAIN;
     const turretStats = getBaseTurretStats(this.techLevel);
     this.turretAttackSpeed = turretStats.interval;
     this.turretDamage = turretStats.damage;
