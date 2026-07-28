@@ -21,6 +21,11 @@ import {
   getCombatDistance,
   getWaveFormationSlot
 } from '../src/combatMath.js';
+import {
+  getCounterProfile,
+  getTargetPriorityBonus,
+  PLAYER_UNIT_ROLE_INFO
+} from '../src/unitRoles.js';
 
 assert.deepEqual(getUnlockedUnitTypes(1), ['melee', 'ranged']);
 assert.deepEqual(getUnlockedUnitTypes(2), ['melee', 'ranged', 'medic', 'sniper']);
@@ -68,6 +73,19 @@ assert.equal(getAttackRangeAgainst(rangedRear, enemyBase), 302);
 const outerLaneSniper = { x: 1310, y: 530, radius: 20, range: 450, formationRow: 0 };
 assert.equal(getCombatDistance(outerLaneSniper, enemyBase), 450);
 assert.ok(getCombatDistance(enemyBase, outerLaneSniper) < levelTwoTurret.range);
+
+const rangedAttacker = { type: 'ranged' };
+const sniperAttacker = { type: 'sniper' };
+const meleeAttacker = { type: 'melee' };
+const airborneTarget = { type: 'ranged', isAirUnit: true };
+const heavyTarget = { type: 'tank', isAirUnit: false };
+const backlineTarget = { type: 'medic', isAirUnit: false };
+assert.equal(getCounterProfile(rangedAttacker, airborneTarget).multiplier, 1.25);
+assert.equal(getCounterProfile(sniperAttacker, heavyTarget).multiplier, 1.35);
+assert.equal(getCounterProfile(meleeAttacker, backlineTarget).multiplier, 1.15);
+assert.equal(getCounterProfile(sniperAttacker, enemyBase).multiplier, 1);
+assert.equal(getTargetPriorityBonus(sniperAttacker, heavyTarget), 120);
+assert.equal(PLAYER_UNIT_ROLE_INFO.ranged.tag, '대공 +25%');
 
 // A level-one AI may not counter with a late-game Pit Lord/Crusader equivalent.
 assert.equal(chooseAffordableUnit('crusader', 300, 1, () => 0), 'melee');

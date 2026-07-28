@@ -82,10 +82,10 @@ export class WaveSystem {
       return '최후의 정화 진행 중 — 지옥문을 무너뜨리십시오';
     }
     if (nextWave === MAX_WAVES) {
-      return '최후의 정화: 지옥문 봉인 해제 · 권장 탱커 + 사제';
+      return '최후의 정화: 지옥문 봉인 해제 · 권장 심판관 + 사제';
     }
     if (nextWave % 6 === 0) {
-      return '정찰: 대악마가 전열을 지휘합니다 · 권장 탱커 + 사제';
+      return '정찰: 대악마 강림 · 대형 약점 · 권장 심판관 + 사제';
     }
 
     const pMelee = this.countSpawners('player', 'melee');
@@ -100,10 +100,10 @@ export class WaveSystem {
     let advice = '엑소시스트';
     if (pTank + pCrusader > 2) {
       threat = '밴시 저격대';
-      advice = '대천사';
+      advice = '엑소시스트 / 수도승';
     } else if (pMelee >= pRanged && pMelee >= pTank) {
       threat = '서큐버스 사격대';
-      advice = '수도승 / 십자군';
+      advice = '엑소시스트';
     } else if (pRanged >= pMelee && pRanged >= pTank) {
       threat = '핏로드 돌격대';
       advice = '심판관';

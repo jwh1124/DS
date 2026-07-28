@@ -16,6 +16,7 @@ import {
   UNIT_COSTS,
   UNIT_TECH_REQUIREMENTS
 } from './src/gameConfig.js';
+import { PLAYER_UNIT_ROLE_INFO } from './src/unitRoles.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -511,12 +512,12 @@ class Game {
     const ttRange = document.getElementById('tt-range');
 
     const unitStats = {
-      melee: { title: '🙏 수도승 (근접) [1] | 성서 계시 Lv.1', desc: '성수 주먹으로 악마를 때려잡는 최전방 전위.', hp: 120, dmg: 25, range: '근접' },
-      ranged: { title: '✝️ 엑소시스트 (원거리) [2] | 성서 계시 Lv.1', desc: '성수탄을 발사하여 원거리에서 악마를 퇴마.', hp: 60, dmg: 35, range: '원거리' },
-      medic: { title: '⛪ 사제 (치유) [3] | 🔒 필요: 성서 계시 Lv.2', desc: '신성한 기도로 부상당한 아군의 상처를 치유.', hp: 100, dmg: '치유+30', range: '중거리' },
-      sniper: { title: '🔥 이단심판관 (저격) [4] | 🔒 필요: 성서 계시 Lv.2', desc: '은탄환으로 초장거리에서 악마를 처형하는 심판자.', hp: 80, dmg: 75, range: '초장거리' },
-      tank: { title: '👼 대천사 (광역심판) [5] | 🔒 필요: 성서 계시 Lv.3', desc: '신성한 불꽃으로 광역 심판을 내리는 천상의 존재.', hp: 300, dmg: '60(AOE)', range: '장거리' },
-      crusader: { title: '⚔️ 십자군 (수호탱커) [6] | 🔒 필요: 성서 계시 Lv.3', desc: '거대한 수호방패와 신성 방어 아우라로 아군을 보호.', hp: 450, dmg: '45(근접)', range: '근접' },
+      melee: { title: '🙏 수도승 (근접) [1] | 성서 계시 Lv.1', desc: PLAYER_UNIT_ROLE_INFO.melee.description, hp: 120, dmg: 25, range: '근접' },
+      ranged: { title: '✝️ 엑소시스트 (원거리) [2] | 성서 계시 Lv.1', desc: PLAYER_UNIT_ROLE_INFO.ranged.description, hp: 60, dmg: '35 · 대공 44', range: '원거리' },
+      medic: { title: '⛪ 사제 (치유) [3] | 🔒 필요: 성서 계시 Lv.2', desc: PLAYER_UNIT_ROLE_INFO.medic.description, hp: 100, dmg: '치유+30', range: '중거리' },
+      sniper: { title: '🔥 이단심판관 (저격) [4] | 🔒 필요: 성서 계시 Lv.2', desc: PLAYER_UNIT_ROLE_INFO.sniper.description, hp: 80, dmg: '90 · 대형 122', range: '초장거리' },
+      tank: { title: '👼 대천사 (광역심판) [5] | 🔒 필요: 성서 계시 Lv.3', desc: PLAYER_UNIT_ROLE_INFO.tank.description, hp: 300, dmg: '60(AOE)', range: '장거리' },
+      crusader: { title: '⚔️ 십자군 (수호탱커) [6] | 🔒 필요: 성서 계시 Lv.3', desc: PLAYER_UNIT_ROLE_INFO.crusader.description, hp: 450, dmg: '45(근접)', range: '근접' },
       income: { title: '🕯️ 제단 봉헌 [Q]', desc: '매 웨이브마다 추가 신앙심을 +15 획득.', hp: '-', dmg: '-', range: '-' },
       tech: { title: '📖 성서 계시 [W]', desc: '성당 방어탑 개방 및 상위 성직자 해금.', hp: '-', dmg: '-', range: '-' },
       ultimate: { title: '⚡ 천벌 [E]', desc: '전장의 모든 악마에게 150 신성 피해를 가하는 천상의 심판.', hp: '-', dmg: '150(부대)', range: '전체' }

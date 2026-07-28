@@ -13,6 +13,7 @@ export class Projectile {
     this.canCrit = combatProfile.canCrit ?? true;
     this.splashRadius = combatProfile.splashRadius ?? 90;
     this.splashRatio = combatProfile.splashRatio ?? 0.5;
+    this.hitTag = combatProfile.hitTag ?? '';
     
     this.targetLastX = target ? target.x : x;
     this.targetLastY = target ? target.y : y;
@@ -78,7 +79,7 @@ export class Projectile {
     if (this.target && this.target.isAlive) {
       const isCrit = this.canCrit && Math.random() < 0.15;
       const finalDmg = isCrit ? this.damage * 1.5 : this.damage;
-      this.target.takeDamage(finalDmg, isCrit);
+      this.target.takeDamage(finalDmg, isCrit, this.hitTag);
     }
     
     const shockColor = this.team === 'player' ? '#f1c40f' : '#ff2d55';

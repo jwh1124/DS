@@ -3,6 +3,7 @@ import { Projectile } from './Projectile.js';
 import { FloatingText } from './FloatingText.js';
 import { getUnitVsBaseDamageMultiplier } from '../gameConfig.js';
 import { getAttackRangeAgainst, getCombatDistance, isBaseTarget } from '../combatMath.js';
+import { getCounterProfile, getTargetPriorityBonus } from '../unitRoles.js';
 
 const UNIT_STATS = {
   melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#f1c40f' },     // Monk / Imp
@@ -154,6 +155,7 @@ export class Unit {
     this.state = 'moving';
     this.target = null;
     this.attackCooldown = 0;
+    this.counterCueCooldown = 0;
     this.formationRow = 0;
     this.hasAura = false;
     this.isBoss = false; 
@@ -197,9 +199,21 @@ export class Unit {
     this.color = '#ff0055';
   }
 
-  takeDamage(amount, isCritical = false) {
+  takeDamage(amount, isCritical = false, counterLabel = '') {
     if (!this.isAlive) return;
     this.hp -= amount;
+
+    if (counterLabel && this.counterCueCooldown <= 0) {
+      this.counterCueCooldown = 1.8;
+      this.game.entityManager.addEntity(new FloatingText(
+        this.game,
+        counterLabel,
+        this.x,
+        this.y - 62 * this.scale,
+        '#d8bf8a',
+        false
+      ));
+    }
     
     const textStr = isCritical ? `CRIT! -${Math.floor(amount)}` : `-${Math.floor(amount)}`;
     const textColor = isCritical ? '#e0b75f' : '#efe4d3';
@@ -299,13 +313,16 @@ export class Unit {
     const enemies = this.game.entityManager.getEntitiesByTeam(enemyTeam);
     
     let closestDist = Infinity;
+    let bestTargetScore = Infinity;
     let closestEnemy = null;
     
     for (let i = 0; i < enemies.length; i++) {
       const enemy = enemies[i];
       const actualDist = getCombatDistance(this, enemy);
+      const targetScore = actualDist - getTargetPriorityBonus(this, enemy);
       
-      if (actualDist < closestDist) {
+      if (targetScore < bestTargetScore) {
+        bestTargetScore = targetScore;
         closestDist = actualDist;
         closestEnemy = enemy;
       }
@@ -322,6 +339,9 @@ export class Unit {
     
     if (this.attackCooldown > 0) {
       this.attackCooldown -= dt;
+    }
+    if (this.counterCueCooldown > 0) {
+      this.counterCueCooldown -= dt;
     }
     if (this.recoil > 0) {
       this.recoil = Math.max(0, this.recoil - dt * 10);
@@ -424,7 +444,9 @@ export class Unit {
       return;
     }
 
-    let currentDamage = this.hasAura ? this.damage * 1.4 : this.damage;
+    const counterProfile = getCounterProfile(this, target);
+    let currentDamage = (this.hasAura ? this.damage * 1.4 : this.damage) * counterProfile.multiplier;
+    const projectileProfile = counterProfile.label ? { hitTag: counterProfile.label } : {};
     
     if (target.maxHp && target.techLevel !== undefined) {
       currentDamage *= getUnitVsBaseDamageMultiplier(this.team);
@@ -444,7 +466,8 @@ export class Unit {
         currentDamage * 1.2, 
         projColor, 
         this.team,
-        false
+        false,
+        projectileProfile
       ));
       
       this.game.entityManager.addEntity(new Particle(
@@ -461,7 +484,8 @@ export class Unit {
         currentDamage, 
         projColor, 
         this.team,
-        false
+        false,
+        projectileProfile
       ));
       this.game.entityManager.addEntity(new Particle(
         this.game, this.x + (this.dir * 26 * this.scale), this.y - 6 * this.scale, projColor, 0.2, 0, 0, 12, 'spark'
@@ -476,12 +500,13 @@ export class Unit {
         currentDamage, 
         projColor, 
         this.team,
-        true
+        true,
+        projectileProfile
       ));
     } else if (this.type === 'crusader') {
       const isCrit = Math.random() < 0.25;
       const finalDmg = isCrit ? currentDamage * 1.6 : currentDamage;
-      target.takeDamage(finalDmg, isCrit);
+      target.takeDamage(finalDmg, isCrit, counterProfile.label);
       
       const shockColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
       this.game.entityManager.addEntity(new Particle(
@@ -493,7 +518,7 @@ export class Unit {
     } else {
       const isCrit = Math.random() < 0.18;
       const finalDmg = isCrit ? currentDamage * 1.5 : currentDamage;
-      target.takeDamage(finalDmg, isCrit);
+      target.takeDamage(finalDmg, isCrit, counterProfile.label);
       
       const hitColor = this.team === 'player' ? '#f1c40f' : '#c0392b';
       for (let i = 0; i < 5; i++) {
