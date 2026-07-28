@@ -93,16 +93,18 @@ export class Projectile {
       const enemies = this.game.entityManager.getEntitiesByTeam(enemyTeam);
       const splashDmg = this.damage * this.splashRatio;
       
-      enemies.forEach(enemy => {
-        if (enemy !== this.target && enemy.isAlive) {
-          const edx = enemy.x - this.x;
-          const edy = enemy.y - this.y;
-          const edist = Math.sqrt(edx*edx + edy*edy);
-          if (edist <= this.splashRadius) {
-            enemy.takeDamage(splashDmg, false);
+      if (splashDmg > 0 && this.splashRadius > 0) {
+        enemies.forEach(enemy => {
+          if (enemy !== this.target && enemy.isAlive) {
+            const edx = enemy.x - this.x;
+            const edy = enemy.y - this.y;
+            const edist = Math.sqrt(edx*edx + edy*edy);
+            if (edist <= this.splashRadius) {
+              enemy.takeDamage(splashDmg, false);
+            }
           }
-        }
-      });
+        });
+      }
       
       this.game.entityManager.addEntity(new Particle(
         this.game, this.x, this.y, shockColor, 0.24, 0, Math.random() * Math.PI, 26, 'slash_arc'

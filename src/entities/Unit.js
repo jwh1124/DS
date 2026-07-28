@@ -2,6 +2,7 @@ import { Particle } from './Particle.js';
 import { Projectile } from './Projectile.js';
 import { FloatingText } from './FloatingText.js';
 import { getUnitVsBaseDamageMultiplier } from '../gameConfig.js';
+import { getAttackRangeAgainst, getCombatDistance, isBaseTarget } from '../combatMath.js';
 
 const UNIT_STATS = {
   melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#f1c40f' },     // Monk / Imp
@@ -153,6 +154,7 @@ export class Unit {
     this.state = 'moving';
     this.target = null;
     this.attackCooldown = 0;
+    this.formationRow = 0;
     this.hasAura = false;
     this.isBoss = false; 
     this.scale = 1;
@@ -301,13 +303,7 @@ export class Unit {
     
     for (let i = 0; i < enemies.length; i++) {
       const enemy = enemies[i];
-      const dx = enemy.x - this.x;
-      const dy = enemy.y - this.y;
-      
-      if (Math.abs(dx) > closestDist || Math.abs(dy) > closestDist) continue;
-      
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const actualDist = dist - this.radius - (enemy.radius || 0);
+      const actualDist = getCombatDistance(this, enemy);
       
       if (actualDist < closestDist) {
         closestDist = actualDist;
@@ -351,7 +347,8 @@ export class Unit {
     this.target = target;
     
     if (target) {
-      if (distance <= this.range) {
+      const attackRange = getAttackRangeAgainst(this, target);
+      if (distance <= attackRange) {
         this.state = 'attacking';
         if (this.attackCooldown <= 0) {
           this.performAttack(target);
@@ -360,7 +357,8 @@ export class Unit {
         }
       } else {
         this.state = 'moving';
-        this.moveTowards(target.x, target.y, dt, currentSpeed);
+        const moveTargetY = isBaseTarget(target) ? this.y : target.y;
+        this.moveTowards(target.x, moveTargetY, dt, currentSpeed);
       }
     } else {
       this.state = 'moving';

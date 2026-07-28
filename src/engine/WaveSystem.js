@@ -2,6 +2,7 @@ import { Unit } from '../entities/Unit.js';
 import { Particle } from '../entities/Particle.js';
 import { FloatingText } from '../entities/FloatingText.js';
 import { WORLD_WIDTH } from '../../main.js';
+import { getWaveFormationSlot } from '../combatMath.js';
 import {
   AI_STARTING_INCOME,
   AI_STARTING_MINERALS,
@@ -244,7 +245,9 @@ export class WaveSystem {
     // Spawn player units
     const pBaseY = this.game.canvas.height / 2;
     this.spawners.player.forEach((contract, idx) => {
-      const unit = new Unit(this.game, 150, this.getFormationY(pBaseY, idx), 'player', contract.type);
+      const slot = getWaveFormationSlot(150, pBaseY, idx, 'player');
+      const unit = new Unit(this.game, slot.x, slot.y, 'player', contract.type);
+      unit.formationRow = slot.row;
       unit.spawnerId = contract.id;
       unit.isWaveFighter = true;
       this.game.entityManager.addEntity(unit);
@@ -252,7 +255,9 @@ export class WaveSystem {
 
     // Spawn enemy units
     this.spawners.enemy.forEach((contract, idx) => {
-      const unit = new Unit(this.game, WORLD_WIDTH - 200, this.getFormationY(eBaseY, idx), 'enemy', contract.type);
+      const slot = getWaveFormationSlot(WORLD_WIDTH - 200, eBaseY, idx, 'enemy');
+      const unit = new Unit(this.game, slot.x, slot.y, 'enemy', contract.type);
+      unit.formationRow = slot.row;
       unit.spawnerId = contract.id;
       unit.isWaveFighter = true;
       this.game.entityManager.addEntity(unit);
@@ -300,14 +305,6 @@ export class WaveSystem {
       : '[최후 심판]: 지옥문의 잔존 마력이 성당을 삼켰습니다.';
     this.isActive = false;
     this.game.stop(winner);
-  }
-
-  getFormationY(baseY, index) {
-    // Seven separated lanes keep large rosters readable at a glance. The
-    // secondary row offsets repeated contracts without turning into a blob.
-    const lane = index % 7;
-    const row = Math.floor(index / 7);
-    return baseY + (lane - 3) * 48 + (row % 3 - 1) * 9;
   }
 
   triggerAiOrbitalStrike() {

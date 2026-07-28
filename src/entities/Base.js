@@ -2,6 +2,7 @@ import { FloatingText } from './FloatingText.js';
 import { Particle } from './Particle.js';
 import { Projectile } from './Projectile.js';
 import { BASE_TECH_HP_GAIN, BASE_TURRET_BALANCE, getBaseTurretStats } from '../gameConfig.js';
+import { getCombatDistance } from '../combatMath.js';
 
 const BASE_ART = {
   player: `${import.meta.env.BASE_URL}bases/holy-cathedral-v2.png`,
@@ -249,9 +250,7 @@ export class Base {
       let closestDist = this.turretRange;
 
       for (const enemy of enemies) {
-        const dx = enemy.x - this.x;
-        const dy = enemy.y - this.y;
-        const dist = Math.hypot(dx, dy);
+        const dist = getCombatDistance(this, enemy);
         if (dist <= closestDist) {
           closestDist = dist;
           closestEnemy = enemy;

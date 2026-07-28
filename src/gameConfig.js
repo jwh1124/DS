@@ -48,16 +48,16 @@ export function getUnitVsBaseDamageMultiplier(attackerTeam) {
   return UNIT_VS_BASE_DAMAGE_MULTIPLIERS[attackerTeam] ?? 1;
 }
 
-// Base artillery should protect the final approach, not control half the map.
-// Level 2 is 38 DPS and level 3 is 58 DPS before the reduced splash damage.
+// Base artillery protects the final approach with deliberate single-target fire.
+// Level 2 is 38 DPS and level 3 is 58 DPS; neither level deals splash damage.
 export const BASE_TURRET_BALANCE = Object.freeze({
-  range: 360,
+  range: 560,
   baseDamage: 35,
   damagePerUpgrade: 20,
   baseInterval: 1.6,
   intervalMultiplier: 0.9,
-  splashRadius: 70,
-  splashRatio: 0.25
+  splashRadius: 0,
+  splashRatio: 0
 });
 
 export function getBaseTurretStats(techLevel) {
