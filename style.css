@@ -321,6 +321,17 @@ body.developer-mode .utility-controls {
   text-shadow: 0 0 5px #000;
 }
 
+.base-defense-status {
+  color: #aa9692;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.base-defense-status.unsealed {
+  color: #d2b784;
+}
+
 .wave-timer {
   background: rgba(15, 10, 20, 0.9);
   border: 1px solid rgba(183, 154, 103, 0.68);

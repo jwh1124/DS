@@ -151,20 +151,19 @@ export class WaveSystem {
     
     // AI Tactical Orbital Strike Check
     const playerUnits = this.game.entityManager.getEntitiesByTeam('player').filter(e => e.radius && e.type);
-    if (playerUnits.length >= 8 && this.aiUltimateCooldown <= 0 && this.aiMinerals >= 300) {
+    const enemyTechCost = this.game.enemyBase ? getTechUpgradeCost(this.game.enemyBase.techLevel) : Infinity;
+    if (this.aiTechReserve >= enemyTechCost && this.game.enemyBase) {
+      // Progression is deterministic: a large player army no longer prevents
+      // the enemy base from ever reaching its expected defensive tier.
+      this.game.enemyBase.upgradeTech();
+      this.aiTechReserve -= enemyTechCost;
+      this.lastActionLog = `[지옥 각성]: 악마 군단 강화 (Lv.${this.game.enemyBase.techLevel})! (-${enemyTechCost}🔥)`;
+    } else if (playerUnits.length >= 8 && this.aiUltimateCooldown <= 0 && this.aiMinerals >= 300) {
       this.triggerAiOrbitalStrike();
       this.aiMinerals -= 300;
       this.aiUltimateCooldown = 35;
       this.lastActionLog = `[☠️ 악마의 저주]: 성직자 부대에 저주 폭격! (-300🔥, 쿨타임 35s)`;
     } else {
-      // Smart AI Tech Upgrade Decision
-      const enemyTechCost = this.game.enemyBase ? getTechUpgradeCost(this.game.enemyBase.techLevel) : Infinity;
-      if (this.aiTechReserve >= enemyTechCost && this.game.enemyBase) {
-        this.game.enemyBase.upgradeTech();
-        this.aiTechReserve -= enemyTechCost;
-        this.lastActionLog = `[지옥 각성]: 악마 군단 강화 (Lv.${this.game.enemyBase.techLevel})! (-${enemyTechCost}🔥)`;
-      }
-      
       // Smart Counter-Pick AI Logic
       const pMelee = this.countSpawners('player', 'melee');
       const pRanged = this.countSpawners('player', 'ranged');

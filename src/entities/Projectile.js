@@ -1,7 +1,7 @@
 import { Particle } from './Particle.js';
 
 export class Projectile {
-  constructor(game, x, y, target, damage, color, team, isHeavy = false) {
+  constructor(game, x, y, target, damage, color, team, isHeavy = false, combatProfile = {}) {
     this.game = game;
     this.x = x;
     this.y = y;
@@ -10,6 +10,9 @@ export class Projectile {
     this.color = color;
     this.team = team;
     this.isHeavy = isHeavy;
+    this.canCrit = combatProfile.canCrit ?? true;
+    this.splashRadius = combatProfile.splashRadius ?? 90;
+    this.splashRatio = combatProfile.splashRatio ?? 0.5;
     
     this.targetLastX = target ? target.x : x;
     this.targetLastY = target ? target.y : y;
@@ -73,7 +76,7 @@ export class Projectile {
     
     // Direct damage
     if (this.target && this.target.isAlive) {
-      const isCrit = Math.random() < 0.15;
+      const isCrit = this.canCrit && Math.random() < 0.15;
       const finalDmg = isCrit ? this.damage * 1.5 : this.damage;
       this.target.takeDamage(finalDmg, isCrit);
     }
@@ -88,15 +91,14 @@ export class Projectile {
     if (this.isHeavy) {
       const enemyTeam = this.team === 'player' ? 'enemy' : 'player';
       const enemies = this.game.entityManager.getEntitiesByTeam(enemyTeam);
-      const splashRadius = 90;
-      const splashDmg = this.damage * 0.5;
+      const splashDmg = this.damage * this.splashRatio;
       
       enemies.forEach(enemy => {
         if (enemy !== this.target && enemy.isAlive) {
           const edx = enemy.x - this.x;
           const edy = enemy.y - this.y;
           const edist = Math.sqrt(edx*edx + edy*edy);
-          if (edist <= splashRadius) {
+          if (edist <= this.splashRadius) {
             enemy.takeDamage(splashDmg, false);
           }
         }

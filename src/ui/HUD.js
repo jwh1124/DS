@@ -15,6 +15,7 @@ export class HUD {
     
     this.eHealthText = document.getElementById('enemy-health-text');
     this.eHealthBar = document.getElementById('enemy-health-bar');
+    this.eDefenseStatus = document.getElementById('enemy-defense-status');
     
     this.buildButtons = document.querySelectorAll('.build-btn');
   }
@@ -56,6 +57,13 @@ export class HUD {
     if (eBase) {
       this.eHealthText.textContent = `${Math.ceil(eBase.hp)} / ${eBase.maxHp}`;
       this.eHealthBar.style.width = `${(eBase.hp / eBase.maxHp) * 100}%`;
+      if (this.eDefenseStatus) {
+        const sealWavesLeft = Math.max(0, MAX_WAVES - waveSystem.aiWaveCount);
+        this.eDefenseStatus.textContent = sealWavesLeft > 0
+          ? `봉인 ${sealWavesLeft}W 후 해제 · 포탑 Lv.${eBase.techLevel}`
+          : `봉인 해제 · 포탑 Lv.${eBase.techLevel}`;
+        this.eDefenseStatus.classList.toggle('unsealed', sealWavesLeft === 0);
+      }
     }
     
     // Keep affordability and rule locks in one place so a locked card can never look purchasable.

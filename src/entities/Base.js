@@ -1,6 +1,7 @@
 import { FloatingText } from './FloatingText.js';
 import { Particle } from './Particle.js';
 import { Projectile } from './Projectile.js';
+import { BASE_TURRET_BALANCE, getBaseTurretStats } from '../gameConfig.js';
 
 const BASE_ART = {
   player: `${import.meta.env.BASE_URL}bases/holy-cathedral-v2.png`,
@@ -21,9 +22,10 @@ export class Base {
     this.isAlive = true;
     this.techLevel = 1;
     this.turretCooldown = 0;
-    this.turretAttackSpeed = 1.0;
-    this.turretDamage = 60;
-    this.turretRange = 1000;
+    const turretStats = getBaseTurretStats(this.techLevel);
+    this.turretAttackSpeed = turretStats.interval;
+    this.turretDamage = turretStats.damage;
+    this.turretRange = turretStats.range;
     this.shieldHitTimer = 0;
     this.turretAngle = team === 'player' ? 0 : Math.PI;
     this.turretRecoil = 0;
@@ -50,8 +52,10 @@ export class Base {
     this.techLevel++;
     this.maxHp += 3000;
     this.hp += 3000;
-    this.turretAttackSpeed *= 0.82;
-    this.turretDamage += 45;
+    const turretStats = getBaseTurretStats(this.techLevel);
+    this.turretAttackSpeed = turretStats.interval;
+    this.turretDamage = turretStats.damage;
+    this.turretRange = turretStats.range;
 
     if (this.game.audio) this.game.audio.playMagic();
 
@@ -267,7 +271,12 @@ export class Base {
             this.turretDamage,
             turretColor,
             this.team,
-            true
+            true,
+            {
+              canCrit: false,
+              splashRadius: BASE_TURRET_BALANCE.splashRadius,
+              splashRatio: BASE_TURRET_BALANCE.splashRatio
+            }
           ));
           this.turretCooldown = this.turretAttackSpeed;
           this.turretRecoil = 1;
