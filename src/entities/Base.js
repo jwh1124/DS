@@ -75,9 +75,28 @@ export class Base {
   takeDamage(amount) {
     if (!this.isAlive) return;
 
-    this.hp -= amount;
+    const gateIsSealed = this.team === 'enemy'
+      && this.game.waveSystem
+      && this.game.waveSystem.aiWaveCount < 12;
+    const sealFloor = Math.ceil(this.maxHp * 0.12);
+    const nextHp = this.hp - amount;
+
+    // Earlier waves wear down the gate, but only the twelfth wave can end the
+    // run. This protects the intended campaign arc from a lucky early snowball
+    // while preserving all damage already dealt.
+    this.hp = gateIsSealed ? Math.max(sealFloor, nextHp) : nextHp;
     this.shieldHitTimer = 0.4;
     if (this.game.addScreenShake) this.game.addScreenShake(3);
+
+    if (gateIsSealed && nextHp <= sealFloor) {
+      if (!this.sealWarningShown) {
+        this.sealWarningShown = true;
+        this.game.entityManager.addEntity(new FloatingText(
+          this.game, '지옥문 봉인: 최후의 정화까지 버텨냅니다', this.x, this.y - 125, '#b66c68', true
+        ));
+      }
+      return;
+    }
 
     const hpRatio = this.hp / this.maxHp;
     if (!this.emergencyPhase1 && hpRatio <= 0.6) {

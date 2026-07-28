@@ -9,6 +9,7 @@ import {
   FIRST_WAVE_DELAY,
   getTechUpgradeCost,
   MAX_SPAWNERS,
+  MAX_WAVES,
   UNIT_COSTS,
   WAVE_INTERVAL
 } from '../gameConfig.js';
@@ -30,6 +31,7 @@ export class WaveSystem {
     this.aiTechReserve = Math.floor(AI_STARTING_MINERALS * 0.6);
     this.aiIncome = AI_STARTING_INCOME;
     this.aiUltimateCooldown = 0;
+    this.finalWaveStarted = false;
     this.lastActionLog = '[교단]: 첫 악마 웨이브에 대비하십시오.';
   }
 
@@ -74,6 +76,12 @@ export class WaveSystem {
 
   getUpcomingWavePreview() {
     const nextWave = this.aiWaveCount + 1;
+    if (nextWave > MAX_WAVES) {
+      return '최후의 정화 진행 중 — 지옥문을 무너뜨리십시오';
+    }
+    if (nextWave === MAX_WAVES) {
+      return '최후의 정화: 지옥문 봉인이 풀립니다 — 대악마 처단';
+    }
     if (nextWave % 6 === 0) {
       return '정찰: 대악마가 전열을 지휘합니다 — 탱커와 치유사를 준비';
     }
@@ -107,6 +115,8 @@ export class WaveSystem {
       this.aiUltimateCooldown -= dt;
     }
 
+    if (this.aiWaveCount >= MAX_WAVES) return;
+
     this.timeUntilWave -= dt;
 
     if (this.timeUntilWave <= 0) {
@@ -116,7 +126,9 @@ export class WaveSystem {
   }
 
   spawnWave() {
+    const recalledCount = this.retirePreviousWave();
     this.aiWaveCount++;
+    this.finalWaveStarted = this.aiWaveCount === MAX_WAVES;
     
     // AI Income addition
     this.aiMinerals += this.aiIncome;
@@ -182,7 +194,7 @@ export class WaveSystem {
       }
       
       if (this.spawners.enemy.length >= MAX_SPAWNERS) {
-        this.lastActionLog = `[지옥문 만원]: 악마 소환진 50/50 최대 가동!`;
+        this.lastActionLog = `[지옥문 만원]: 악마 소환진 ${MAX_SPAWNERS}/${MAX_SPAWNERS} 최대 가동!`;
       } else if (purchasedCount > 0) {
         this.lastActionLog = `[악마 소환]: ${unitNames[lastBoughtType]} 강림! (-${UNIT_COSTS[lastBoughtType]}🔥, 잔여 ${Math.floor(this.aiMinerals)}🔥)`;
       } else if (!this.lastActionLog.includes('시대 발전') && !this.lastActionLog.includes('궤도 폭격')) {
@@ -192,10 +204,11 @@ export class WaveSystem {
     
     const eBaseY = this.game.canvas.height / 2;
     
-    // Boss wave check (Every 6 waves)
+    // Boss wave check (mid-boss and final boss)
     if (this.aiWaveCount > 0 && this.aiWaveCount % 6 === 0) {
       const tempBoss = new Unit(this.game, WORLD_WIDTH - 200, eBaseY, 'enemy', 'tank');
       tempBoss.makeBoss();
+      tempBoss.isWaveFighter = true;
       this.game.entityManager.addEntity(tempBoss);
       
       if (this.game.audio) {
@@ -203,6 +216,12 @@ export class WaveSystem {
       }
       if (this.game.addScreenShake) {
         this.game.addScreenShake(8);
+      }
+
+      if (this.finalWaveStarted) {
+        this.game.entityManager.addEntity(new FloatingText(
+          this.game, '✝️ 지옥문 봉인 해제 — 지금 정화하십시오!', WORLD_WIDTH / 2, 140, '#e7c56f', true
+        ));
       }
       
       this.game.entityManager.addEntity(new FloatingText(this.game, `☠️ 경고: 대악마 강림! (Wave ${this.aiWaveCount}) ☠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
@@ -213,17 +232,17 @@ export class WaveSystem {
     // Spawn player units
     const pBaseY = this.game.canvas.height / 2;
     this.spawners.player.forEach((contract, idx) => {
-      const yOffset = (idx % 5 - 2) * 22;
-      const unit = new Unit(this.game, 150, pBaseY + yOffset, 'player', contract.type);
+      const unit = new Unit(this.game, 150, this.getFormationY(pBaseY, idx), 'player', contract.type);
       unit.spawnerId = contract.id;
+      unit.isWaveFighter = true;
       this.game.entityManager.addEntity(unit);
     });
 
     // Spawn enemy units
     this.spawners.enemy.forEach((contract, idx) => {
-      const yOffset = (idx % 5 - 2) * 22;
-      const unit = new Unit(this.game, WORLD_WIDTH - 200, eBaseY + yOffset, 'enemy', contract.type);
+      const unit = new Unit(this.game, WORLD_WIDTH - 200, this.getFormationY(eBaseY, idx), 'enemy', contract.type);
       unit.spawnerId = contract.id;
+      unit.isWaveFighter = true;
       this.game.entityManager.addEntity(unit);
     });
     
@@ -233,6 +252,31 @@ export class WaveSystem {
       const incomeAmt = this.game.economy.income;
       this.game.entityManager.addEntity(new FloatingText(this.game, `+${incomeAmt} ✝️`, this.game.playerBase.x, this.game.playerBase.y - 80, '#f1c40f', true));
     }
+
+    if (recalledCount > 0) {
+      this.game.entityManager.addEntity(new FloatingText(
+        this.game, `전열 교대 · 이전 분대 ${recalledCount}명 귀환`, WORLD_WIDTH / 2, 252, '#c9c1b6', false
+      ));
+    }
+  }
+
+  retirePreviousWave() {
+    let recalledCount = 0;
+    for (const entity of this.game.entityManager.entities) {
+      if (entity.isWaveFighter && entity.isAlive) {
+        entity.isAlive = false;
+        recalledCount++;
+      }
+    }
+    return recalledCount;
+  }
+
+  getFormationY(baseY, index) {
+    // Seven separated lanes keep large rosters readable at a glance. The
+    // secondary row offsets repeated contracts without turning into a blob.
+    const lane = index % 7;
+    const row = Math.floor(index / 7);
+    return baseY + (lane - 3) * 48 + (row % 3 - 1) * 9;
   }
 
   triggerAiOrbitalStrike() {

@@ -25,11 +25,17 @@ export class HUD {
     this.incomeText.textContent = `+${Math.floor(this.game.economy.income)} / wave`;
     
     // Update timer
-    this.timerText.textContent = Math.max(0, this.game.waveSystem.timeUntilWave).toFixed(1);
-    if (this.waveLabel) this.waveLabel.textContent = `WAVE ${this.game.waveSystem.aiWaveCount + 1} · 악마 정찰`;
-    if (this.wavePreview) this.wavePreview.textContent = this.game.waveSystem.getUpcomingWavePreview();
+    const waveSystem = this.game.waveSystem;
+    const isFinale = waveSystem.aiWaveCount >= MAX_WAVES;
+    this.timerText.textContent = isFinale ? '—' : Math.max(0, waveSystem.timeUntilWave).toFixed(1);
+    if (this.waveLabel) {
+      this.waveLabel.textContent = isFinale
+        ? 'FINAL WAVE · 지옥문 정화'
+        : `WAVE ${waveSystem.aiWaveCount + 1}/${MAX_WAVES} · 악마 정찰`;
+    }
+    if (this.wavePreview) this.wavePreview.textContent = waveSystem.getUpcomingWavePreview();
     if (this.launchWaveButton) {
-      this.launchWaveButton.disabled = this.game.waveSystem.timeUntilWave <= 0.25;
+      this.launchWaveButton.disabled = isFinale || waveSystem.timeUntilWave <= 0.25;
     }
     
     // Update Base Health
@@ -64,4 +70,4 @@ export class HUD {
     });
   }
 }
-import { MAX_SPAWNERS, MAX_TECH_LEVEL, UNIT_TECH_REQUIREMENTS } from '../gameConfig.js';
+import { MAX_SPAWNERS, MAX_TECH_LEVEL, MAX_WAVES, UNIT_TECH_REQUIREMENTS } from '../gameConfig.js';

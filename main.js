@@ -286,8 +286,8 @@ class Game {
     
     if (dbgAiMinerals) dbgAiMinerals.textContent = `${Math.floor(this.waveSystem.aiMinerals)} 🔥`;
     if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 🔥`;
-    if (dbgAiUnits) dbgAiUnits.textContent = `임프${aiMelee} 서큐${aiRanged} 리치${aiMedic} 밴시${aiSniper} 발록${aiTank} 핏로드${aiCrusader} (${enemySpawners.length}/50)`;
-    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `수도승${pMelee} 퇴마${pRanged} 사제${pMedic} 심판${pSniper} 천사${pTank} 십자군${pCrusader} (${playerSpawners.length}/50)`;
+    if (dbgAiUnits) dbgAiUnits.textContent = `임프${aiMelee} 서큐${aiRanged} 리치${aiMedic} 밴시${aiSniper} 발록${aiTank} 핏로드${aiCrusader} (${enemySpawners.length}/${MAX_SPAWNERS})`;
+    if (dbgPlayerUnits) dbgPlayerUnits.textContent = `수도승${pMelee} 퇴마${pRanged} 사제${pMedic} 심판${pSniper} 천사${pTank} 십자군${pCrusader} (${playerSpawners.length}/${MAX_SPAWNERS})`;
     if (dbgLastAction && this.waveSystem.lastActionLog) dbgLastAction.textContent = this.waveSystem.lastActionLog;
     
     if (this.moveCameraLeft) {
@@ -412,7 +412,7 @@ class Game {
     } else {
       if (this.waveSystem.spawners.player.length >= MAX_SPAWNERS) {
         this.entityManager.addEntity(new FloatingText(
-          this, `⚠️ 교단 소환 한도 (50/50 MAX)!`, this.playerBase.x, this.playerBase.y - 120, '#ff0055', true
+          this, `⚠️ 교단 편성 한도 (${MAX_SPAWNERS}/${MAX_SPAWNERS} MAX)!`, this.playerBase.x, this.playerBase.y - 120, '#ff0055', true
         ));
         return;
       }

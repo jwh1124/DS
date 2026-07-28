@@ -22,13 +22,16 @@ export const UNIT_COSTS = {
 // exponential ladder. A player can choose economy, troops, or one of two
 // tangible unlocks during a normal-length match.
 export const MAX_TECH_LEVEL = 3;
-export const MAX_SPAWNERS = 50;
+// A compact roster keeps every role legible in a single wave.
+export const MAX_SPAWNERS = 16;
+export const MAX_WAVES = 12;
 export const PLAYER_STARTING_MINERALS = 300;
 export const AI_STARTING_MINERALS = 250;
 export const PLAYER_STARTING_INCOME = 60;
 export const AI_STARTING_INCOME = 60;
-export const FIRST_WAVE_DELAY = 10;
-export const WAVE_INTERVAL = 15;
+// A full twelve-wave campaign is roughly eight minutes without early starts.
+export const FIRST_WAVE_DELAY = 15;
+export const WAVE_INTERVAL = 40;
 
 export function getTechUpgradeCost(currentTechLevel) {
   if (currentTechLevel >= MAX_TECH_LEVEL) return Infinity;

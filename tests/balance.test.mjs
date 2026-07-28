@@ -3,6 +3,9 @@ import {
   chooseAffordableUnit,
   getTechUpgradeCost,
   getUnlockedUnitTypes,
+  MAX_SPAWNERS,
+  MAX_WAVES,
+  WAVE_INTERVAL,
   UNIT_COSTS
 } from '../src/gameConfig.js';
 
@@ -12,6 +15,9 @@ assert.deepEqual(getUnlockedUnitTypes(3), ['melee', 'ranged', 'medic', 'sniper',
 assert.equal(getTechUpgradeCost(1), 400);
 assert.equal(getTechUpgradeCost(2), 400);
 assert.equal(getTechUpgradeCost(3), Infinity);
+assert.equal(MAX_WAVES, 12);
+assert.equal(MAX_SPAWNERS, 16);
+assert.equal(WAVE_INTERVAL, 40);
 
 // A level-one AI may not counter with a late-game Pit Lord/Crusader equivalent.
 assert.equal(chooseAffordableUnit('crusader', 300, 1, () => 0), 'melee');
