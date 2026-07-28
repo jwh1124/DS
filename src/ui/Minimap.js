@@ -47,28 +47,20 @@ export class Minimap {
     this.ctx.fillRect(0, 0, w, h);
     
     // Ground line
-    this.ctx.fillStyle = '#ff8800';
+    this.ctx.fillStyle = '#845c3d';
     this.ctx.fillRect(0, h - 6, w, 2);
     
     const scale = w / WORLD_WIDTH;
     
     // Draw bases
     if (this.game.playerBase && this.game.playerBase.isAlive) {
-      this.ctx.fillStyle = '#00e5ff';
+      this.ctx.fillStyle = '#79aaa6';
       this.ctx.fillRect(this.game.playerBase.x * scale - 4, h/2 - 6, 8, 12);
-      this.ctx.shadowBlur = 6;
-      this.ctx.shadowColor = '#00e5ff';
-      this.ctx.fillRect(this.game.playerBase.x * scale - 4, h/2 - 6, 8, 12);
-      this.ctx.shadowBlur = 0;
     }
     
     if (this.game.enemyBase && this.game.enemyBase.isAlive) {
-      this.ctx.fillStyle = '#ff3333';
+      this.ctx.fillStyle = '#ad6763';
       this.ctx.fillRect(this.game.enemyBase.x * scale - 4, h/2 - 6, 8, 12);
-      this.ctx.shadowBlur = 6;
-      this.ctx.shadowColor = '#ff3333';
-      this.ctx.fillRect(this.game.enemyBase.x * scale - 4, h/2 - 6, 8, 12);
-      this.ctx.shadowBlur = 0;
     }
     
     // Draw entities
@@ -81,12 +73,12 @@ export class Minimap {
       const my = (e.y / this.game.canvas.height) * h;
       
       if (e.isBoss) {
-        this.ctx.fillStyle = '#ff00ff';
+        this.ctx.fillStyle = '#b07b72';
         this.ctx.beginPath();
         this.ctx.arc(mx, my, 4, 0, Math.PI * 2);
         this.ctx.fill();
       } else {
-        this.ctx.fillStyle = e.team === 'player' ? '#00e5ff' : '#ff3333';
+        this.ctx.fillStyle = e.team === 'player' ? '#79aaa6' : '#ad6763';
         this.ctx.fillRect(mx - 1.5, my - 1.5, 3, 3);
       }
     }
@@ -94,11 +86,8 @@ export class Minimap {
     // Camera box
     const camW = this.game.canvas.width * scale;
     const camX = this.game.cameraX * scale;
-    this.ctx.strokeStyle = '#f1c40f';
+    this.ctx.strokeStyle = '#b79a67';
     this.ctx.lineWidth = 1.5;
-    this.ctx.shadowBlur = 4;
-    this.ctx.shadowColor = '#f1c40f';
     this.ctx.strokeRect(camX, 1, camW, h - 2);
-    this.ctx.shadowBlur = 0;
   }
 }

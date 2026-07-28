@@ -177,12 +177,12 @@ class Game {
     
     if (winner === 'player') {
       title.textContent = '✝️ 승리!';
-      title.style.color = '#f1c40f';
-      title.style.textShadow = '0 0 35px #f1c40f';
+      title.style.color = '#c7ad77';
+      title.style.textShadow = '0 5px 18px rgba(0, 0, 0, 0.72)';
     } else {
       title.textContent = '☠️ 패배...';
-      title.style.color = '#ff3333';
-      title.style.textShadow = '0 0 35px #ff3333';
+      title.style.color = '#b66c68';
+      title.style.textShadow = '0 5px 18px rgba(0, 0, 0, 0.72)';
     }
     
     if (gameOverScreen) gameOverScreen.classList.remove('hidden');
