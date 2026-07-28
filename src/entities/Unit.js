@@ -90,38 +90,34 @@ function removeBackground(img) {
   }
 }
 
-// Preload AI Sprite Images
+const baseUrl = import.meta.env.BASE_URL || './';
+const HOLY_ROSTER = new Image();
+const INFERNAL_ROSTER = new Image();
+HOLY_ROSTER.src = baseUrl + 'sprites/holy-roster-v3.png';
+INFERNAL_ROSTER.src = baseUrl + 'sprites/infernal-roster-v3.png';
+HOLY_ROSTER.hasNativeAlpha = true;
+INFERNAL_ROSTER.hasNativeAlpha = true;
+
 const SPRITE_IMAGES = {
+  player: { melee: HOLY_ROSTER, ranged: HOLY_ROSTER, medic: HOLY_ROSTER, sniper: HOLY_ROSTER, tank: HOLY_ROSTER, crusader: HOLY_ROSTER },
+  enemy: { melee: INFERNAL_ROSTER, ranged: INFERNAL_ROSTER, medic: INFERNAL_ROSTER, sniper: INFERNAL_ROSTER, tank: INFERNAL_ROSTER, crusader: INFERNAL_ROSTER }
+};
+
+// Atlas layout is fixed: melee/ranged/medic on top, sniper/tank/crusader on the bottom.
+const SPRITE_FRAMES = {
   player: {
-    melee: new Image(),
-    ranged: new Image(),
-    medic: new Image(),
-    sniper: new Image(),
-    tank: new Image(),
-    crusader: new Image()
+    melee: { col: 0, row: 0 }, ranged: { col: 1, row: 0 }, medic: { col: 2, row: 0 },
+    sniper: { col: 0, row: 1 }, tank: { col: 1, row: 1 }, crusader: { col: 2, row: 1 }
   },
   enemy: {
-    melee: new Image(),
-    ranged: new Image(),
-    tank: new Image()
+    melee: { col: 0, row: 0 }, ranged: { col: 1, row: 0 }, medic: { col: 2, row: 0 },
+    sniper: { col: 0, row: 1 }, tank: { col: 1, row: 1 }, crusader: { col: 2, row: 1 }
   }
 };
 
-const baseUrl = import.meta.env.BASE_URL || './';
-SPRITE_IMAGES.player.melee.src = baseUrl + 'sprites/monk.jpg';
-SPRITE_IMAGES.player.ranged.src = baseUrl + 'sprites/exorcist.jpg';
-SPRITE_IMAGES.player.medic.src = baseUrl + 'sprites/priest.jpg';
-SPRITE_IMAGES.player.sniper.src = baseUrl + 'sprites/inquisitor.jpg';
-SPRITE_IMAGES.player.tank.src = baseUrl + 'sprites/archangel.jpg';
-SPRITE_IMAGES.player.crusader.src = baseUrl + 'sprites/crusader.jpg';
-SPRITE_IMAGES.enemy.melee.src = baseUrl + 'sprites/imp.jpg';
-SPRITE_IMAGES.enemy.ranged.src = baseUrl + 'sprites/succubus.jpg';
-SPRITE_IMAGES.enemy.tank.src = baseUrl + 'sprites/balrog-warlord-v2.png';
-SPRITE_IMAGES.enemy.tank.hasNativeAlpha = true;
-
 const SPRITE_FACING = {
   player: { melee: 1, ranged: 1, medic: 1, sniper: 1, tank: 1, crusader: 1 },
-  enemy: { melee: -1, ranged: 1, medic: -1, sniper: -1, tank: -1, crusader: -1 }
+  enemy: { melee: -1, ranged: -1, medic: -1, sniper: -1, tank: -1, crusader: -1 }
 };
 
 export class Unit {
@@ -200,7 +196,7 @@ export class Unit {
     this.hp -= amount;
     
     const textStr = isCritical ? `CRIT! -${Math.floor(amount)}` : `-${Math.floor(amount)}`;
-    const textColor = isCritical ? '#f1c40f' : (this.team === 'player' ? '#ff4d4d' : '#9b59b6');
+    const textColor = isCritical ? '#e0b75f' : '#efe4d3';
     this.game.entityManager.addEntity(new FloatingText(this.game, textStr, this.x, this.y - 38 * this.scale, textColor, isCritical));
     
     const sparkColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
@@ -597,18 +593,26 @@ export class Unit {
     
     const imgGroup = SPRITE_IMAGES[this.team];
     const img = imgGroup ? imgGroup[this.type] : null;
+    const frame = SPRITE_FRAMES[this.team]?.[this.type];
     
     if (img && img.complete && img.naturalWidth > 0) {
-      // Guaranteed 100% Transparent Background Removal (누끼 따기)
       const transparentCanvas = img.hasNativeAlpha ? img : removeBackground(img);
-      
+      const sourceW = frame ? img.naturalWidth / 3 : img.naturalWidth;
+      const sourceH = frame ? img.naturalHeight / 2 : img.naturalHeight;
       const drawH = this.isBoss ? 62 : 58;
-      const drawW = drawH * ((img.naturalWidth || drawH) / (img.naturalHeight || drawH));
+      const drawW = drawH * (sourceW / sourceH);
       
-      ctx.shadowBlur = 14;
-      ctx.shadowColor = this.team === 'player' ? '#f1c40f' : '#8b00ff';
-      ctx.drawImage(transparentCanvas, -drawW / 2, -drawH / 2 - 6, drawW, drawH);
-      ctx.shadowBlur = 0;
+      ctx.drawImage(
+        transparentCanvas,
+        frame ? frame.col * sourceW : 0,
+        frame ? frame.row * sourceH : 0,
+        sourceW,
+        sourceH,
+        -drawW / 2,
+        -drawH / 2 - 6,
+        drawW,
+        drawH
+      );
 
     } else {
       // High-Quality Vector Art for Crusader & Pit Lord

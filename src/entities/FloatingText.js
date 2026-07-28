@@ -6,11 +6,11 @@ export class FloatingText {
     this.y = y;
     this.color = color;
     this.isCritical = isCritical;
-    this.life = isCritical ? 1.3 : 0.9;
+    this.life = isCritical ? 1.05 : 0.78;
     this.maxLife = this.life;
-    this.vy = isCritical ? -50 : -35;
-    this.vx = (Math.random() - 0.5) * 20;
-    this.scale = isCritical ? 1.8 : 1.0;
+    this.vy = isCritical ? -46 : -30;
+    this.vx = (Math.random() - 0.5) * 12;
+    this.scale = isCritical ? 1.2 : 0.92;
     this.isAlive = true;
   }
 
@@ -24,10 +24,9 @@ export class FloatingText {
     this.y += this.vy * dt;
     this.x += this.vx * dt;
     
-    // Scale animation (pop & settle)
-    if (this.isCritical && this.life > this.maxLife * 0.7) {
-      this.scale = 1.8 + Math.sin((1 - this.life / this.maxLife) * Math.PI * 5) * 0.4;
-    }
+    const progress = 1 - this.life / this.maxLife;
+    const pop = Math.sin(Math.min(1, progress * 6) * Math.PI * 0.5);
+    this.scale = (this.isCritical ? 1.12 : 0.9) + pop * (this.isCritical ? 0.22 : 0.1);
   }
 
   draw(ctx) {
@@ -39,25 +38,27 @@ export class FloatingText {
     ctx.save();
     ctx.globalAlpha = alpha;
     
-    const fontSize = this.isCritical ? 22 : 14;
-    ctx.font = `${this.isCritical ? '900' : '700'} ${fontSize}px Orbitron, "Noto Sans KR", sans-serif`;
+    const fontSize = this.isCritical ? 20 : 14;
+    const damageText = this.isCritical ? this.text.replace('CRIT! ', '') : this.text;
+    ctx.font = `${this.isCritical ? '900' : '800'} ${fontSize}px "Noto Sans KR", sans-serif`;
     ctx.textAlign = 'center';
     
     ctx.translate(this.x, this.y);
     ctx.scale(this.scale, this.scale);
     
-    // Glow effect for criticals
     if (this.isCritical) {
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = '#f1c40f';
+      ctx.font = '800 10px Cinzel, "Noto Sans KR", sans-serif';
+      ctx.fillStyle = '#d7b56a';
+      ctx.fillText('CRITICAL', 0, -fontSize * 0.8);
+      ctx.font = `900 ${fontSize}px "Noto Sans KR", sans-serif`;
     }
     
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
-    ctx.lineWidth = 4;
-    ctx.strokeText(this.text, 0, 0);
+    ctx.strokeStyle = 'rgba(20, 15, 15, 0.95)';
+    ctx.lineWidth = this.isCritical ? 3 : 2.5;
+    ctx.strokeText(damageText, 0, 0);
     
     ctx.fillStyle = this.color;
-    ctx.fillText(this.text, 0, 0);
+    ctx.fillText(damageText, 0, 0);
     
     ctx.restore();
   }
