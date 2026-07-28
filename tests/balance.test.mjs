@@ -5,6 +5,10 @@ import {
   getUnlockedUnitTypes,
   MAX_SPAWNERS,
   MAX_WAVES,
+  PLAYER_STARTING_INCOME,
+  PLAYER_STARTING_MINERALS,
+  AI_STARTING_INCOME,
+  AI_STARTING_MINERALS,
   WAVE_INTERVAL,
   UNIT_COSTS
 } from '../src/gameConfig.js';
@@ -18,6 +22,10 @@ assert.equal(getTechUpgradeCost(3), Infinity);
 assert.equal(MAX_WAVES, 12);
 assert.equal(MAX_SPAWNERS, 16);
 assert.equal(WAVE_INTERVAL, 40);
+assert.equal(PLAYER_STARTING_MINERALS, 400);
+assert.equal(PLAYER_STARTING_INCOME, 90);
+assert.equal(AI_STARTING_MINERALS, 180);
+assert.equal(AI_STARTING_INCOME, 50);
 
 // A level-one AI may not counter with a late-game Pit Lord/Crusader equivalent.
 assert.equal(chooseAffordableUnit('crusader', 300, 1, () => 0), 'melee');

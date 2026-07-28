@@ -698,5 +698,10 @@ class Game {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  new Game();
+  // Vite hot reload can re-evaluate this entry while the page is still open.
+  // Keep one authoritative game instance so controls never receive duplicate
+  // listeners (which is especially destructive for purchases and upgrades).
+  if (!window.__exorcismGame) {
+    window.__exorcismGame = new Game();
+  }
 });
