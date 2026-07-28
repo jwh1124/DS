@@ -22,6 +22,7 @@ assert.equal(getTechUpgradeCost(3), Infinity);
 assert.equal(MAX_WAVES, 12);
 assert.equal(MAX_SPAWNERS, 16);
 assert.equal(WAVE_INTERVAL, 40);
+assert.equal(MAX_WAVES * WAVE_INTERVAL, 480);
 assert.equal(PLAYER_STARTING_MINERALS, 400);
 assert.equal(PLAYER_STARTING_INCOME, 90);
 assert.equal(AI_STARTING_MINERALS, 180);

@@ -32,6 +32,7 @@ export class WaveSystem {
     this.aiIncome = AI_STARTING_INCOME;
     this.aiUltimateCooldown = 0;
     this.finalWaveStarted = false;
+    this.finalBattleTime = 0;
     this.lastActionLog = '[교단]: 첫 악마 웨이브에 대비하십시오.';
   }
 
@@ -123,7 +124,10 @@ export class WaveSystem {
       this.aiUltimateCooldown -= dt;
     }
 
-    if (this.aiWaveCount >= MAX_WAVES) return;
+    if (this.aiWaveCount >= MAX_WAVES) {
+      this.updateFinalBattle(dt);
+      return;
+    }
 
     this.timeUntilWave -= dt;
 
@@ -137,6 +141,7 @@ export class WaveSystem {
     const recalledCount = this.retirePreviousWave();
     this.aiWaveCount++;
     this.finalWaveStarted = this.aiWaveCount === MAX_WAVES;
+    if (this.finalWaveStarted) this.finalBattleTime = 60;
     
     // AI Income addition
     this.aiMinerals += this.aiIncome;
@@ -277,6 +282,25 @@ export class WaveSystem {
       }
     }
     return recalledCount;
+  }
+
+  updateFinalBattle(dt) {
+    if (this.finalBattleTime <= 0) return;
+    this.finalBattleTime = Math.max(0, this.finalBattleTime - dt);
+    if (this.finalBattleTime > 0) return;
+
+    const playerBase = this.game.playerBase;
+    const enemyBase = this.game.enemyBase;
+    if (!playerBase?.isAlive || !enemyBase?.isAlive) return;
+
+    const playerIntegrity = playerBase.hp / playerBase.maxHp;
+    const enemyIntegrity = enemyBase.hp / enemyBase.maxHp;
+    const winner = playerIntegrity >= enemyIntegrity ? 'player' : 'enemy';
+    this.lastActionLog = winner === 'player'
+      ? '[최후 심판]: 성당의 신성이 지옥문을 압도했습니다.'
+      : '[최후 심판]: 지옥문의 잔존 마력이 성당을 삼켰습니다.';
+    this.isActive = false;
+    this.game.stop(winner);
   }
 
   getFormationY(baseY, index) {
