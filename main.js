@@ -248,12 +248,12 @@ class Game {
     
     // Update Build Queue Badges
     const playerSpawners = this.waveSystem.spawners.player;
-    const pMelee = playerSpawners.filter(t => t === 'melee').length;
-    const pRanged = playerSpawners.filter(t => t === 'ranged').length;
-    const pMedic = playerSpawners.filter(t => t === 'medic').length;
-    const pSniper = playerSpawners.filter(t => t === 'sniper').length;
-    const pTank = playerSpawners.filter(t => t === 'tank').length;
-    const pCrusader = playerSpawners.filter(t => t === 'crusader').length;
+    const pMelee = this.waveSystem.countSpawners('player', 'melee');
+    const pRanged = this.waveSystem.countSpawners('player', 'ranged');
+    const pMedic = this.waveSystem.countSpawners('player', 'medic');
+    const pSniper = this.waveSystem.countSpawners('player', 'sniper');
+    const pTank = this.waveSystem.countSpawners('player', 'tank');
+    const pCrusader = this.waveSystem.countSpawners('player', 'crusader');
     
     const qMelee = document.getElementById('queue-melee');
     const qRanged = document.getElementById('queue-ranged');
@@ -271,12 +271,12 @@ class Game {
     
     // Update Debug Monitor
     const enemySpawners = this.waveSystem.spawners.enemy;
-    const aiMelee = enemySpawners.filter(t => t === 'melee').length;
-    const aiRanged = enemySpawners.filter(t => t === 'ranged').length;
-    const aiMedic = enemySpawners.filter(t => t === 'medic').length;
-    const aiSniper = enemySpawners.filter(t => t === 'sniper').length;
-    const aiTank = enemySpawners.filter(t => t === 'tank').length;
-    const aiCrusader = enemySpawners.filter(t => t === 'crusader').length;
+    const aiMelee = this.waveSystem.countSpawners('enemy', 'melee');
+    const aiRanged = this.waveSystem.countSpawners('enemy', 'ranged');
+    const aiMedic = this.waveSystem.countSpawners('enemy', 'medic');
+    const aiSniper = this.waveSystem.countSpawners('enemy', 'sniper');
+    const aiTank = this.waveSystem.countSpawners('enemy', 'tank');
+    const aiCrusader = this.waveSystem.countSpawners('enemy', 'crusader');
     
     const dbgAiMinerals = document.getElementById('debug-ai-minerals');
     const dbgAiIncome = document.getElementById('debug-ai-income');
@@ -437,12 +437,16 @@ class Game {
     
     const removed = this.waveSystem.removeSpawner('player', type);
     if (removed) {
-      const refundAmount = Math.floor(UNIT_COSTS[type] * 0.8);
+      const refundAmount = Math.floor(UNIT_COSTS[type] * 0.5);
       this.economy.minerals += refundAmount;
       this.audio.playMagic();
+      const recalledUnits = this.entityManager.entities.filter(entity =>
+        entity.team === 'player' && entity.spawnerId === removed.id && entity.isAlive
+      );
+      recalledUnits.forEach(unit => { unit.isAlive = false; });
       
       this.entityManager.addEntity(new FloatingText(
-        this, `♻️ ${PLAYER_UNIT_NAMES[type]} 환속 (+${refundAmount} ✝️)`, this.playerBase.x, this.playerBase.y - 100, '#f1c40f', true
+        this, `계약 해지: ${PLAYER_UNIT_NAMES[type]} ${recalledUnits.length}명 귀환 (+${refundAmount} 신앙석)`, this.playerBase.x, this.playerBase.y - 100, '#f1c40f', true
       ));
       
       for (let i = 0; i < 10; i++) {
@@ -455,6 +459,18 @@ class Game {
         this, `⚠️ 환속할 ${PLAYER_UNIT_NAMES[type]} 없음!`, this.playerBase.x, this.playerBase.y - 100, '#ff0055', false
       ));
     }
+  }
+
+  launchNextWaveEarly() {
+    if (!this.isRunning || this.isPaused) return;
+    if (!this.waveSystem.launchNextWaveEarly()) return;
+
+    const earlyBonus = 20;
+    this.economy.minerals += earlyBonus;
+    this.audio.playClick();
+    this.entityManager.addEntity(new FloatingText(
+      this, `정찰 돌파 · 웨이브 개시 (+${earlyBonus} 신앙심)`, WORLD_WIDTH / 2, 170, '#e7c56f', true
+    ));
   }
 
   setupInput() {
@@ -525,6 +541,7 @@ class Game {
     document.getElementById('pause-btn')?.addEventListener('click', () => this.togglePause());
     document.getElementById('resume-btn')?.addEventListener('click', () => this.togglePause());
     document.getElementById('pause-restart-btn')?.addEventListener('click', () => this.resetGame());
+    document.getElementById('launch-wave-btn')?.addEventListener('click', () => this.launchNextWaveEarly());
     
     document.querySelectorAll('.cheat-btn[data-speed]').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -618,6 +635,8 @@ class Game {
       } else if (key === 'e') {
         const btn = document.querySelector('.build-btn[data-type="ultimate"]');
         if (btn) this.triggerAction('ultimate', parseInt(btn.dataset.cost), btn);
+      } else if (key === 'f') {
+        this.launchNextWaveEarly();
       }
     });
     

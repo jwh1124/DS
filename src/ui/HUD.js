@@ -6,6 +6,9 @@ export class HUD {
     this.mineralsText = document.getElementById('minerals-text');
     this.incomeText = document.getElementById('income-text');
     this.timerText = document.getElementById('timer-text');
+    this.waveLabel = document.getElementById('wave-label');
+    this.wavePreview = document.getElementById('wave-preview');
+    this.launchWaveButton = document.getElementById('launch-wave-btn');
     
     this.pHealthText = document.getElementById('player-health-text');
     this.pHealthBar = document.getElementById('player-health-bar');
@@ -23,6 +26,11 @@ export class HUD {
     
     // Update timer
     this.timerText.textContent = Math.max(0, this.game.waveSystem.timeUntilWave).toFixed(1);
+    if (this.waveLabel) this.waveLabel.textContent = `WAVE ${this.game.waveSystem.aiWaveCount + 1} · 악마 정찰`;
+    if (this.wavePreview) this.wavePreview.textContent = this.game.waveSystem.getUpcomingWavePreview();
+    if (this.launchWaveButton) {
+      this.launchWaveButton.disabled = this.game.waveSystem.timeUntilWave <= 0.25;
+    }
     
     // Update Base Health
     const pBase = this.game.playerBase;

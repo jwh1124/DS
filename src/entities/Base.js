@@ -48,10 +48,10 @@ export class Base {
 
   upgradeTech() {
     this.techLevel++;
-    this.maxHp += 5000;
-    this.hp += 5000;
-    this.turretAttackSpeed *= 0.7;
-    this.turretDamage += 100;
+    this.maxHp += 3000;
+    this.hp += 3000;
+    this.turretAttackSpeed *= 0.82;
+    this.turretDamage += 45;
 
     if (this.game.audio) this.game.audio.playMagic();
 

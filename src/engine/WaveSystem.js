@@ -24,8 +24,10 @@ export class WaveSystem {
     this.timeUntilWave = FIRST_WAVE_DELAY;
     this.isActive = false;
     this.spawners = { player: [], enemy: [] };
+    this.nextSpawnerId = 1;
     this.aiWaveCount = 0;
     this.aiMinerals = AI_STARTING_MINERALS;
+    this.aiTechReserve = Math.floor(AI_STARTING_MINERALS * 0.6);
     this.aiIncome = AI_STARTING_INCOME;
     this.aiUltimateCooldown = 0;
     this.lastActionLog = '[교단]: 첫 악마 웨이브에 대비하십시오.';
@@ -37,6 +39,9 @@ export class WaveSystem {
     
     const diff = this.game.difficulty || 1.0;
     this.aiMinerals = Math.floor(AI_STARTING_MINERALS * diff);
+    // A separate ascension reserve guarantees visible AI growth while the
+    // regular war chest is still free to counter the player's army.
+    this.aiTechReserve = Math.floor(AI_STARTING_MINERALS * diff * 0.6);
     this.aiIncome = Math.floor(AI_STARTING_INCOME * diff);
     this.aiUltimateCooldown = 20;
     this.lastActionLog = `[지옥문]: 악마 군단 소환력 ${this.aiMinerals}🔥 / 증원 +${this.aiIncome}🔥`;
@@ -48,19 +53,51 @@ export class WaveSystem {
   
   addSpawner(team, type) {
     if (this.spawners[team].length < MAX_SPAWNERS) {
-      this.spawners[team].push(type);
-      return true;
+      const contract = { id: `${team}-${this.nextSpawnerId++}`, type };
+      this.spawners[team].push(contract);
+      return contract;
     }
     return false;
   }
 
   removeSpawner(team, type) {
-    const idx = this.spawners[team].indexOf(type);
+    const idx = this.spawners[team].findIndex(contract => contract.type === type);
     if (idx !== -1) {
-      this.spawners[team].splice(idx, 1);
-      return true;
+      return this.spawners[team].splice(idx, 1)[0];
     }
     return false;
+  }
+
+  countSpawners(team, type) {
+    return this.spawners[team].filter(contract => contract.type === type).length;
+  }
+
+  getUpcomingWavePreview() {
+    const nextWave = this.aiWaveCount + 1;
+    if (nextWave % 6 === 0) {
+      return '정찰: 대악마가 전열을 지휘합니다 — 탱커와 치유사를 준비';
+    }
+
+    const pMelee = this.countSpawners('player', 'melee');
+    const pRanged = this.countSpawners('player', 'ranged');
+    const pTank = this.countSpawners('player', 'tank');
+    const pCrusader = this.countSpawners('player', 'crusader');
+    const enemyTechLevel = this.game.enemyBase?.techLevel ?? 1;
+    const nextTechCost = getTechUpgradeCost(enemyTechLevel);
+    const ascends = this.aiTechReserve + this.aiIncome >= nextTechCost;
+
+    let threat = '임프 돌격대';
+    if (pTank + pCrusader > 2) threat = '밴시 저격대';
+    else if (pMelee >= pRanged && pMelee >= pTank) threat = '서큐버스 사격대';
+    else if (pRanged >= pMelee && pRanged >= pTank) threat = '핏로드 돌격대';
+
+    return `정찰: ${threat}${ascends ? ' · 지옥문 각성 임박' : ''}`;
+  }
+
+  launchNextWaveEarly() {
+    if (!this.isActive || this.timeUntilWave <= 0.25) return false;
+    this.timeUntilWave = 0;
+    return true;
   }
 
   update(dt) {
@@ -83,6 +120,7 @@ export class WaveSystem {
     
     // AI Income addition
     this.aiMinerals += this.aiIncome;
+    this.aiTechReserve += this.aiIncome;
     
     const unitNames = { melee: '임프', ranged: '서큐버스', medic: '리치', sniper: '밴시', tank: '발록', crusader: '핏로드' };
     
@@ -96,18 +134,18 @@ export class WaveSystem {
     } else {
       // Smart AI Tech Upgrade Decision
       const enemyTechCost = this.game.enemyBase ? getTechUpgradeCost(this.game.enemyBase.techLevel) : Infinity;
-      if (this.aiMinerals >= enemyTechCost && this.game.enemyBase) {
+      if (this.aiTechReserve >= enemyTechCost && this.game.enemyBase) {
         this.game.enemyBase.upgradeTech();
-        this.aiMinerals -= enemyTechCost;
+        this.aiTechReserve -= enemyTechCost;
         this.lastActionLog = `[지옥 각성]: 악마 군단 강화 (Lv.${this.game.enemyBase.techLevel})! (-${enemyTechCost}🔥)`;
       }
       
       // Smart Counter-Pick AI Logic
-      const pMelee = this.spawners.player.filter(t => t === 'melee').length;
-      const pRanged = this.spawners.player.filter(t => t === 'ranged').length;
-      const pSniper = this.spawners.player.filter(t => t === 'sniper').length;
-      const pTank = this.spawners.player.filter(t => t === 'tank').length;
-      const pCrusader = this.spawners.player.filter(t => t === 'crusader').length;
+      const pMelee = this.countSpawners('player', 'melee');
+      const pRanged = this.countSpawners('player', 'ranged');
+      const pSniper = this.countSpawners('player', 'sniper');
+      const pTank = this.countSpawners('player', 'tank');
+      const pCrusader = this.countSpawners('player', 'crusader');
       
       let preferredUnit = 'melee';
       if (pTank + pCrusader > 2) {
@@ -116,7 +154,7 @@ export class WaveSystem {
         preferredUnit = 'ranged';
       } else if (pRanged >= pMelee && pRanged >= pTank) {
         preferredUnit = 'crusader';
-      } else if (this.spawners.enemy.length > 5 && !this.spawners.enemy.includes('medic')) {
+      } else if (this.spawners.enemy.length > 5 && this.countSpawners('enemy', 'medic') === 0) {
         preferredUnit = 'medic';
       } else {
         preferredUnit = 'melee';
@@ -174,16 +212,18 @@ export class WaveSystem {
     
     // Spawn player units
     const pBaseY = this.game.canvas.height / 2;
-    this.spawners.player.forEach((type, idx) => {
+    this.spawners.player.forEach((contract, idx) => {
       const yOffset = (idx % 5 - 2) * 22;
-      const unit = new Unit(this.game, 150, pBaseY + yOffset, 'player', type);
+      const unit = new Unit(this.game, 150, pBaseY + yOffset, 'player', contract.type);
+      unit.spawnerId = contract.id;
       this.game.entityManager.addEntity(unit);
     });
 
     // Spawn enemy units
-    this.spawners.enemy.forEach((type, idx) => {
+    this.spawners.enemy.forEach((contract, idx) => {
       const yOffset = (idx % 5 - 2) * 22;
-      const unit = new Unit(this.game, WORLD_WIDTH - 200, eBaseY + yOffset, 'enemy', type);
+      const unit = new Unit(this.game, WORLD_WIDTH - 200, eBaseY + yOffset, 'enemy', contract.type);
+      unit.spawnerId = contract.id;
       this.game.entityManager.addEntity(unit);
     });
     

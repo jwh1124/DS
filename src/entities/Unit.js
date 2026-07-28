@@ -163,12 +163,15 @@ export class Unit {
     
     const base = this.team === 'player' ? this.game.playerBase : this.game.enemyBase;
     if (base && base.techLevel > 1) {
-      const techLevel = Math.min(5, base.techLevel);
-      this.maxHp *= techLevel;
+      const techLevel = Math.min(3, base.techLevel);
+      // Tech rewards a composition decision instead of multiplying an entire
+      // army into an instant win before its distinct roles can matter.
+      const techMultiplier = 1 + (techLevel - 1) * 0.18;
+      this.maxHp = Math.round(this.maxHp * techMultiplier);
       this.hp = this.maxHp;
-      if (this.damage > 0) this.damage *= techLevel;
-      this.tier = Math.min(3, Math.ceil(techLevel / 2));
-      this.scale = 1 + (this.tier - 1) * 0.35;
+      if (this.damage > 0) this.damage = Math.round(this.damage * techMultiplier);
+      this.tier = techLevel;
+      this.scale = 1 + (this.tier - 1) * 0.1;
     }
     
     if (this.team === 'enemy') {
@@ -283,6 +286,10 @@ export class Unit {
         const dist = Math.sqrt(dx*dx + dy*dy);
         return { target: injuredFriend, distance: dist };
       }
+
+      // A healer must never fall through to enemy targeting. That used to
+      // turn an unneeded medic into an enemy healer.
+      return { target: null, distance: Infinity };
     }
 
     const enemyTeam = this.team === 'player' ? 'enemy' : 'player';

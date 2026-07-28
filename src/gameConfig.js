@@ -4,9 +4,9 @@ export const UNIT_TECH_REQUIREMENTS = {
   melee: 1,
   ranged: 1,
   medic: 2,
-  sniper: 3,
-  tank: 4,
-  crusader: 5
+  sniper: 2,
+  tank: 3,
+  crusader: 3
 };
 
 export const UNIT_COSTS = {
@@ -18,7 +18,10 @@ export const UNIT_COSTS = {
   crusader: 250
 };
 
-export const MAX_TECH_LEVEL = 5;
+// Three readable milestones are easier to play around than the old five-level
+// exponential ladder. A player can choose economy, troops, or one of two
+// tangible unlocks during a normal-length match.
+export const MAX_TECH_LEVEL = 3;
 export const MAX_SPAWNERS = 50;
 export const PLAYER_STARTING_MINERALS = 300;
 export const AI_STARTING_MINERALS = 250;
@@ -29,7 +32,7 @@ export const WAVE_INTERVAL = 15;
 
 export function getTechUpgradeCost(currentTechLevel) {
   if (currentTechLevel >= MAX_TECH_LEVEL) return Infinity;
-  return 800 * (2 ** (currentTechLevel - 1));
+  return 400;
 }
 
 export function getUnlockedUnitTypes(techLevel) {
