@@ -7,6 +7,7 @@ const BASE_ART = {
   enemy: `${import.meta.env.BASE_URL}bases/infernal-gate-v2.png`,
 };
 const HOLY_TURRET_ART = `${import.meta.env.BASE_URL}sprites/holy-reliquary-cannon-v1.png`;
+const INFERNAL_TURRET_ART = `${import.meta.env.BASE_URL}sprites/infernal-gate-cannon-v1.png`;
 
 export class Base {
   constructor(game, x, y, team, maxHp = 10000) {
@@ -38,12 +39,10 @@ export class Base {
       this.art.onerror = () => { this.artReady = false; };
       this.art.src = BASE_ART[team];
 
-      if (team === 'player') {
-        this.turretArt = new Image();
-        this.turretArt.onload = () => { this.turretArtReady = true; };
-        this.turretArt.onerror = () => { this.turretArtReady = false; };
-        this.turretArt.src = HOLY_TURRET_ART;
-      }
+      this.turretArt = new Image();
+      this.turretArt.onload = () => { this.turretArtReady = true; };
+      this.turretArt.onerror = () => { this.turretArtReady = false; };
+      this.turretArt.src = team === 'player' ? HOLY_TURRET_ART : INFERNAL_TURRET_ART;
     }
   }
 
@@ -129,11 +128,12 @@ export class Base {
     const mount = this.getTurretMount();
     const isHoly = this.team === 'player';
 
-    if (isHoly && this.turretArtReady) {
-      // Full sprite keeps the level-up artillery legible against the dense cathedral texture.
+    if (this.turretArtReady) {
+      // Full sprites keep both level-up artillery pieces legible against dense base artwork.
+      const size = isHoly ? 160 : 150;
       ctx.save();
-      ctx.translate(mount.x - this.turretRecoil * 4, mount.y);
-      ctx.drawImage(this.turretArt, -83, -80, 160, 160);
+      ctx.translate(mount.x + (isHoly ? -1 : 1) * this.turretRecoil * 4, mount.y);
+      ctx.drawImage(this.turretArt, -size / 2, -size / 2, size, size);
       ctx.restore();
       return;
     }
