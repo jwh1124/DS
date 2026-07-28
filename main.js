@@ -36,6 +36,7 @@ class Game {
     this.ultimateCooldown = 0;
     this.autoSpend = false;
     this.isDeveloperMode = new URLSearchParams(window.location.search).has('dev');
+    this.runStats = this.createRunStats();
     
     this.audio = new AudioEngine();
     
@@ -98,6 +99,18 @@ class Game {
   addScreenShake(intensity) {
     this.screenShake = Math.max(this.screenShake, Math.min(1, intensity / 20));
   }
+
+  createRunStats() {
+    return {
+      contractsSigned: 0,
+      contractsRefunded: 0,
+      earlyStarts: 0,
+      earlyFaith: 0,
+      incomeRites: 0,
+      techUpgrades: 0,
+      ultimates: 0
+    };
+  }
   
   start() {
     this.isRunning = true;
@@ -134,6 +147,7 @@ class Game {
     this.cameraX = 0;
     this.gameSpeed = 1;
     this.autoSpend = false;
+    this.runStats = this.createRunStats();
     
     // Reset Tech button UI
     const techBtn = document.querySelector('.build-btn[data-type="tech"]');
@@ -188,9 +202,17 @@ class Game {
     if (gameOverScreen) gameOverScreen.classList.remove('hidden');
     if (summary) {
       const wave = Math.max(1, this.waveSystem.aiWaveCount);
-      summary.textContent = winner === 'player'
-        ? `${wave} 웨이브 만에 지옥문을 정화했습니다.`
-        : `${wave} 웨이브에서 성당이 무너졌습니다. 조합을 바꿔 다시 도전하세요.`;
+      const integrity = this.playerBase
+        ? Math.round((this.playerBase.hp / this.playerBase.maxHp) * 100)
+        : 0;
+      const record = `편성 ${this.runStats.contractsSigned} · 조기 개시 ${this.runStats.earlyStarts} · 계시 ${this.runStats.techUpgrades}`;
+      if (winner === 'player') {
+        const score = integrity + this.runStats.earlyStarts * 2 + this.runStats.techUpgrades * 4 + this.runStats.incomeRites * 2;
+        const grade = score >= 112 ? 'S' : score >= 92 ? 'A' : score >= 72 ? 'B' : 'C';
+        summary.textContent = `${wave}웨이브 정화 성공 · 전술 등급 ${grade} · 성당 보전 ${integrity}%\n${record}`;
+      } else {
+        summary.textContent = `${wave}/12웨이브에서 성당이 무너졌습니다.\n${record} · 조합을 바꿔 다시 도전하세요.`;
+      }
     }
   }
 
@@ -378,6 +400,7 @@ class Game {
     if (type === 'income') {
       if (this.economy.spendMinerals(cost)) {
         this.economy.increaseIncome(15);
+        this.runStats.incomeRites++;
         for (let i = 0; i < 15; i++) {
           this.entityManager.addEntity(new Particle(
             this, this.playerBase.x, this.playerBase.y, '#f1c40f', 0.8, 60, Math.random() * Math.PI * 2, 4, 'spark'
@@ -389,6 +412,7 @@ class Game {
       
       if (this.economy.spendMinerals(cost)) {
         this.playerBase.upgradeTech();
+        this.runStats.techUpgrades++;
         
         if (btnElement) {
           if (this.playerBase.techLevel >= MAX_TECH_LEVEL) {
@@ -407,6 +431,7 @@ class Game {
     } else if (type === 'ultimate') {
       if (this.economy.spendMinerals(cost)) {
         this.ultimateCooldown = 30;
+        this.runStats.ultimates++;
         this.triggerOrbitalStrike();
       }
     } else {
@@ -420,6 +445,7 @@ class Game {
       if (this.economy.spendMinerals(cost)) {
         const added = this.waveSystem.addSpawner('player', type);
         if (added) {
+          this.runStats.contractsSigned++;
           for (let i = 0; i < 12; i++) {
             this.entityManager.addEntity(new Particle(
               this, this.playerBase.x, this.playerBase.y, '#f1c40f', 0.5, 50, Math.random() * Math.PI * 2, 3, 'spark'
@@ -444,6 +470,7 @@ class Game {
         entity.team === 'player' && entity.spawnerId === removed.id && entity.isAlive
       );
       recalledUnits.forEach(unit => { unit.isAlive = false; });
+      this.runStats.contractsRefunded++;
       
       this.entityManager.addEntity(new FloatingText(
         this, `계약 해지: ${PLAYER_UNIT_NAMES[type]} ${recalledUnits.length}명 귀환 (+${refundAmount} 신앙석)`, this.playerBase.x, this.playerBase.y - 100, '#f1c40f', true
@@ -467,6 +494,8 @@ class Game {
 
     const earlyBonus = 20;
     this.economy.minerals += earlyBonus;
+    this.runStats.earlyStarts++;
+    this.runStats.earlyFaith += earlyBonus;
     this.audio.playClick();
     this.entityManager.addEntity(new FloatingText(
       this, `정찰 돌파 · 웨이브 개시 (+${earlyBonus} 신앙심)`, WORLD_WIDTH / 2, 170, '#e7c56f', true
