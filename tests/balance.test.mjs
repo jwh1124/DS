@@ -19,6 +19,7 @@ import {
 import {
   getAttackRangeAgainst,
   getCombatDistance,
+  getPointToTargetDistance,
   getWaveFormationSlot
 } from '../src/combatMath.js';
 import {
@@ -41,6 +42,7 @@ import {
 } from '../src/bosses.js';
 import {
   AI_TECH_RESERVE_PER_WAVE,
+  getAiRosterCap,
   getAiRecruitmentPriority,
   shouldUpgradeEnemyTech
 } from '../src/aiStrategy.js';
@@ -66,11 +68,11 @@ assert.equal(getUnitVsBaseDamageMultiplier('enemy'), 1);
 
 const levelTwoTurret = getBaseTurretStats(2);
 const levelThreeTurret = getBaseTurretStats(3);
-assert.equal(levelTwoTurret.range, 560);
-assert.equal(levelTwoTurret.damage, 55);
-assert.ok(Math.abs(levelTwoTurret.interval - 1.44) < Number.EPSILON * 2);
-assert.ok(levelTwoTurret.damage / levelTwoTurret.interval < 40);
-assert.ok(levelThreeTurret.damage / levelThreeTurret.interval < 60);
+assert.equal(levelTwoTurret.range, 640);
+assert.equal(levelTwoTurret.damage, 45);
+assert.ok(Math.abs(levelTwoTurret.interval - 1.564) < Number.EPSILON * 2);
+assert.ok(levelTwoTurret.damage / levelTwoTurret.interval < 30);
+assert.ok(levelThreeTurret.damage / levelThreeTurret.interval < 45);
 assert.equal(BASE_TURRET_BALANCE.splashRatio, 0);
 assert.equal(BASE_TURRET_BALANCE.splashRadius, 0);
 
@@ -89,9 +91,36 @@ assert.equal(getAttackRangeAgainst(rangedFront, enemyBase), 250);
 assert.equal(getCombatDistance(rangedRear, enemyBase), 302);
 assert.equal(getAttackRangeAgainst(rangedRear, enemyBase), 302);
 
+const frontLineTarget = { x: 1280, y: 360, radius: 20, type: 'melee' };
+const firingLineRanged = { x: 990, y: 360, radius: 20, range: 250, formationRow: 0, type: 'ranged' };
+const rearLineRanged = { x: 938, y: 360, radius: 20, range: 250, formationRow: 1, type: 'ranged' };
+const rearLineMelee = { ...rearLineRanged, range: 45, type: 'melee' };
+assert.equal(getCombatDistance(firingLineRanged, frontLineTarget), 250);
+assert.equal(getCombatDistance(rearLineRanged, frontLineTarget), 302);
+assert.equal(getAttackRangeAgainst(firingLineRanged, frontLineTarget), 250);
+assert.equal(getAttackRangeAgainst(rearLineRanged, frontLineTarget), 302);
+assert.equal(getAttackRangeAgainst(rearLineMelee, frontLineTarget), 45);
+
 const outerLaneSniper = { x: 1310, y: 530, radius: 20, range: 450, formationRow: 0 };
 assert.equal(getCombatDistance(outerLaneSniper, enemyBase), 450);
-assert.ok(getCombatDistance(enemyBase, outerLaneSniper) < levelTwoTurret.range);
+const enemyTurretMount = { x: 1766, y: 278 };
+assert.ok(getPointToTargetDistance(enemyTurretMount, outerLaneSniper) < levelTwoTurret.range);
+
+const rearOuterLaneSniper = { x: 1258, y: 530, radius: 20, range: 450, formationRow: 1, type: 'sniper' };
+assert.equal(getCombatDistance(rearOuterLaneSniper, enemyBase), 502);
+assert.equal(getAttackRangeAgainst(rearOuterLaneSniper, enemyBase), 502);
+assert.ok(
+  getPointToTargetDistance(enemyTurretMount, rearOuterLaneSniper) < levelTwoTurret.range,
+  'base artillery must engage the farthest rear-line sniper that can hit the base'
+);
+const playerBase = { x: 150, y: 360, radius: 70, maxHp: 12000, techLevel: 2 };
+const playerTurretMount = { x: 234, y: 278 };
+const enemyRearOuterLaneSniper = { x: 742, y: 530, radius: 20, range: 450, formationRow: 1, type: 'sniper' };
+assert.equal(getCombatDistance(enemyRearOuterLaneSniper, playerBase), 502);
+assert.ok(
+  getPointToTargetDistance(playerTurretMount, enemyRearOuterLaneSniper) < levelTwoTurret.range,
+  'holy and infernal artillery must use the same coverage rule'
+);
 
 const rangedAttacker = { type: 'ranged' };
 const sniperAttacker = { type: 'sniper' };
@@ -143,6 +172,13 @@ assert.deepEqual(resolveBossGate(true, false), { locked: false, completed: true 
 assert.deepEqual(resolveBossGate(false, false), { locked: false, completed: false });
 
 assert.equal(AI_TECH_RESERVE_PER_WAVE, 80);
+assert.equal(getAiRosterCap(1), 3);
+assert.equal(getAiRosterCap(6), 8);
+assert.equal(getAiRosterCap(7), 9);
+assert.equal(getAiRosterCap(9), 11);
+assert.equal(getAiRosterCap(10), 12);
+assert.equal(getAiRosterCap(11), 12);
+assert.equal(getAiRosterCap(12), 16);
 assert.equal(shouldUpgradeEnemyTech(4, 1, 500, 400), false);
 assert.equal(shouldUpgradeEnemyTech(5, 1, 400, 400), true);
 assert.equal(shouldUpgradeEnemyTech(8, 2, 500, 400), false);
@@ -151,6 +187,24 @@ assert.equal(shouldUpgradeEnemyTech(12, 3, 999, Infinity), false);
 
 const balancedPlayerCounts = { melee: 3, ranged: 2, medic: 1, sniper: 2, tank: 1, crusader: 1 };
 const emptyEnemyRoles = { melee: 4, ranged: 2, medic: 0, sniper: 0, tank: 0, crusader: 0 };
+assert.deepEqual(getAiRecruitmentPriority({
+  wave: 3,
+  playerCounts: balancedPlayerCounts,
+  enemyCounts: { melee: 0, ranged: 2, medic: 0, sniper: 0, tank: 0, crusader: 0 },
+  enemyRosterSize: 2
+}), { type: 'melee', saveForRole: false });
+assert.deepEqual(getAiRecruitmentPriority({
+  wave: 3,
+  playerCounts: balancedPlayerCounts,
+  enemyCounts: { melee: 2, ranged: 0, medic: 0, sniper: 0, tank: 0, crusader: 0 },
+  enemyRosterSize: 2
+}), { type: 'ranged', saveForRole: false });
+assert.deepEqual(getAiRecruitmentPriority({
+  wave: 3,
+  playerCounts: { ...balancedPlayerCounts, melee: 1, ranged: 5 },
+  enemyCounts: { melee: 1, ranged: 1, medic: 0, sniper: 0, tank: 0, crusader: 0 },
+  enemyRosterSize: 2
+}), { type: 'melee', saveForRole: false });
 assert.deepEqual(getAiRecruitmentPriority({
   wave: 5,
   playerCounts: balancedPlayerCounts,

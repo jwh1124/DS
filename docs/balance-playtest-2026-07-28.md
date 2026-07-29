@@ -53,3 +53,50 @@ No developer controls were used.
 The corrected NORMAL build therefore has both a verified winning route and a meaningful strategic
 loss. INFERNO remains punishing, but its miniboss no longer removes the run before the player can
 make a response.
+
+## Formation and artillery regression — 2026-07-29
+
+### Defects reproduced
+
+- The formation test only proved that a rear-row ranged unit could hit a base. It did not prove
+  that the same unit could fire through the front row at an ordinary enemy.
+- Base artillery acquired targets from the base centre while its projectile visibly left a side
+  tower. That made the displayed mount and effective range disagree.
+- The early AI repeatedly bought the same counter unit. One NORMAL run reached wave 6 with
+  `0 Imps / 8 Succubi / 1 Lich`, causing the escort to decide the boss wave before the boss did.
+- A first late-game cap reached 16 enemies by wave 10, removing the intended breather before the
+  final boss.
+
+### Rules applied
+
+- Rear-row units with at least 150 range receive exactly one formation-depth allowance (52 px)
+  against units as well as bases. Melee units receive no such allowance.
+- Holy and infernal artillery both acquire from their visible mount at 640 range.
+- Artillery remains single-target: splash radius and splash ratio are both zero.
+- Level 2 artillery is about 29 DPS; level 3 is about 42 DPS.
+- Basic enemy melee/ranged counts may differ by at most two before recruitment corrects the gap.
+- Enemy roster caps are `3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 16` for waves 1–12.
+
+### Targeted visible checks
+
+- A nine-Exorcist formation was launched through the real UI to cover both formation rows.
+- A level-2 cathedral with no fielded units acquired approaching demons before base contact.
+- Both faction mount-to-sniper coverage invariants and zero-splash artillery are enforced by the
+  automated balance test.
+
+### Final NORMAL run
+
+- Local corrected build, visible UI, 3x developer speed only
+- No developer money, auto-spend, or early launch
+- Opening: four Monks and two Exorcists
+- Doctrines: Faithful Tithe, Martyr's Vow, Sanctuary
+- Result: **win**, wave 12, cathedral `6,265 / 15,500` (40%)
+- Final roster: 16 contracts
+- Tech upgrades: 2 (level 3)
+- Divine Judgement uses: 2
+
+This run followed several deliberate losing runs. A melee-heavy roster that banked over 1,200
+faith and skipped its miracle lost at wave 12; the verified winning route spent that economy on
+tech, mixed roles, and two correctly timed miracles. NORMAL therefore preserves a real loss state
+without allowing a single early AI counter type or maximum-strength pre-final wave to decide the
+campaign by itself.

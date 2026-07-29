@@ -18,10 +18,16 @@ export function getCombatDistance(attacker, target) {
 }
 
 export function getAttackRangeAgainst(attacker, target) {
-  const firingRowBonus = isBaseTarget(target)
-    ? Math.max(0, attacker.formationRow || 0) * FORMATION_ROW_DEPTH
-    : 0;
+  const formationDepth = Math.max(0, attacker.formationRow || 0) * FORMATION_ROW_DEPTH;
+  const canSupportFromRear = isBaseTarget(target) || attacker.range >= 150;
+  const firingRowBonus = canSupportFromRear ? formationDepth : 0;
   return attacker.range + firingRowBonus;
+}
+
+export function getPointToTargetDistance(point, target) {
+  const dx = target.x - point.x;
+  const dy = target.y - point.y;
+  return Math.max(0, Math.hypot(dx, dy) - (target.radius || 0));
 }
 
 export function getWaveFormationSlot(baseX, baseY, index, team) {

@@ -48,14 +48,14 @@ export function getUnitVsBaseDamageMultiplier(attackerTeam) {
   return UNIT_VS_BASE_DAMAGE_MULTIPLIERS[attackerTeam] ?? 1;
 }
 
-// Base artillery protects the final approach with deliberate single-target fire.
-// Level 2 is 38 DPS and level 3 is 58 DPS; neither level deals splash damage.
+// Base artillery owns the longest engagement range, but only pressures one target.
+// Level 2 is about 29 DPS and level 3 is about 42 DPS; neither level deals splash damage.
 export const BASE_TURRET_BALANCE = Object.freeze({
-  range: 560,
-  baseDamage: 35,
-  damagePerUpgrade: 20,
-  baseInterval: 1.6,
-  intervalMultiplier: 0.9,
+  range: 640,
+  baseDamage: 30,
+  damagePerUpgrade: 15,
+  baseInterval: 1.7,
+  intervalMultiplier: 0.92,
   splashRadius: 0,
   splashRatio: 0
 });

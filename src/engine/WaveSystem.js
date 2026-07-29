@@ -10,6 +10,7 @@ import {
 } from '../bosses.js';
 import {
   AI_TECH_RESERVE_PER_WAVE,
+  getAiRosterCap,
   getAiRecruitmentPriority,
   shouldUpgradeEnemyTech
 } from '../aiStrategy.js';
@@ -227,7 +228,12 @@ export class WaveSystem {
       let attempts = 0;
       
       const enemyTechLevel = this.game.enemyBase ? this.game.enemyBase.techLevel : 1;
-      while (this.aiMinerals >= UNIT_COSTS.melee && attempts < 6 && this.spawners.enemy.length < MAX_SPAWNERS) {
+      const enemyRosterCap = getAiRosterCap(this.aiWaveCount);
+      while (
+        this.aiMinerals >= UNIT_COSTS.melee
+        && attempts < 6
+        && this.spawners.enemy.length < enemyRosterCap
+      ) {
         attempts++;
 
         const enemyCounts = {
@@ -265,6 +271,8 @@ export class WaveSystem {
       
       if (this.spawners.enemy.length >= MAX_SPAWNERS) {
         this.lastActionLog = `[지옥문 만원]: 악마 소환진 ${MAX_SPAWNERS}/${MAX_SPAWNERS} 최대 가동!`;
+      } else if (this.spawners.enemy.length >= enemyRosterCap) {
+        this.lastActionLog = `[악마 대기]: 현재 웨이브 편제 ${enemyRosterCap}명 완성 · 잔여 ${Math.floor(this.aiMinerals)}🔥`;
       } else if (purchasedCount > 0) {
         this.lastActionLog = `[악마 소환]: ${unitNames[lastBoughtType]} 강림! (-${UNIT_COSTS[lastBoughtType]}🔥, 잔여 ${Math.floor(this.aiMinerals)}🔥)`;
       } else if (savingForType) {

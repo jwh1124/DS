@@ -2,7 +2,7 @@ import { FloatingText } from './FloatingText.js';
 import { Particle } from './Particle.js';
 import { Projectile } from './Projectile.js';
 import { BASE_TECH_HP_GAIN, BASE_TURRET_BALANCE, getBaseTurretStats } from '../gameConfig.js';
-import { getCombatDistance } from '../combatMath.js';
+import { getPointToTargetDistance } from '../combatMath.js';
 
 const BASE_ART = {
   player: `${import.meta.env.BASE_URL}bases/holy-cathedral-v2.png`,
@@ -252,11 +252,14 @@ export class Base {
       if (this.turretCooldown > 0) this.turretCooldown -= dt;
       const enemyTeam = this.team === 'player' ? 'enemy' : 'player';
       const enemies = this.game.entityManager.getEntitiesByTeam(enemyTeam);
+      const mount = this.getTurretMount();
       let closestEnemy = null;
       let closestDist = this.turretRange;
 
       for (const enemy of enemies) {
-        const dist = getCombatDistance(this, enemy);
+        // Acquisition and projectile origin share the same physical mount.
+        // This keeps the visible barrel and the effective range in agreement.
+        const dist = getPointToTargetDistance(mount, enemy);
         if (dist <= closestDist) {
           closestDist = dist;
           closestEnemy = enemy;
@@ -264,7 +267,6 @@ export class Base {
       }
 
       if (closestEnemy) {
-        const mount = this.getTurretMount();
         this.turretAngle = Math.atan2(closestEnemy.y - mount.y, closestEnemy.x - mount.x);
         if (this.turretCooldown <= 0) {
           const turretColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
