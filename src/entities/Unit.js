@@ -1,13 +1,20 @@
 import { Particle } from './Particle.js';
 import { Projectile } from './Projectile.js';
 import { FloatingText } from './FloatingText.js';
-import { getUnitVsBaseDamageMultiplier } from '../gameConfig.js';
+import {
+  getUnitVsBaseDamageMultiplier,
+  UNIT_MOVEMENT_SPEED_MULTIPLIER
+} from '../gameConfig.js';
 import { getAttackRangeAgainst, getCombatDistance, isBaseTarget } from '../combatMath.js';
 import { getCounterProfile, getTargetPriorityBonus } from '../unitRoles.js';
 import { getDoctrineUnitMultipliers } from '../doctrines.js';
 import { getBossProfile } from '../bosses.js';
 import { getTacticalOrderTargetBonus } from '../tacticalOrders.js';
-import { MEDIC_HEAL_RANGE, selectCombatTarget } from '../targeting.js';
+import {
+  isValidMedicTarget,
+  MEDIC_HEAL_RANGE,
+  selectCombatTarget
+} from '../targeting.js';
 
 const UNIT_STATS = {
   melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#f1c40f' },     // Monk / Imp
@@ -149,7 +156,7 @@ export class Unit {
     this.hp = stats.hp;
     this.damage = stats.damage;
     this.range = stats.range;
-    this.speed = stats.speed;
+    this.speed = stats.speed * UNIT_MOVEMENT_SPEED_MULTIPLIER;
     this.attackSpeed = stats.attackSpeed;
     this.color = team === 'player' ? (stats.color || '#f1c40f') : '#8b00ff';
     
@@ -177,6 +184,9 @@ export class Unit {
     this.bossTierLabel = '';
     this.bossCounterHint = '';
     this.bossDrawHeight = 0;
+    this.bossSplashRadius = 90;
+    this.bossSplashRatio = 0.5;
+    this.bossCanCrit = true;
     this.scale = 1;
     this.tier = 1;
     this.recoil = 0;
@@ -222,6 +232,9 @@ export class Unit {
     this.bossTierLabel = profile.tierLabel;
     this.bossCounterHint = profile.counterHint;
     this.bossDrawHeight = profile.drawHeight;
+    this.bossSplashRadius = profile.splashRadius;
+    this.bossSplashRatio = profile.splashRatio;
+    this.bossCanCrit = profile.canCrit;
     this.scale = profile.worldScale;
     this.maxHp *= profile.hpMultiplier;
     this.hp = this.maxHp;
@@ -330,7 +343,7 @@ export class Unit {
       
       for (let i = 0; i < friends.length; i++) {
         const f = friends[i];
-        if (f !== this && f.isAlive && f.hp < f.maxHp && f.type !== undefined && f !== this.game.playerBase && f !== this.game.enemyBase) {
+        if (isValidMedicTarget(this, f)) {
           const ratio = f.hp / f.maxHp;
           if (ratio < lowestHpRatio) {
             lowestHpRatio = ratio;
@@ -535,6 +548,14 @@ export class Unit {
       ));
     } else if (this.type === 'tank') {
       const projColor = this.team === 'player' ? '#f1c40f' : '#ff2d55';
+      const heavyProfile = this.isBoss
+        ? {
+            ...projectileProfile,
+            canCrit: this.bossCanCrit,
+            splashRadius: this.bossSplashRadius,
+            splashRatio: this.bossSplashRatio
+          }
+        : projectileProfile;
       this.game.entityManager.addEntity(new Projectile(
         this.game, 
         this.x + (this.dir * 25 * this.scale), 
@@ -544,7 +565,7 @@ export class Unit {
         projColor, 
         this.team,
         true,
-        projectileProfile
+        heavyProfile
       ));
     } else if (this.type === 'crusader') {
       const isCrit = Math.random() < 0.25;

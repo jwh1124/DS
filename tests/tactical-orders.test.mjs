@@ -31,6 +31,7 @@ test('rear order redirects holy ranged attackers without overriding medic protec
 test('boss order prioritizes bosses over ordinary heavy units without affecting enemy AI', () => {
   assert.equal(getTacticalOrderTargetBonus('boss', rangedHoly, enemyBoss), 260);
   assert.equal(getTacticalOrderTargetBonus('boss', rangedHoly, enemyHeavy), 150);
+  assert.equal(getTacticalOrderTargetBonus('boss', meleeHoly, enemyBoss), 0);
   assert.equal(getTacticalOrderTargetBonus('balanced', rangedHoly, enemyBoss), 0);
   assert.equal(getTacticalOrderTargetBonus('boss', { team: 'enemy', range: 250 }, enemyBoss), 0);
 });

@@ -18,7 +18,7 @@ export const TACTICAL_ORDERS = Object.freeze([
     key: '9',
     label: '대악마 집중',
     shortLabel: '대형',
-    hint: '모든 공격 병종이 보스와 대형 악마를 우선합니다.'
+    hint: '원거리 성직자는 보스에 집중하고 전열은 호위대를 막습니다.'
   })
 ]);
 
@@ -40,6 +40,8 @@ export function getTacticalOrderTargetBonus(orderId, attacker, target) {
   }
 
   if (orderId === 'boss') {
+    const canFocusHeavy = (attacker.range ?? 0) >= 150;
+    if (!canFocusHeavy) return 0;
     if (target.isBoss) return 260;
     return HEAVY_TARGET_TYPES.has(target.type) ? 150 : 0;
   }

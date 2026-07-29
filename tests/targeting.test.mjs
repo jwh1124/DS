@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { FORMATION_ROW_DEPTH, getAttackRangeAgainst } from '../src/combatMath.js';
 import {
   getCombatTargetTier,
+  isValidMedicTarget,
   MEDIC_HEAL_RANGE,
   selectCombatTarget
 } from '../src/targeting.js';
@@ -50,4 +51,13 @@ test('base artillery shares the same medic-last ranking among reachable enemies'
   );
 
   assert.equal(selected.target, distantCombatant);
+});
+
+test('medics sustain ordinary allies but cannot erase boss damage indefinitely', () => {
+  const healer = { type: 'medic' };
+  const ally = { type: 'melee', isAlive: true, hp: 50, maxHp: 120 };
+  const boss = { type: 'tank', isBoss: true, isAlive: true, hp: 900, maxHp: 1500 };
+
+  assert.equal(isValidMedicTarget(healer, ally), true);
+  assert.equal(isValidMedicTarget(healer, boss), false);
 });

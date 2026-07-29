@@ -6,6 +6,15 @@ export function getCombatTargetTier(target) {
   return 0;
 }
 
+export function isValidMedicTarget(healer, target) {
+  return Boolean(target)
+    && target !== healer
+    && target.isAlive
+    && target.type !== undefined
+    && !target.isBoss
+    && target.hp < target.maxHp;
+}
+
 export function selectCombatTarget(candidates, getDistance, getScore) {
   let bestTarget = null;
   let bestDistance = Infinity;

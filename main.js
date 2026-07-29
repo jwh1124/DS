@@ -733,14 +733,22 @@ class Game {
       const refundAmount = Math.floor(UNIT_COSTS[type] * 0.5);
       this.economy.minerals += refundAmount;
       this.audio.playMagic();
-      const recalledUnits = this.entityManager.entities.filter(entity =>
+      const fieldedUnits = this.entityManager.entities.filter(entity =>
         entity.team === 'player' && entity.spawnerId === removed.id && entity.isAlive
       );
-      recalledUnits.forEach(unit => { unit.isAlive = false; });
+      // Cancelling a contract changes the next wave's roster. A unit already
+      // fighting keeps advancing until the current wave ends.
       this.runStats.contractsRefunded++;
       
       this.entityManager.addEntity(new FloatingText(
-        this, `계약 해지: ${PLAYER_UNIT_NAMES[type]} ${recalledUnits.length}명 귀환 (+${refundAmount} 신앙석)`, this.playerBase.x, this.playerBase.y - 100, '#d8bf8a', 'emphasis'
+        this,
+        fieldedUnits.length > 0
+          ? `계약 해지: ${PLAYER_UNIT_NAMES[type]} · 다음 웨이브부터 제외 (+${refundAmount} 신앙심)`
+          : `계약 해지: ${PLAYER_UNIT_NAMES[type]} (+${refundAmount} 신앙심)`,
+        this.playerBase.x,
+        this.playerBase.y - 100,
+        '#d8bf8a',
+        'emphasis'
       ));
       
       for (let i = 0; i < 10; i++) {
@@ -786,8 +794,8 @@ class Game {
     const unitStats = {
       melee: { title: '수도승 (근접) [1] | 성서 계시 Lv.1', desc: PLAYER_UNIT_ROLE_INFO.melee.description, hp: 120, dmg: 25, range: '근접' },
       ranged: { title: '엑소시스트 (원거리) [2] | 성서 계시 Lv.1', desc: PLAYER_UNIT_ROLE_INFO.ranged.description, hp: 60, dmg: '35 · 대공 44', range: '원거리' },
-      medic: { title: '사제 (치유) [3] | 필요: 성서 계시 Lv.2', desc: PLAYER_UNIT_ROLE_INFO.medic.description, hp: 100, dmg: '치유+30', range: '장거리' },
-      sniper: { title: '이단심판관 (저격) [4] | 필요: 성서 계시 Lv.2', desc: PLAYER_UNIT_ROLE_INFO.sniper.description, hp: 80, dmg: '90 · 대형 122', range: '초장거리' },
+      medic: { title: '사제 (치유) [3] | 필요: 성서 계시 Lv.2 (300)', desc: PLAYER_UNIT_ROLE_INFO.medic.description, hp: 100, dmg: '치유+30', range: '장거리' },
+      sniper: { title: '이단심판관 (저격) [4] | 필요: 성서 계시 Lv.2 (300)', desc: PLAYER_UNIT_ROLE_INFO.sniper.description, hp: 80, dmg: '90 · 대형 122', range: '초장거리' },
       tank: { title: '대천사 (광역심판) [5] | 필요: 성서 계시 Lv.3', desc: PLAYER_UNIT_ROLE_INFO.tank.description, hp: 300, dmg: '60(AOE)', range: '장거리' },
       crusader: { title: '십자군 (수호탱커) [6] | 필요: 성서 계시 Lv.3', desc: PLAYER_UNIT_ROLE_INFO.crusader.description, hp: 450, dmg: '45(근접)', range: '근접' },
       income: { title: '제단 봉헌 [Q]', desc: '매 웨이브마다 추가 신앙심을 +15 획득.', hp: '-', dmg: '-', range: '-' },

@@ -8,8 +8,12 @@ const BOSS_PROFILES = Object.freeze({
     spritePath: 'sprites/abyssal-executioner-boss-v1.png',
     drawHeight: 110,
     worldScale: 1.7,
-    hpMultiplier: 5,
-    damageMultiplier: 1.8,
+    hpMultiplier: 3.5,
+    damageMultiplier: 0.65,
+    splashRadius: 60,
+    splashRatio: 0.15,
+    canCrit: false,
+    escortCap: 4,
     radiusMultiplier: 2.2
   }),
   sovereign: Object.freeze({
@@ -22,7 +26,11 @@ const BOSS_PROFILES = Object.freeze({
     drawHeight: 125,
     worldScale: 1.85,
     hpMultiplier: 5,
-    damageMultiplier: 1.8,
+    damageMultiplier: 1.2,
+    splashRadius: 80,
+    splashRatio: 0.35,
+    canCrit: false,
+    escortCap: 10,
     radiusMultiplier: 2.2
   })
 });
@@ -43,6 +51,17 @@ export function getBossProfile(id) {
 
 export function getBossProfileForWave(wave) {
   return BOSS_BY_WAVE[wave] ?? null;
+}
+
+export function selectBossEscortContracts(contracts, cap) {
+  const safeContracts = Array.isArray(contracts) ? contracts : [];
+  const safeCap = Math.max(0, Math.floor(Number(cap) || 0));
+  if (safeContracts.length <= safeCap) return safeContracts.slice();
+
+  const medic = safeContracts.find(contract => contract.type === 'medic');
+  const combatants = safeContracts.filter(contract => contract !== medic);
+  if (!medic || safeCap === 0) return combatants.slice(0, safeCap);
+  return [...combatants.slice(0, safeCap - 1), medic];
 }
 
 export function resolveBossGate(gateActive, bossAlive) {

@@ -37,17 +37,22 @@ export class HUD {
     const isFinale = waveSystem.aiWaveCount >= MAX_WAVES;
     const activeBoss = waveSystem.getActiveBoss?.();
     const bossGateLocked = waveSystem.isBossGateLocked?.() ?? false;
+    const activeEnemyWave = waveSystem.hasActiveEnemyWave?.() ?? false;
     const clearPrepActive = waveSystem.isClearPrepWindow?.() ?? false;
     this.timerText.textContent = bossGateLocked
       ? '격퇴'
       : isFinale
         ? `${Math.ceil(waveSystem.finalBattleTime)}s`
+        : activeEnemyWave
+          ? '교전'
         : Math.max(0, waveSystem.timeUntilWave).toFixed(1);
     if (this.waveLabel) {
       this.waveLabel.textContent = bossGateLocked
         ? `WAVE ${waveSystem.aiWaveCount}/${MAX_WAVES} · 보스 교전`
         : isFinale
           ? 'FINAL WAVE · 지옥문 정화'
+          : activeEnemyWave
+            ? `WAVE ${waveSystem.aiWaveCount}/${MAX_WAVES} · 악마 교전`
           : clearPrepActive
             ? `WAVE ${waveSystem.aiWaveCount + 1}/${MAX_WAVES} · 전장 정비`
             : `WAVE ${waveSystem.aiWaveCount + 1}/${MAX_WAVES} · 악마 정찰`;
@@ -57,16 +62,21 @@ export class HUD {
         ? `${activeBoss.bossName} 격퇴 후 진군 · ${activeBoss.bossCounterHint}`
         : isFinale
           ? `최후 심판까지 ${Math.ceil(waveSystem.finalBattleTime)}초 · 지옥문을 정화하십시오`
+          : activeEnemyWave
+            ? `현재 악마 부대를 격퇴하십시오 · 다음 ${waveSystem.getUpcomingWavePreview()}`
           : clearPrepActive
             ? `악마 전멸 · ${waveSystem.getUpcomingWavePreview()}`
             : waveSystem.getUpcomingWavePreview();
     }
     if (this.launchWaveButton) {
-      this.launchWaveButton.disabled = bossGateLocked || isFinale || waveSystem.timeUntilWave <= 0.25;
+      const canLaunchEarly = waveSystem.canLaunchNextWaveEarly?.() ?? false;
+      this.launchWaveButton.disabled = isFinale || !canLaunchEarly;
       this.launchWaveButton.textContent = bossGateLocked
         ? '대악마 격퇴 필요'
         : isFinale
           ? '최후 정화 진행 중'
+          : activeEnemyWave
+            ? '악마 교전 중'
           : clearPrepActive
             ? '[F] 즉시 진군 · +20'
             : '[F] 조기 개시 · +20';

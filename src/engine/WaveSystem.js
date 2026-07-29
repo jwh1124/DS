@@ -6,7 +6,8 @@ import { getWaveFormationSlot } from '../combatMath.js';
 import {
   BOSS_RECOVERY_DELAY,
   getBossProfileForWave,
-  resolveBossGate
+  resolveBossGate,
+  selectBossEscortContracts
 } from '../bosses.js';
 import {
   AI_TECH_RESERVE_PER_WAVE,
@@ -26,7 +27,11 @@ import {
   WAVE_CLEAR_PREP_TIME,
   WAVE_INTERVAL
 } from '../gameConfig.js';
-import { resolveClearedWavePrep } from '../wavePacing.js';
+import {
+  canLaunchNextWaveEarly,
+  resolveClearedWavePrep,
+  shouldTickWaveCountdown
+} from '../wavePacing.js';
 
 export class WaveSystem {
   constructor(game) {
@@ -138,9 +143,18 @@ export class WaveSystem {
   }
 
   launchNextWaveEarly() {
-    if (!this.isActive || this.isBossGateLocked() || this.timeUntilWave <= 0.25) return false;
+    if (!this.canLaunchNextWaveEarly()) return false;
     this.timeUntilWave = 0;
     return true;
+  }
+
+  canLaunchNextWaveEarly() {
+    return canLaunchNextWaveEarly({
+      isActive: this.isActive,
+      bossGateLocked: this.isBossGateLocked(),
+      hasActiveEnemyWave: this.hasActiveEnemyWave(),
+      timeUntilWave: this.timeUntilWave
+    });
   }
 
   getActiveBoss() {
@@ -185,11 +199,12 @@ export class WaveSystem {
       this.lastActionLog = `[정비]: 대악마 격퇴 · ${BOSS_RECOVERY_DELAY}초 후 진군`;
     }
 
+    const activeEnemyWave = this.hasActiveEnemyWave();
     const pacing = resolveClearedWavePrep({
       aiWaveCount: this.aiWaveCount,
       maxWaves: MAX_WAVES,
       bossGateLocked: false,
-      hasActiveEnemyWave: this.hasActiveEnemyWave(),
+      hasActiveEnemyWave: activeEnemyWave,
       timeUntilWave: this.timeUntilWave,
       clearPrepTime: WAVE_CLEAR_PREP_TIME
     });
@@ -197,6 +212,13 @@ export class WaveSystem {
     this.clearPrepActive = pacing.clearPrepActive;
     if (pacing.accelerated) {
       this.lastActionLog = `[전장 정리]: 악마 전멸 · ${WAVE_CLEAR_PREP_TIME}초 정비 후 진군`;
+    }
+
+    if (!shouldTickWaveCountdown({
+      bossGateLocked: false,
+      hasActiveEnemyWave: activeEnemyWave
+    })) {
+      return;
     }
 
     this.timeUntilWave -= dt;
@@ -363,8 +385,12 @@ export class WaveSystem {
       this.game.entityManager.addEntity(unit);
     });
 
-    // Spawn enemy units
-    this.spawners.enemy.forEach((contract, idx) => {
+    // Boss waves deploy authored escort sizes instead of stacking the boss on
+    // top of the full persistent roster.
+    const deployedEnemyContracts = bossProfile
+      ? selectBossEscortContracts(this.spawners.enemy, bossProfile.escortCap)
+      : this.spawners.enemy;
+    deployedEnemyContracts.forEach((contract, idx) => {
       const slot = getWaveFormationSlot(WORLD_WIDTH - 200, eBaseY, idx, 'enemy');
       const unit = new Unit(this.game, slot.x, slot.y, 'enemy', contract.type);
       unit.formationRow = slot.row;

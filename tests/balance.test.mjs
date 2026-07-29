@@ -13,11 +13,16 @@ import {
   PLAYER_STARTING_MINERALS,
   AI_STARTING_INCOME,
   AI_STARTING_MINERALS,
+  UNIT_MOVEMENT_SPEED_MULTIPLIER,
   WAVE_CLEAR_PREP_TIME,
   WAVE_INTERVAL,
   UNIT_COSTS
 } from '../src/gameConfig.js';
-import { resolveClearedWavePrep } from '../src/wavePacing.js';
+import {
+  canLaunchNextWaveEarly,
+  resolveClearedWavePrep,
+  shouldTickWaveCountdown
+} from '../src/wavePacing.js';
 import {
   getAttackRangeAgainst,
   getCombatDistance,
@@ -40,7 +45,8 @@ import {
   BOSS_RECOVERY_DELAY,
   getBossProfile,
   getBossProfileForWave,
-  resolveBossGate
+  resolveBossGate,
+  selectBossEscortContracts
 } from '../src/bosses.js';
 import {
   AI_TECH_RESERVE_PER_WAVE,
@@ -53,7 +59,7 @@ import { FloatingText } from '../src/entities/FloatingText.js';
 assert.deepEqual(getUnlockedUnitTypes(1), ['melee', 'ranged']);
 assert.deepEqual(getUnlockedUnitTypes(2), ['melee', 'ranged', 'medic', 'sniper']);
 assert.deepEqual(getUnlockedUnitTypes(3), ['melee', 'ranged', 'medic', 'sniper', 'tank', 'crusader']);
-assert.equal(getTechUpgradeCost(1), 400);
+assert.equal(getTechUpgradeCost(1), 300);
 assert.equal(getTechUpgradeCost(2), 400);
 assert.equal(getTechUpgradeCost(3), Infinity);
 assert.equal(MAX_WAVES, 12);
@@ -65,6 +71,7 @@ assert.equal(PLAYER_STARTING_MINERALS, 400);
 assert.equal(PLAYER_STARTING_INCOME, 90);
 assert.equal(AI_STARTING_MINERALS, 180);
 assert.equal(AI_STARTING_INCOME, 50);
+assert.equal(UNIT_MOVEMENT_SPEED_MULTIPLIER, 2);
 assert.equal(BASE_TECH_HP_GAIN, 2000);
 assert.equal(getUnitVsBaseDamageMultiplier('player'), 2);
 assert.equal(getUnitVsBaseDamageMultiplier('enemy'), 1);
@@ -98,6 +105,36 @@ assert.equal(resolveClearedWavePrep({
   timeUntilWave: 35,
   clearPrepTime: WAVE_CLEAR_PREP_TIME
 }).timeUntilWave, 35);
+assert.equal(canLaunchNextWaveEarly({
+  isActive: true,
+  bossGateLocked: false,
+  hasActiveEnemyWave: false,
+  timeUntilWave: 12
+}), true);
+assert.equal(canLaunchNextWaveEarly({
+  isActive: true,
+  bossGateLocked: false,
+  hasActiveEnemyWave: true,
+  timeUntilWave: 12
+}), false);
+assert.equal(shouldTickWaveCountdown({
+  bossGateLocked: false,
+  hasActiveEnemyWave: false
+}), true);
+assert.equal(shouldTickWaveCountdown({
+  bossGateLocked: false,
+  hasActiveEnemyWave: true
+}), false);
+assert.equal(shouldTickWaveCountdown({
+  bossGateLocked: true,
+  hasActiveEnemyWave: false
+}), false);
+assert.equal(canLaunchNextWaveEarly({
+  isActive: true,
+  bossGateLocked: true,
+  hasActiveEnemyWave: false,
+  timeUntilWave: 12
+}), false);
 assert.equal(resolveClearedWavePrep({
   aiWaveCount: 1,
   maxWaves: MAX_WAVES,
@@ -132,6 +169,15 @@ assert.ok(levelTwoTurret.damage / levelTwoTurret.interval < 30);
 assert.ok(levelThreeTurret.damage / levelThreeTurret.interval < 45);
 assert.equal(BASE_TURRET_BALANCE.splashRatio, 0);
 assert.equal(BASE_TURRET_BALANCE.splashRadius, 0);
+
+const executionerProfile = getBossProfile('executioner');
+const normalTechMultiplier = 1.18;
+const executionerDirectHit = 60 * normalTechMultiplier * executionerProfile.damageMultiplier;
+const levelTwoRangedHp = 60 * normalTechMultiplier;
+assert.ok(executionerDirectHit < levelTwoRangedHp);
+assert.ok(executionerDirectHit * executionerProfile.splashRatio < 30);
+assert.equal(executionerProfile.canCrit, false);
+assert.ok(executionerProfile.splashRadius < 90);
 
 const playerFrontSlot = getWaveFormationSlot(150, 360, 0, 'player');
 const playerRearSlot = getWaveFormationSlot(150, 360, 8, 'player');
@@ -220,13 +266,29 @@ assert.equal(midBoss.id, 'executioner');
 assert.equal(finalBoss.id, 'sovereign');
 assert.equal(getBossProfileForWave(9), null);
 assert.notEqual(midBoss.spritePath, finalBoss.spritePath);
-assert.equal(midBoss.hpMultiplier, 5);
-assert.equal(finalBoss.damageMultiplier, 1.8);
+assert.equal(midBoss.hpMultiplier, 3.5);
+assert.equal(midBoss.damageMultiplier, 0.65);
+assert.equal(finalBoss.damageMultiplier, 1.2);
+assert.equal(midBoss.escortCap, 4);
+assert.equal(finalBoss.escortCap, 10);
 assert.equal(getBossProfile('executioner'), midBoss);
 assert.equal(BOSS_RECOVERY_DELAY, 8);
 assert.deepEqual(resolveBossGate(true, true), { locked: true, completed: false });
 assert.deepEqual(resolveBossGate(true, false), { locked: false, completed: true });
 assert.deepEqual(resolveBossGate(false, false), { locked: false, completed: false });
+const bossEscortPool = [
+  { id: 'm1', type: 'melee' },
+  { id: 'r1', type: 'ranged' },
+  { id: 'm2', type: 'melee' },
+  { id: 'r2', type: 'ranged' },
+  { id: 'm3', type: 'melee' },
+  { id: 'medic', type: 'medic' },
+  { id: 'r3', type: 'ranged' }
+];
+const midBossEscorts = selectBossEscortContracts(bossEscortPool, midBoss.escortCap);
+assert.equal(midBossEscorts.length, midBoss.escortCap);
+assert.ok(midBossEscorts.some(contract => contract.type === 'medic'));
+assert.equal(selectBossEscortContracts(bossEscortPool, 0).length, 0);
 
 assert.equal(AI_TECH_RESERVE_PER_WAVE, 80);
 assert.equal(getAiRosterCap(1), 3);
