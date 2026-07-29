@@ -9,6 +9,11 @@ import {
   resolveBossGate
 } from '../bosses.js';
 import {
+  AI_TECH_RESERVE_PER_WAVE,
+  getAiRecruitmentPriority,
+  shouldUpgradeEnemyTech
+} from '../aiStrategy.js';
+import {
   AI_STARTING_INCOME,
   AI_STARTING_MINERALS,
   chooseAffordableUnit,
@@ -105,7 +110,12 @@ export class WaveSystem {
     const pCrusader = this.countSpawners('player', 'crusader');
     const enemyTechLevel = this.game.enemyBase?.techLevel ?? 1;
     const nextTechCost = getTechUpgradeCost(enemyTechLevel);
-    const ascends = this.aiTechReserve + this.aiIncome >= nextTechCost;
+    const ascends = shouldUpgradeEnemyTech(
+      nextWave,
+      enemyTechLevel,
+      this.aiTechReserve + AI_TECH_RESERVE_PER_WAVE,
+      nextTechCost
+    );
 
     let threat = '임프 돌격대';
     let advice = '엑소시스트';
@@ -176,14 +186,22 @@ export class WaveSystem {
     
     // AI Income addition
     this.aiMinerals += this.aiIncome;
-    this.aiTechReserve += this.aiIncome;
+    this.aiTechReserve += AI_TECH_RESERVE_PER_WAVE;
     
     const unitNames = { melee: '임프', ranged: '서큐버스', medic: '리치', sniper: '밴시', tank: '발록', crusader: '핏로드' };
     
     // AI Tactical Orbital Strike Check
     const playerUnits = this.game.entityManager.getEntitiesByTeam('player').filter(e => e.radius && e.type);
     const enemyTechCost = this.game.enemyBase ? getTechUpgradeCost(this.game.enemyBase.techLevel) : Infinity;
-    if (this.aiTechReserve >= enemyTechCost && this.game.enemyBase) {
+    if (
+      this.game.enemyBase
+      && shouldUpgradeEnemyTech(
+        this.aiWaveCount,
+        this.game.enemyBase.techLevel,
+        this.aiTechReserve,
+        enemyTechCost
+      )
+    ) {
       // Progression is deterministic: a large player army no longer prevents
       // the enemy base from ever reaching its expected defensive tier.
       this.game.enemyBase.upgradeTech();
@@ -195,35 +213,44 @@ export class WaveSystem {
       this.aiUltimateCooldown = 35;
       this.lastActionLog = `[☠️ 악마의 저주]: 성직자 부대에 저주 폭격! (-300🔥, 쿨타임 35s)`;
     } else {
-      // Smart Counter-Pick AI Logic
-      const pMelee = this.countSpawners('player', 'melee');
-      const pRanged = this.countSpawners('player', 'ranged');
-      const pSniper = this.countSpawners('player', 'sniper');
-      const pTank = this.countSpawners('player', 'tank');
-      const pCrusader = this.countSpawners('player', 'crusader');
-      
-      let preferredUnit = 'melee';
-      if (pTank + pCrusader > 2) {
-        preferredUnit = 'sniper';
-      } else if (pMelee >= pRanged && pMelee >= pTank) {
-        preferredUnit = 'ranged';
-      } else if (pRanged >= pMelee && pRanged >= pTank) {
-        preferredUnit = 'crusader';
-      } else if (this.spawners.enemy.length > 5 && this.countSpawners('enemy', 'medic') === 0) {
-        preferredUnit = 'medic';
-      } else {
-        preferredUnit = 'melee';
-      }
-      
+      const playerCounts = {
+        melee: this.countSpawners('player', 'melee'),
+        ranged: this.countSpawners('player', 'ranged'),
+        medic: this.countSpawners('player', 'medic'),
+        sniper: this.countSpawners('player', 'sniper'),
+        tank: this.countSpawners('player', 'tank'),
+        crusader: this.countSpawners('player', 'crusader')
+      };
       let purchasedCount = 0;
       let lastBoughtType = '';
+      let savingForType = '';
       let attempts = 0;
       
       const enemyTechLevel = this.game.enemyBase ? this.game.enemyBase.techLevel : 1;
       while (this.aiMinerals >= UNIT_COSTS.melee && attempts < 6 && this.spawners.enemy.length < MAX_SPAWNERS) {
         attempts++;
 
-        const chosen = chooseAffordableUnit(preferredUnit, this.aiMinerals, enemyTechLevel);
+        const enemyCounts = {
+          melee: this.countSpawners('enemy', 'melee'),
+          ranged: this.countSpawners('enemy', 'ranged'),
+          medic: this.countSpawners('enemy', 'medic'),
+          sniper: this.countSpawners('enemy', 'sniper'),
+          tank: this.countSpawners('enemy', 'tank'),
+          crusader: this.countSpawners('enemy', 'crusader')
+        };
+        const priority = getAiRecruitmentPriority({
+          wave: this.aiWaveCount,
+          playerCounts,
+          enemyCounts,
+          enemyRosterSize: this.spawners.enemy.length
+        });
+        const preferredCost = UNIT_COSTS[priority.type];
+        if (priority.saveForRole && this.aiMinerals < preferredCost) {
+          savingForType = priority.type;
+          break;
+        }
+
+        const chosen = chooseAffordableUnit(priority.type, this.aiMinerals, enemyTechLevel);
         if (!chosen) break;
         
         const success = this.addSpawner('enemy', chosen);
@@ -240,6 +267,8 @@ export class WaveSystem {
         this.lastActionLog = `[지옥문 만원]: 악마 소환진 ${MAX_SPAWNERS}/${MAX_SPAWNERS} 최대 가동!`;
       } else if (purchasedCount > 0) {
         this.lastActionLog = `[악마 소환]: ${unitNames[lastBoughtType]} 강림! (-${UNIT_COSTS[lastBoughtType]}🔥, 잔여 ${Math.floor(this.aiMinerals)}🔥)`;
+      } else if (savingForType) {
+        this.lastActionLog = `[악마 축적]: ${unitNames[savingForType]} 소환 준비 (필요 ${UNIT_COSTS[savingForType]}🔥, 보유 ${Math.floor(this.aiMinerals)}🔥)`;
       } else if (!this.lastActionLog.includes('시대 발전') && !this.lastActionLog.includes('궤도 폭격')) {
         this.lastActionLog = `[악마 축적]: 소환 보류 (잔여 ${Math.floor(this.aiMinerals)}🔥, 증원 +${this.aiIncome}🔥)`;
       }

@@ -39,6 +39,11 @@ import {
   getBossProfileForWave,
   resolveBossGate
 } from '../src/bosses.js';
+import {
+  AI_TECH_RESERVE_PER_WAVE,
+  getAiRecruitmentPriority,
+  shouldUpgradeEnemyTech
+} from '../src/aiStrategy.js';
 import { FloatingText } from '../src/entities/FloatingText.js';
 
 assert.deepEqual(getUnlockedUnitTypes(1), ['melee', 'ranged']);
@@ -136,6 +141,40 @@ assert.equal(BOSS_RECOVERY_DELAY, 8);
 assert.deepEqual(resolveBossGate(true, true), { locked: true, completed: false });
 assert.deepEqual(resolveBossGate(true, false), { locked: false, completed: true });
 assert.deepEqual(resolveBossGate(false, false), { locked: false, completed: false });
+
+assert.equal(AI_TECH_RESERVE_PER_WAVE, 80);
+assert.equal(shouldUpgradeEnemyTech(4, 1, 500, 400), false);
+assert.equal(shouldUpgradeEnemyTech(5, 1, 400, 400), true);
+assert.equal(shouldUpgradeEnemyTech(8, 2, 500, 400), false);
+assert.equal(shouldUpgradeEnemyTech(9, 2, 400, 400), true);
+assert.equal(shouldUpgradeEnemyTech(12, 3, 999, Infinity), false);
+
+const balancedPlayerCounts = { melee: 3, ranged: 2, medic: 1, sniper: 2, tank: 1, crusader: 1 };
+const emptyEnemyRoles = { melee: 4, ranged: 2, medic: 0, sniper: 0, tank: 0, crusader: 0 };
+assert.deepEqual(getAiRecruitmentPriority({
+  wave: 5,
+  playerCounts: balancedPlayerCounts,
+  enemyCounts: emptyEnemyRoles,
+  enemyRosterSize: 6
+}), { type: 'medic', saveForRole: true });
+assert.deepEqual(getAiRecruitmentPriority({
+  wave: 7,
+  playerCounts: balancedPlayerCounts,
+  enemyCounts: { ...emptyEnemyRoles, medic: 1 },
+  enemyRosterSize: 7
+}), { type: 'sniper', saveForRole: true });
+assert.deepEqual(getAiRecruitmentPriority({
+  wave: 9,
+  playerCounts: balancedPlayerCounts,
+  enemyCounts: { ...emptyEnemyRoles, medic: 1, sniper: 1 },
+  enemyRosterSize: 8
+}), { type: 'tank', saveForRole: true });
+assert.deepEqual(getAiRecruitmentPriority({
+  wave: 10,
+  playerCounts: balancedPlayerCounts,
+  enemyCounts: { ...emptyEnemyRoles, medic: 1, sniper: 1, tank: 1 },
+  enemyRosterSize: 9
+}), { type: 'crusader', saveForRole: true });
 
 const criticalDamageText = new FloatingText({}, 'CRIT! -100', 0, 0, '#fff', true);
 const emphasizedStatusText = new FloatingText({}, '웨이브 개시', 0, 0, '#fff', 'emphasis');
