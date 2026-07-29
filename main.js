@@ -107,6 +107,7 @@ class Game {
     });
     
     document.getElementById('start-btn').addEventListener('click', () => {
+      this.audio.ensureRunning();
       document.getElementById('title-screen').style.opacity = '0';
       setTimeout(() => {
         document.getElementById('title-screen').style.display = 'none';
@@ -498,6 +499,10 @@ class Game {
     this.waveSystem.update(scaledDt);
     this.economy.update(scaledDt);
     this.entityManager.update(scaledDt);
+    const attackingUnits = this.entityManager.entities.filter(entity =>
+      entity.isWaveFighter && entity.isAlive && entity.state === 'attacking'
+    ).length;
+    this.audio.setCombatIntensity(Math.min(1, attackingUnits / 8));
     this.hud.update();
     
     // Update Build Queue Badges
@@ -536,12 +541,18 @@ class Game {
     const dbgAiIncome = document.getElementById('debug-ai-income');
     const dbgAiUnits = document.getElementById('debug-ai-units');
     const dbgPlayerUnits = document.getElementById('debug-player-units');
+    const dbgAudioVoices = document.getElementById('debug-audio-voices');
     const dbgLastAction = document.getElementById('debug-last-action');
     
     if (dbgAiMinerals) dbgAiMinerals.textContent = `${Math.floor(this.waveSystem.aiMinerals)} 악마력`;
     if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 악마력`;
     if (dbgAiUnits) dbgAiUnits.textContent = `임프${aiMelee} 서큐${aiRanged} 리치${aiMedic} 밴시${aiSniper} 발록${aiTank} 핏로드${aiCrusader} (${enemySpawners.length}/${MAX_SPAWNERS})`;
     if (dbgPlayerUnits) dbgPlayerUnits.textContent = `수도승${pMelee} 퇴마${pRanged} 사제${pMedic} 심판${pSniper} 천사${pTank} 십자군${pCrusader} (${playerSpawners.length}/${MAX_SPAWNERS})`;
+    if (dbgAudioVoices) {
+      const audioState = this.audio.getDebugState();
+      const contextLabel = audioState.contextState === 'running' ? '출력 정상' : `출력 ${audioState.contextState}`;
+      dbgAudioVoices.textContent = `재생 ${audioState.played} · 억제 ${audioState.dropped} · 전투 ${Math.round(audioState.intensity * 100)}% · 최고피크 ${Math.round(audioState.peak * 100)}% · ${contextLabel}`;
+    }
     if (dbgLastAction && this.waveSystem.lastActionLog) dbgLastAction.textContent = this.waveSystem.lastActionLog;
     
     if (this.moveCameraLeft) {
@@ -947,7 +958,7 @@ class Game {
   }
   
   triggerOrbitalStrike() {
-    this.audio.playExplosion();
+    this.audio.playExplosion({ major: true });
     this.addScreenShake(20);
 
     this.entityManager.addEntity(new FloatingText(

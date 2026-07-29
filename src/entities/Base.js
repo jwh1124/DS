@@ -135,6 +135,7 @@ export class Base {
     if (this.hp <= 0) {
       this.hp = 0;
       this.isAlive = false;
+      if (this.game.audio) this.game.audio.playExplosion({ major: true });
       if (this.game.addScreenShake) this.game.addScreenShake(20);
       const expColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
       for (let i = 0; i < 60; i++) {

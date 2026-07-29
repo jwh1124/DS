@@ -425,7 +425,7 @@ export class WaveSystem {
 
   triggerAiOrbitalStrike() {
     if (this.game.audio) {
-      this.game.audio.playExplosion();
+      this.game.audio.playExplosion({ major: true });
       this.game.audio.playBossAlarm();
     }
     if (this.game.addScreenShake) {

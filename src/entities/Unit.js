@@ -293,7 +293,7 @@ export class Unit {
 
   explode() {
     if (this.game.audio) {
-      this.game.audio.playExplosion();
+      this.game.audio.playExplosion({ major: this.isBoss });
     }
     
     if ((this.isBoss || this.type === 'tank' || this.type === 'crusader') && this.game.addScreenShake) {
