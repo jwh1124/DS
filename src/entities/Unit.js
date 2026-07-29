@@ -7,11 +7,12 @@ import { getCounterProfile, getTargetPriorityBonus } from '../unitRoles.js';
 import { getDoctrineUnitMultipliers } from '../doctrines.js';
 import { getBossProfile } from '../bosses.js';
 import { getTacticalOrderTargetBonus } from '../tacticalOrders.js';
+import { MEDIC_HEAL_RANGE, selectCombatTarget } from '../targeting.js';
 
 const UNIT_STATS = {
   melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#f1c40f' },     // Monk / Imp
   ranged: { hp: 60, damage: 35, range: 250, speed: 70, attackSpeed: 1.2, color: '#dfe6e9' },     // Exorcist / Succubus
-  medic: { hp: 100, damage: 0, range: 180, speed: 65, attackSpeed: 1.5, color: '#f1c40f' },      // Priest / Lich
+  medic: { hp: 100, damage: 0, range: MEDIC_HEAL_RANGE, speed: 65, attackSpeed: 1.5, color: '#f1c40f' }, // Priest / Lich
   sniper: { hp: 80, damage: 75, range: 450, speed: 55, attackSpeed: 2.0, color: '#e74c3c' },     // Inquisitor / Banshee
   tank: { hp: 300, damage: 60, range: 360, speed: 40, attackSpeed: 1.5, color: '#f1c40f' },      // Archangel / Balrog
   crusader: { hp: 450, damage: 45, range: 55, speed: 60, attackSpeed: 1.2, color: '#f1c40f' }   // Crusader / Pit Lord
@@ -339,10 +340,10 @@ export class Unit {
       }
       
       if (injuredFriend) {
-        const dx = injuredFriend.x - this.x;
-        const dy = injuredFriend.y - this.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        return { target: injuredFriend, distance: dist };
+        return {
+          target: injuredFriend,
+          distance: getCombatDistance(this, injuredFriend)
+        };
       }
 
       // A healer must never fall through to enemy targeting. That used to
@@ -353,28 +354,18 @@ export class Unit {
     const enemyTeam = this.team === 'player' ? 'enemy' : 'player';
     const enemies = this.game.entityManager.getEntitiesByTeam(enemyTeam);
     
-    let closestDist = Infinity;
-    let bestTargetScore = Infinity;
-    let closestEnemy = null;
-    
-    for (let i = 0; i < enemies.length; i++) {
-      const enemy = enemies[i];
-      const actualDist = getCombatDistance(this, enemy);
-      const tacticalBonus = getTacticalOrderTargetBonus(
-        this.game.tacticalOrder,
-        this,
-        enemy
-      );
-      const targetScore = actualDist - getTargetPriorityBonus(this, enemy) - tacticalBonus;
-      
-      if (targetScore < bestTargetScore) {
-        bestTargetScore = targetScore;
-        closestDist = actualDist;
-        closestEnemy = enemy;
+    return selectCombatTarget(
+      enemies,
+      enemy => getCombatDistance(this, enemy),
+      (enemy, actualDist) => {
+        const tacticalBonus = getTacticalOrderTargetBonus(
+          this.game.tacticalOrder,
+          this,
+          enemy
+        );
+        return actualDist - getTargetPriorityBonus(this, enemy) - tacticalBonus;
       }
-    }
-    
-    return { target: closestEnemy, distance: closestDist };
+    );
   }
 
   update(dt) {

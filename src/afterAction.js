@@ -57,7 +57,7 @@ function getRecommendation({
   if (endReason === 'finalJudgement') {
     return {
       title: '최후 심판에서 지옥문 압박이 부족했습니다',
-      text: `판정 당시 성당 ${playerIntegrity}% 대 지옥문 ${enemyIntegrity}%였습니다. [8] 후열 처단으로 지원 악마를 걷어낸 뒤 심판관의 공성 시간을 확보하세요.`
+        text: `판정 당시 성당 ${playerIntegrity}% 대 지옥문 ${enemyIntegrity}%였습니다. [8] 후열 처단으로 원거리 악마를 걷어낸 뒤 심판관의 공성 시간을 확보하세요.`
     };
   }
   if (wave <= 4 && frontLine < 3) {

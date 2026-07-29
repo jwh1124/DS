@@ -32,6 +32,7 @@ import {
 } from './src/cameraDirector.js';
 import { buildAfterActionReport } from './src/afterAction.js';
 import { getTacticalOrderDefinition } from './src/tacticalOrders.js';
+import { getCombatDistance } from './src/combatMath.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -541,6 +542,7 @@ class Game {
     const dbgAiIncome = document.getElementById('debug-ai-income');
     const dbgAiUnits = document.getElementById('debug-ai-units');
     const dbgPlayerUnits = document.getElementById('debug-player-units');
+    const dbgHealerTactics = document.getElementById('debug-healer-tactics');
     const dbgAudioVoices = document.getElementById('debug-audio-voices');
     const dbgLastAction = document.getElementById('debug-last-action');
     
@@ -548,6 +550,27 @@ class Game {
     if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 악마력`;
     if (dbgAiUnits) dbgAiUnits.textContent = `임프${aiMelee} 서큐${aiRanged} 리치${aiMedic} 밴시${aiSniper} 발록${aiTank} 핏로드${aiCrusader} (${enemySpawners.length}/${MAX_SPAWNERS})`;
     if (dbgPlayerUnits) dbgPlayerUnits.textContent = `수도승${pMelee} 퇴마${pRanged} 사제${pMedic} 심판${pSniper} 천사${pTank} 십자군${pCrusader} (${playerSpawners.length}/${MAX_SPAWNERS})`;
+    if (dbgHealerTactics) {
+      const livingUnits = this.entityManager.entities.filter(entity =>
+        entity.isWaveFighter && entity.isAlive
+      );
+      const healerSummary = (team, label) => {
+        const healers = livingUnits.filter(unit => unit.team === team && unit.type === 'medic');
+        const activeHealers = healers.filter(unit =>
+          unit.state === 'attacking' && unit.target?.isAlive
+        );
+        const longestHeal = activeHealers.reduce(
+          (longest, healer) => Math.max(longest, getCombatDistance(healer, healer.target)),
+          0
+        );
+        const threats = livingUnits.filter(unit =>
+          unit.target?.team === team && unit.target?.type === 'medic'
+        ).length;
+        return `${label}${healers.length} · 치유${activeHealers.length}`
+          + `${longestHeal > 0 ? `(${Math.round(longestHeal)})` : ''} · 피격표적${threats}`;
+      };
+      dbgHealerTactics.textContent = `${healerSummary('player', '사제')} / ${healerSummary('enemy', '리치')}`;
+    }
     if (dbgAudioVoices) {
       const audioState = this.audio.getDebugState();
       const contextLabel = audioState.contextState === 'running' ? '출력 정상' : `출력 ${audioState.contextState}`;
@@ -763,7 +786,7 @@ class Game {
     const unitStats = {
       melee: { title: '수도승 (근접) [1] | 성서 계시 Lv.1', desc: PLAYER_UNIT_ROLE_INFO.melee.description, hp: 120, dmg: 25, range: '근접' },
       ranged: { title: '엑소시스트 (원거리) [2] | 성서 계시 Lv.1', desc: PLAYER_UNIT_ROLE_INFO.ranged.description, hp: 60, dmg: '35 · 대공 44', range: '원거리' },
-      medic: { title: '사제 (치유) [3] | 필요: 성서 계시 Lv.2', desc: PLAYER_UNIT_ROLE_INFO.medic.description, hp: 100, dmg: '치유+30', range: '중거리' },
+      medic: { title: '사제 (치유) [3] | 필요: 성서 계시 Lv.2', desc: PLAYER_UNIT_ROLE_INFO.medic.description, hp: 100, dmg: '치유+30', range: '장거리' },
       sniper: { title: '이단심판관 (저격) [4] | 필요: 성서 계시 Lv.2', desc: PLAYER_UNIT_ROLE_INFO.sniper.description, hp: 80, dmg: '90 · 대형 122', range: '초장거리' },
       tank: { title: '대천사 (광역심판) [5] | 필요: 성서 계시 Lv.3', desc: PLAYER_UNIT_ROLE_INFO.tank.description, hp: 300, dmg: '60(AOE)', range: '장거리' },
       crusader: { title: '십자군 (수호탱커) [6] | 필요: 성서 계시 Lv.3', desc: PLAYER_UNIT_ROLE_INFO.crusader.description, hp: 450, dmg: '45(근접)', range: '근접' },

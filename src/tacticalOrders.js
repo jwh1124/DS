@@ -11,7 +11,7 @@ export const TACTICAL_ORDERS = Object.freeze([
     key: '8',
     label: '후열 처단',
     shortLabel: '후열',
-    hint: '원거리 성직자가 사격·치유 악마를 우선합니다.'
+    hint: '원거리 성직자가 서큐버스·밴시를 우선합니다. 리치는 마지막에 공격합니다.'
   }),
   Object.freeze({
     id: 'boss',
@@ -23,7 +23,7 @@ export const TACTICAL_ORDERS = Object.freeze([
 ]);
 
 const TACTICAL_ORDER_MAP = new Map(TACTICAL_ORDERS.map(order => [order.id, order]));
-const REAR_TARGET_TYPES = new Set(['ranged', 'medic', 'sniper']);
+const REAR_TARGET_TYPES = new Set(['ranged', 'sniper']);
 const HEAVY_TARGET_TYPES = new Set(['tank', 'crusader']);
 
 export function getTacticalOrderDefinition(orderId) {

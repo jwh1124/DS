@@ -19,8 +19,8 @@ export const PLAYER_UNIT_ROLE_INFO = Object.freeze({
     description: '안정적인 원거리 사격. 공중 악마에게 25% 추가 피해.'
   }),
   medic: Object.freeze({
-    tag: '치유',
-    description: '가장 많이 다친 아군을 우선해 30 HP씩 회복.'
+    tag: '장거리 치유',
+    description: '넓은 범위에서 가장 많이 다친 아군을 우선해 30 HP씩 회복.'
   }),
   sniper: Object.freeze({
     tag: '대형 +35%',

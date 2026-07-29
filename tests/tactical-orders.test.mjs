@@ -8,7 +8,8 @@ import {
 
 const rangedHoly = { team: 'player', type: 'ranged', range: 250 };
 const meleeHoly = { team: 'player', type: 'melee', range: 45 };
-const enemyRear = { team: 'enemy', type: 'medic' };
+const enemyRear = { team: 'enemy', type: 'sniper' };
+const enemyMedic = { team: 'enemy', type: 'medic' };
 const enemyHeavy = { team: 'enemy', type: 'tank' };
 const enemyBoss = { team: 'enemy', type: 'tank', isBoss: true };
 const enemyBase = { team: 'enemy', techLevel: 2 };
@@ -19,8 +20,9 @@ test('tactical order definitions are stable and unknown input falls back to bala
   assert.equal(getTacticalOrderDefinition('unknown').id, 'balanced');
 });
 
-test('rear order only redirects holy ranged attackers toward support targets', () => {
+test('rear order redirects holy ranged attackers without overriding medic protection', () => {
   assert.equal(getTacticalOrderTargetBonus('rear', rangedHoly, enemyRear), 170);
+  assert.equal(getTacticalOrderTargetBonus('rear', rangedHoly, enemyMedic), 0);
   assert.equal(getTacticalOrderTargetBonus('rear', meleeHoly, enemyRear), 0);
   assert.equal(getTacticalOrderTargetBonus('rear', rangedHoly, enemyHeavy), 0);
   assert.equal(getTacticalOrderTargetBonus('rear', rangedHoly, enemyBase), 0);
