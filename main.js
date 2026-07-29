@@ -23,6 +23,7 @@ import {
   getDoctrineById,
   getDoctrineChoices
 } from './src/doctrines.js';
+import { iconMarkup, labeledIconMarkup } from './src/ui/icons.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -171,7 +172,7 @@ class Game {
     if (techBtn) {
       techBtn.dataset.cost = getTechUpgradeCost(1);
       techBtn.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> ${getTechUpgradeCost(1)}`;
-      techBtn.querySelector('.name').innerHTML = `📖 성서 계시 (Lv.2)`;
+      techBtn.querySelector('[data-action-label]').textContent = '성서 계시 (Lv.2)';
       techBtn.style.opacity = '1';
     }
 
@@ -180,7 +181,7 @@ class Game {
     });
     const autoSpendBtn = document.getElementById('auto-spend-btn');
     if (autoSpendBtn) {
-      autoSpendBtn.textContent = '🤖 자동 소환: 끔';
+      autoSpendBtn.innerHTML = labeledIconMarkup('cycle', '자동 소환: 끔');
       autoSpendBtn.classList.remove('active');
     }
     
@@ -214,11 +215,11 @@ class Game {
     const summary = document.getElementById('game-over-summary');
     
     if (winner === 'player') {
-      title.textContent = '✝️ 승리!';
+      title.innerHTML = `${iconMarkup('cross', 'result-icon')}<span>승리!</span>`;
       title.style.color = '#c7ad77';
       title.style.textShadow = '0 5px 18px rgba(0, 0, 0, 0.72)';
     } else {
-      title.textContent = '☠️ 패배...';
+      title.innerHTML = `${iconMarkup('skull', 'result-icon')}<span>패배...</span>`;
       title.style.color = '#b66c68';
       title.style.textShadow = '0 5px 18px rgba(0, 0, 0, 0.72)';
     }
@@ -268,7 +269,7 @@ class Game {
     choiceRoot.innerHTML = choices.map((doctrine, index) => `
       <button class="doctrine-card" type="button" data-doctrine="${doctrine.id}">
         <span class="doctrine-key">[${index + 1}]</span>
-        <span class="doctrine-icon" aria-hidden="true">${doctrine.icon}</span>
+        <span class="doctrine-icon" aria-hidden="true">${iconMarkup(doctrine.icon)}</span>
         <span class="doctrine-role">${doctrine.role}</span>
         <strong>${doctrine.title}</strong>
         <span class="doctrine-description">${doctrine.description}</span>
@@ -398,10 +399,10 @@ class Game {
     }
     
     const ultBtn = document.querySelector('.build-btn[data-type="ultimate"]');
-    const ultName = ultBtn?.querySelector('.name');
+    const ultName = ultBtn?.querySelector('[data-action-label]');
     if (ultName) ultName.textContent = this.ultimateCooldown > 0
-      ? `⚡ 천벌 (${Math.ceil(this.ultimateCooldown)}s)`
-      : '⚡ 천벌 (부대 타격)';
+      ? `천벌 (${Math.ceil(this.ultimateCooldown)}s)`
+      : '천벌 (부대 타격)';
     
     this.waveSystem.update(scaledDt);
     this.economy.update(scaledDt);
@@ -446,8 +447,8 @@ class Game {
     const dbgPlayerUnits = document.getElementById('debug-player-units');
     const dbgLastAction = document.getElementById('debug-last-action');
     
-    if (dbgAiMinerals) dbgAiMinerals.textContent = `${Math.floor(this.waveSystem.aiMinerals)} 🔥`;
-    if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 🔥`;
+    if (dbgAiMinerals) dbgAiMinerals.textContent = `${Math.floor(this.waveSystem.aiMinerals)} 악마력`;
+    if (dbgAiIncome) dbgAiIncome.textContent = `+${this.waveSystem.aiIncome} 악마력`;
     if (dbgAiUnits) dbgAiUnits.textContent = `임프${aiMelee} 서큐${aiRanged} 리치${aiMedic} 밴시${aiSniper} 발록${aiTank} 핏로드${aiCrusader} (${enemySpawners.length}/${MAX_SPAWNERS})`;
     if (dbgPlayerUnits) dbgPlayerUnits.textContent = `수도승${pMelee} 퇴마${pRanged} 사제${pMedic} 심판${pSniper} 천사${pTank} 십자군${pCrusader} (${playerSpawners.length}/${MAX_SPAWNERS})`;
     if (dbgLastAction && this.waveSystem.lastActionLog) dbgLastAction.textContent = this.waveSystem.lastActionLog;
@@ -530,7 +531,7 @@ class Game {
     const reqTech = UNIT_TECH_REQUIREMENTS[type];
     if (reqTech && this.playerBase && this.playerBase.techLevel < reqTech) {
       this.entityManager.addEntity(new FloatingText(
-        this, `🔒 필요: 성서 계시 Lv.${reqTech}!`, this.playerBase.x, this.playerBase.y - 120, '#b97872', 'emphasis'
+        this, `성서 계시 Lv.${reqTech} 필요`, this.playerBase.x, this.playerBase.y - 120, '#b97872', 'emphasis'
       ));
       return;
     }
@@ -558,13 +559,13 @@ class Game {
           if (this.playerBase.techLevel >= MAX_TECH_LEVEL) {
             btnElement.dataset.cost = Infinity;
             btnElement.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> -`;
-            btnElement.querySelector('.name').innerHTML = `📖 성서 계시 (MAX)`;
+            btnElement.querySelector('[data-action-label]').textContent = '성서 계시 (MAX)';
             btnElement.style.opacity = 0.5;
           } else {
             const nextCost = getTechUpgradeCost(this.playerBase.techLevel);
             btnElement.dataset.cost = nextCost;
             btnElement.querySelector('.cost').innerHTML = `<div class="mineral-icon small"></div> ${nextCost}`;
-            btnElement.querySelector('.name').innerHTML = `📖 성서 계시 (Lv.${this.playerBase.techLevel + 1})`;
+            btnElement.querySelector('[data-action-label]').textContent = `성서 계시 (Lv.${this.playerBase.techLevel + 1})`;
           }
         }
       }
@@ -577,7 +578,7 @@ class Game {
     } else {
       if (this.waveSystem.spawners.player.length >= MAX_SPAWNERS) {
         this.entityManager.addEntity(new FloatingText(
-          this, `⚠️ 교단 편성 한도 (${MAX_SPAWNERS}/${MAX_SPAWNERS} MAX)!`, this.playerBase.x, this.playerBase.y - 120, '#b97872', 'emphasis'
+          this, `교단 편성 한도 도달 (${MAX_SPAWNERS}/${MAX_SPAWNERS})`, this.playerBase.x, this.playerBase.y - 120, '#b97872', 'emphasis'
         ));
         return;
       }
@@ -623,7 +624,7 @@ class Game {
       }
     } else {
       this.entityManager.addEntity(new FloatingText(
-        this, `⚠️ 환속할 ${PLAYER_UNIT_NAMES[type]} 없음!`, this.playerBase.x, this.playerBase.y - 100, '#ff0055', false
+        this, `환속할 ${PLAYER_UNIT_NAMES[type]} 없음`, this.playerBase.x, this.playerBase.y - 100, '#b97872', false
       ));
     }
   }
@@ -651,15 +652,15 @@ class Game {
     const ttRange = document.getElementById('tt-range');
 
     const unitStats = {
-      melee: { title: '🙏 수도승 (근접) [1] | 성서 계시 Lv.1', desc: PLAYER_UNIT_ROLE_INFO.melee.description, hp: 120, dmg: 25, range: '근접' },
-      ranged: { title: '✝️ 엑소시스트 (원거리) [2] | 성서 계시 Lv.1', desc: PLAYER_UNIT_ROLE_INFO.ranged.description, hp: 60, dmg: '35 · 대공 44', range: '원거리' },
-      medic: { title: '⛪ 사제 (치유) [3] | 🔒 필요: 성서 계시 Lv.2', desc: PLAYER_UNIT_ROLE_INFO.medic.description, hp: 100, dmg: '치유+30', range: '중거리' },
-      sniper: { title: '🔥 이단심판관 (저격) [4] | 🔒 필요: 성서 계시 Lv.2', desc: PLAYER_UNIT_ROLE_INFO.sniper.description, hp: 80, dmg: '90 · 대형 122', range: '초장거리' },
-      tank: { title: '👼 대천사 (광역심판) [5] | 🔒 필요: 성서 계시 Lv.3', desc: PLAYER_UNIT_ROLE_INFO.tank.description, hp: 300, dmg: '60(AOE)', range: '장거리' },
-      crusader: { title: '⚔️ 십자군 (수호탱커) [6] | 🔒 필요: 성서 계시 Lv.3', desc: PLAYER_UNIT_ROLE_INFO.crusader.description, hp: 450, dmg: '45(근접)', range: '근접' },
-      income: { title: '🕯️ 제단 봉헌 [Q]', desc: '매 웨이브마다 추가 신앙심을 +15 획득.', hp: '-', dmg: '-', range: '-' },
-      tech: { title: '📖 성서 계시 [W]', desc: '성당 방어탑 개방 및 상위 성직자 해금.', hp: '-', dmg: '-', range: '-' },
-      ultimate: { title: '⚡ 천벌 [E]', desc: '전장의 모든 악마에게 150 신성 피해를 가하는 천상의 심판.', hp: '-', dmg: '150(부대)', range: '전체' }
+      melee: { title: '수도승 (근접) [1] | 성서 계시 Lv.1', desc: PLAYER_UNIT_ROLE_INFO.melee.description, hp: 120, dmg: 25, range: '근접' },
+      ranged: { title: '엑소시스트 (원거리) [2] | 성서 계시 Lv.1', desc: PLAYER_UNIT_ROLE_INFO.ranged.description, hp: 60, dmg: '35 · 대공 44', range: '원거리' },
+      medic: { title: '사제 (치유) [3] | 필요: 성서 계시 Lv.2', desc: PLAYER_UNIT_ROLE_INFO.medic.description, hp: 100, dmg: '치유+30', range: '중거리' },
+      sniper: { title: '이단심판관 (저격) [4] | 필요: 성서 계시 Lv.2', desc: PLAYER_UNIT_ROLE_INFO.sniper.description, hp: 80, dmg: '90 · 대형 122', range: '초장거리' },
+      tank: { title: '대천사 (광역심판) [5] | 필요: 성서 계시 Lv.3', desc: PLAYER_UNIT_ROLE_INFO.tank.description, hp: 300, dmg: '60(AOE)', range: '장거리' },
+      crusader: { title: '십자군 (수호탱커) [6] | 필요: 성서 계시 Lv.3', desc: PLAYER_UNIT_ROLE_INFO.crusader.description, hp: 450, dmg: '45(근접)', range: '근접' },
+      income: { title: '제단 봉헌 [Q]', desc: '매 웨이브마다 추가 신앙심을 +15 획득.', hp: '-', dmg: '-', range: '-' },
+      tech: { title: '성서 계시 [W]', desc: '성당 방어탑 개방 및 상위 성직자 해금.', hp: '-', dmg: '-', range: '-' },
+      ultimate: { title: '천벌 [E]', desc: '전장의 모든 악마에게 150 신성 피해를 가하는 천상의 심판.', hp: '-', dmg: '150(부대)', range: '전체' }
     };
 
     document.querySelectorAll('.build-btn').forEach(btn => {
@@ -732,9 +733,10 @@ class Game {
       audioBtn.addEventListener('click', () => {
         const isMuted = this.audio.toggleMute();
         audioButtons.forEach(button => {
-          button.textContent = button.hasAttribute('data-compact-audio')
-            ? (isMuted ? '🔇' : '🔊')
-            : (isMuted ? '🔇 사운드 끔' : '🔊 사운드 켬');
+          const audioIcon = isMuted ? 'volume-off' : 'volume';
+          button.innerHTML = button.hasAttribute('data-compact-audio')
+            ? iconMarkup(audioIcon)
+            : labeledIconMarkup(audioIcon, isMuted ? '사운드 끔' : '사운드 켬');
           button.setAttribute('aria-label', isMuted ? '사운드 켜기' : '사운드 끄기');
           button.classList.toggle('active', !isMuted);
         });
@@ -745,7 +747,7 @@ class Game {
     if (autoSpendBtn) {
       autoSpendBtn.addEventListener('click', () => {
         this.autoSpend = !this.autoSpend;
-        autoSpendBtn.textContent = this.autoSpend ? '🤖 자동 소환: 켬' : '🤖 자동 소환: 끔';
+        autoSpendBtn.innerHTML = labeledIconMarkup('cycle', this.autoSpend ? '자동 소환: 켬' : '자동 소환: 끔');
         if (this.autoSpend) {
           autoSpendBtn.classList.add('active');
         } else {

@@ -267,8 +267,8 @@ export class Unit {
       if (this.team === 'enemy' && this.game.economy) {
         this.game.economy.minerals += bounty;
         const bountyLabel = this.isBoss && this.bossName
-          ? `${this.bossName} 격퇴 · +${bounty} ✝️`
-          : `+${bounty} ✝️`;
+          ? `${this.bossName} 격퇴 · 신앙심 +${bounty}`
+          : `신앙심 +${bounty}`;
         this.game.entityManager.addEntity(new FloatingText(
           this.game,
           bountyLabel,
@@ -709,7 +709,7 @@ export class Unit {
       // High-Quality Vector Art for Crusader & Pit Lord
       if (this.type === 'crusader') {
         if (this.team === 'player') {
-          // ⚔️ 십자군 (Crusader): Heavy Gold Armor, Tower Shield with Red Cross, Flaming Mace
+          // Crusader: Heavy Gold Armor, Tower Shield with Red Cross, Flaming Mace
           const stepLeg = Math.sin(this.animTime * 1.5) * 5;
           ctx.fillStyle = '#1e272e';
           ctx.fillRect(-11 + stepLeg, 4, 7, 12);

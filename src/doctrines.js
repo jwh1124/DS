@@ -2,7 +2,7 @@ const DOCTRINES = Object.freeze({
   shieldWall: Object.freeze({
     id: 'shieldWall',
     wave: 3,
-    icon: '🛡️',
+    icon: 'shield',
     title: '수호 방벽',
     role: '전열 교리',
     description: '수도승과 십자군의 최대 체력이 25% 증가합니다.',
@@ -11,7 +11,7 @@ const DOCTRINES = Object.freeze({
   silverRite: Object.freeze({
     id: 'silverRite',
     wave: 3,
-    icon: '✦',
+    icon: 'star',
     title: '은탄 의식',
     role: '사격 교리',
     description: '엑소시스트와 심판관의 공격력이 18% 증가합니다.',
@@ -20,7 +20,7 @@ const DOCTRINES = Object.freeze({
   faithfulTithe: Object.freeze({
     id: 'faithfulTithe',
     wave: 3,
-    icon: '🕯️',
+    icon: 'candle',
     title: '신실한 십일조',
     role: '경제 교리',
     description: '이후 웨이브마다 신앙심을 20 더 획득합니다.',
@@ -29,7 +29,7 @@ const DOCTRINES = Object.freeze({
   mercyHymn: Object.freeze({
     id: 'mercyHymn',
     wave: 6,
-    icon: '♰',
+    icon: 'cross',
     title: '자비의 성가',
     role: '회복 교리',
     description: '사제의 치유량이 40% 증가합니다.',
@@ -38,7 +38,7 @@ const DOCTRINES = Object.freeze({
   heavenlyFire: Object.freeze({
     id: 'heavenlyFire',
     wave: 6,
-    icon: '☄',
+    icon: 'comet',
     title: '천상의 화염',
     role: '광역 교리',
     description: '대천사의 공격력이 22% 증가합니다.',
@@ -47,7 +47,7 @@ const DOCTRINES = Object.freeze({
   martyrVow: Object.freeze({
     id: 'martyrVow',
     wave: 6,
-    icon: '⚜',
+    icon: 'fleur',
     title: '순교자의 맹세',
     role: '생존 교리',
     description: '모든 성직자 부대의 최대 체력이 12% 증가합니다.',
@@ -56,7 +56,7 @@ const DOCTRINES = Object.freeze({
   finalCrusade: Object.freeze({
     id: 'finalCrusade',
     wave: 9,
-    icon: '⚔',
+    icon: 'sword',
     title: '최후의 성전',
     role: '공세 교리',
     description: '모든 성직자 부대의 공격력이 12% 증가합니다.',
@@ -65,7 +65,7 @@ const DOCTRINES = Object.freeze({
   grandExorcism: Object.freeze({
     id: 'grandExorcism',
     wave: 9,
-    icon: '✝',
+    icon: 'cross',
     title: '대정화 의식',
     role: '결전 교리',
     description: '성직자 부대가 지옥문에 주는 피해가 15% 증가합니다.',
@@ -74,7 +74,7 @@ const DOCTRINES = Object.freeze({
   sanctuary: Object.freeze({
     id: 'sanctuary',
     wave: 9,
-    icon: '⛪',
+    icon: 'cathedral',
     title: '성역 선포',
     role: '요새 교리',
     description: '성당 최대 체력과 현재 체력이 1,500 증가합니다.',

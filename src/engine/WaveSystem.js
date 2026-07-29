@@ -60,7 +60,7 @@ export class WaveSystem {
     this.aiTechReserve = Math.floor(AI_STARTING_MINERALS * diff * 0.6);
     this.aiIncome = Math.floor(AI_STARTING_INCOME * diff);
     this.aiUltimateCooldown = 20;
-    this.lastActionLog = `[지옥문]: 악마 군단 소환력 ${this.aiMinerals}🔥 / 증원 +${this.aiIncome}🔥`;
+    this.lastActionLog = `[지옥문]: 악마 군단 소환력 ${this.aiMinerals} / 증원 +${this.aiIncome}`;
   }
 
   stop() {
@@ -207,12 +207,12 @@ export class WaveSystem {
       // the enemy base from ever reaching its expected defensive tier.
       this.game.enemyBase.upgradeTech();
       this.aiTechReserve -= enemyTechCost;
-      this.lastActionLog = `[지옥 각성]: 악마 군단 강화 (Lv.${this.game.enemyBase.techLevel})! (-${enemyTechCost}🔥)`;
+      this.lastActionLog = `[지옥 각성]: 악마 군단 강화 (Lv.${this.game.enemyBase.techLevel})! (-${enemyTechCost} 악마력)`;
     } else if (playerUnits.length >= 8 && this.aiUltimateCooldown <= 0 && this.aiMinerals >= 300) {
       this.triggerAiOrbitalStrike();
       this.aiMinerals -= 300;
       this.aiUltimateCooldown = 35;
-      this.lastActionLog = `[☠️ 악마의 저주]: 성직자 부대에 저주 폭격! (-300🔥, 쿨타임 35s)`;
+      this.lastActionLog = `[악마의 저주]: 성직자 부대에 저주 폭격! (-300 악마력, 쿨타임 35s)`;
     } else {
       const playerCounts = {
         melee: this.countSpawners('player', 'melee'),
@@ -272,13 +272,13 @@ export class WaveSystem {
       if (this.spawners.enemy.length >= MAX_SPAWNERS) {
         this.lastActionLog = `[지옥문 만원]: 악마 소환진 ${MAX_SPAWNERS}/${MAX_SPAWNERS} 최대 가동!`;
       } else if (this.spawners.enemy.length >= enemyRosterCap) {
-        this.lastActionLog = `[악마 대기]: 현재 웨이브 편제 ${enemyRosterCap}명 완성 · 잔여 ${Math.floor(this.aiMinerals)}🔥`;
+        this.lastActionLog = `[악마 대기]: 현재 웨이브 편제 ${enemyRosterCap}명 완성 · 잔여 ${Math.floor(this.aiMinerals)} 악마력`;
       } else if (purchasedCount > 0) {
-        this.lastActionLog = `[악마 소환]: ${unitNames[lastBoughtType]} 강림! (-${UNIT_COSTS[lastBoughtType]}🔥, 잔여 ${Math.floor(this.aiMinerals)}🔥)`;
+        this.lastActionLog = `[악마 소환]: ${unitNames[lastBoughtType]} 강림! (-${UNIT_COSTS[lastBoughtType]} 악마력, 잔여 ${Math.floor(this.aiMinerals)} 악마력)`;
       } else if (savingForType) {
-        this.lastActionLog = `[악마 축적]: ${unitNames[savingForType]} 소환 준비 (필요 ${UNIT_COSTS[savingForType]}🔥, 보유 ${Math.floor(this.aiMinerals)}🔥)`;
+        this.lastActionLog = `[악마 축적]: ${unitNames[savingForType]} 소환 준비 (필요 ${UNIT_COSTS[savingForType]} 악마력, 보유 ${Math.floor(this.aiMinerals)} 악마력)`;
       } else if (!this.lastActionLog.includes('시대 발전') && !this.lastActionLog.includes('궤도 폭격')) {
-        this.lastActionLog = `[악마 축적]: 소환 보류 (잔여 ${Math.floor(this.aiMinerals)}🔥, 증원 +${this.aiIncome}🔥)`;
+        this.lastActionLog = `[악마 축적]: 소환 보류 (잔여 ${Math.floor(this.aiMinerals)} 악마력, 증원 +${this.aiIncome} 악마력)`;
       }
     }
     
@@ -349,7 +349,7 @@ export class WaveSystem {
     if (this.game.playerBase) {
       const incomeAmt = this.game.economy.income;
       this.game.entityManager.addEntity(new FloatingText(
-        this.game, `+${incomeAmt} ✝️`, this.game.playerBase.x, this.game.playerBase.y - 80, '#d8bf8a', 'emphasis'
+        this.game, `신앙심 +${incomeAmt}`, this.game.playerBase.x, this.game.playerBase.y - 80, '#d8bf8a', 'emphasis'
       ));
     }
 
