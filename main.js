@@ -33,6 +33,7 @@ import {
 import { buildAfterActionReport } from './src/afterAction.js';
 import { getTacticalOrderDefinition } from './src/tacticalOrders.js';
 import { getCombatDistance } from './src/combatMath.js';
+import { cancelContractForNextWave } from './src/contractLifecycle.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -728,16 +729,17 @@ class Game {
     
     if (!UNIT_COSTS[type]) return;
     
-    const removed = this.waveSystem.removeSpawner('player', type);
-    if (removed) {
-      const refundAmount = Math.floor(UNIT_COSTS[type] * 0.5);
-      this.economy.minerals += refundAmount;
+    const cancellation = cancelContractForNextWave({
+      waveSystem: this.waveSystem,
+      entityManager: this.entityManager,
+      economy: this.economy,
+      team: 'player',
+      type,
+      unitCost: UNIT_COSTS[type]
+    });
+    if (cancellation.removed) {
+      const { refundAmount, fieldedUnits } = cancellation;
       this.audio.playMagic();
-      const fieldedUnits = this.entityManager.entities.filter(entity =>
-        entity.team === 'player' && entity.spawnerId === removed.id && entity.isAlive
-      );
-      // Cancelling a contract changes the next wave's roster. A unit already
-      // fighting keeps advancing until the current wave ends.
       this.runStats.contractsRefunded++;
       
       this.entityManager.addEntity(new FloatingText(

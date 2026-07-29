@@ -1,0 +1,164 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import { getWaveFormationSlot } from '../src/combatMath.js';
+import { applyDoctrineToBonuses, createDoctrineBonuses } from '../src/doctrines.js';
+
+globalThis.Image = class {
+  constructor() {
+    this.src = '';
+    this.width = 64;
+    this.height = 64;
+    this.naturalWidth = 64;
+    this.naturalHeight = 64;
+  }
+};
+
+const { Unit } = await import('../src/entities/Unit.js');
+
+function seededRandom(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state += 0x6D2B79F5;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+class TestEntityManager {
+  constructor() {
+    this.entities = [];
+  }
+
+  addEntity(entity) {
+    this.entities.push(entity);
+  }
+
+  getEntitiesByTeam(team) {
+    return this.entities.filter(entity =>
+      entity.team === team
+      && entity.isAlive !== false
+      && typeof entity.takeDamage === 'function'
+    );
+  }
+
+  update(dt) {
+    for (let index = this.entities.length - 1; index >= 0; index--) {
+      const entity = this.entities[index];
+      if (entity.isAlive === false) {
+        this.entities.splice(index, 1);
+      } else {
+        entity.update?.(dt);
+      }
+    }
+  }
+}
+
+function createTestBase(team, x) {
+  return {
+    team,
+    x,
+    y: 360,
+    radius: 70,
+    techLevel: 2,
+    maxHp: 12000,
+    hp: 12000,
+    isAlive: true,
+    update() {},
+    takeDamage(amount) {
+      this.hp = Math.max(0, this.hp - amount);
+      this.isAlive = this.hp > 0;
+    }
+  };
+}
+
+function runMidBossBattle(seed) {
+  const previousRandom = Math.random;
+  Math.random = seededRandom(seed);
+
+  try {
+    const entityManager = new TestEntityManager();
+    const playerBase = createTestBase('player', 100);
+    const enemyBase = createTestBase('enemy', 1900);
+    const doctrineBonuses = applyDoctrineToBonuses(
+      applyDoctrineToBonuses(createDoctrineBonuses(), 'faithfulTithe'),
+      'mercyHymn'
+    );
+    const game = {
+      canvas: { height: 720 },
+      difficulty: 1,
+      entityManager,
+      playerBase,
+      enemyBase,
+      doctrineBonuses,
+      tacticalOrder: 'boss',
+      economy: { minerals: 0 },
+      waveSystem: { aiMinerals: 0, aiWaveCount: 6 },
+      audio: {
+        playBossAlarm() {},
+        playExplosion() {},
+        playHit() {},
+        playMagic() {},
+        playShoot() {}
+      },
+      addScreenShake() {},
+      stop() {}
+    };
+
+    entityManager.addEntity(playerBase);
+    entityManager.addEntity(enemyBase);
+
+    const playerRoster = ['melee', 'melee', 'melee', 'melee', 'ranged', 'ranged', 'medic', 'sniper'];
+    playerRoster.forEach((type, index) => {
+      const slot = getWaveFormationSlot(150, 360, index, 'player');
+      const unit = new Unit(game, slot.x, slot.y, 'player', type);
+      unit.formationRow = slot.row;
+      unit.isWaveFighter = true;
+      entityManager.addEntity(unit);
+    });
+
+    const boss = new Unit(game, 1650, 520, 'enemy', 'tank');
+    boss.makeBoss('executioner');
+    boss.isWaveFighter = true;
+    entityManager.addEntity(boss);
+
+    const enemyRoster = ['melee', 'melee', 'ranged', 'medic'];
+    enemyRoster.forEach((type, index) => {
+      const slot = getWaveFormationSlot(1800, 360, index, 'enemy');
+      const unit = new Unit(game, slot.x, slot.y, 'enemy', type);
+      unit.formationRow = slot.row;
+      unit.isWaveFighter = true;
+      entityManager.addEntity(unit);
+    });
+
+    let elapsed = 0;
+    while (elapsed < 75 && boss.isAlive && playerBase.isAlive) {
+      entityManager.update(1 / 60);
+      elapsed += 1 / 60;
+    }
+
+    return {
+      bossAlive: boss.isAlive,
+      bossHp: Math.max(0, Math.round(boss.hp)),
+      cathedralHp: Math.round(playerBase.hp),
+      elapsed,
+      holySurvivors: entityManager.getEntitiesByTeam('player')
+        .filter(entity => entity.type !== undefined).length
+    };
+  } finally {
+    Math.random = previousRandom;
+  }
+}
+
+test('recommended normal roster defeats the wave-six mini-boss without base artillery', () => {
+  const outcomes = [11, 29, 47, 83, 131].map(runMidBossBattle);
+
+  for (const outcome of outcomes) {
+    assert.equal(outcome.bossAlive, false, JSON.stringify(outcome));
+    assert.equal(outcome.cathedralHp, 12000, JSON.stringify(outcome));
+    assert.ok(outcome.holySurvivors >= 2, JSON.stringify(outcome));
+    assert.ok(outcome.elapsed < 55, JSON.stringify(outcome));
+  }
+});

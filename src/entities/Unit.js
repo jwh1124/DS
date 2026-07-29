@@ -104,7 +104,7 @@ function removeBackground(img) {
   }
 }
 
-const baseUrl = import.meta.env.BASE_URL || './';
+const baseUrl = import.meta.env?.BASE_URL || './';
 const HOLY_ROSTER = new Image();
 const INFERNAL_ROSTER = new Image();
 HOLY_ROSTER.src = baseUrl + 'sprites/holy-roster-v3.png';
