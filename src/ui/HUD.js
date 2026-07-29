@@ -35,21 +35,34 @@ export class HUD {
     // Update timer
     const waveSystem = this.game.waveSystem;
     const isFinale = waveSystem.aiWaveCount >= MAX_WAVES;
-    this.timerText.textContent = isFinale
-      ? `${Math.ceil(waveSystem.finalBattleTime)}s`
-      : Math.max(0, waveSystem.timeUntilWave).toFixed(1);
+    const activeBoss = waveSystem.getActiveBoss?.();
+    const bossGateLocked = waveSystem.isBossGateLocked?.() ?? false;
+    this.timerText.textContent = bossGateLocked
+      ? '격퇴'
+      : isFinale
+        ? `${Math.ceil(waveSystem.finalBattleTime)}s`
+        : Math.max(0, waveSystem.timeUntilWave).toFixed(1);
     if (this.waveLabel) {
-      this.waveLabel.textContent = isFinale
-        ? 'FINAL WAVE · 지옥문 정화'
-        : `WAVE ${waveSystem.aiWaveCount + 1}/${MAX_WAVES} · 악마 정찰`;
+      this.waveLabel.textContent = bossGateLocked
+        ? `WAVE ${waveSystem.aiWaveCount}/${MAX_WAVES} · 보스 교전`
+        : isFinale
+          ? 'FINAL WAVE · 지옥문 정화'
+          : `WAVE ${waveSystem.aiWaveCount + 1}/${MAX_WAVES} · 악마 정찰`;
     }
     if (this.wavePreview) {
-      this.wavePreview.textContent = isFinale
-        ? `최후 심판까지 ${Math.ceil(waveSystem.finalBattleTime)}초 · 지옥문을 정화하십시오`
-        : waveSystem.getUpcomingWavePreview();
+      this.wavePreview.textContent = bossGateLocked && activeBoss
+        ? `${activeBoss.bossName} 격퇴 후 진군 · ${activeBoss.bossCounterHint}`
+        : isFinale
+          ? `최후 심판까지 ${Math.ceil(waveSystem.finalBattleTime)}초 · 지옥문을 정화하십시오`
+          : waveSystem.getUpcomingWavePreview();
     }
     if (this.launchWaveButton) {
-      this.launchWaveButton.disabled = isFinale || waveSystem.timeUntilWave <= 0.25;
+      this.launchWaveButton.disabled = bossGateLocked || isFinale || waveSystem.timeUntilWave <= 0.25;
+      this.launchWaveButton.textContent = bossGateLocked
+        ? '대악마 격퇴 필요'
+        : isFinale
+          ? '최후 정화 진행 중'
+          : '[F] 조기 개시 · +20';
     }
     
     // Update Base Health

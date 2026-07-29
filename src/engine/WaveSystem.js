@@ -3,7 +3,11 @@ import { Particle } from '../entities/Particle.js';
 import { FloatingText } from '../entities/FloatingText.js';
 import { WORLD_WIDTH } from '../../main.js';
 import { getWaveFormationSlot } from '../combatMath.js';
-import { getBossProfileForWave } from '../bosses.js';
+import {
+  BOSS_RECOVERY_DELAY,
+  getBossProfileForWave,
+  resolveBossGate
+} from '../bosses.js';
 import {
   AI_STARTING_INCOME,
   AI_STARTING_MINERALS,
@@ -35,6 +39,7 @@ export class WaveSystem {
     this.aiUltimateCooldown = 0;
     this.finalWaveStarted = false;
     this.finalBattleTime = 0;
+    this.bossGateActive = false;
     this.lastActionLog = '[교단]: 첫 악마 웨이브에 대비하십시오.';
   }
 
@@ -78,6 +83,11 @@ export class WaveSystem {
   }
 
   getUpcomingWavePreview() {
+    const activeBoss = this.getActiveBoss();
+    if (this.bossGateActive && activeBoss) {
+      return `${activeBoss.bossName} 격퇴 후 진군 · ${activeBoss.bossCounterHint}`;
+    }
+
     const nextWave = this.aiWaveCount + 1;
     if (nextWave > MAX_WAVES) {
       return '최후의 정화 진행 중 — 지옥문을 무너뜨리십시오';
@@ -114,9 +124,18 @@ export class WaveSystem {
   }
 
   launchNextWaveEarly() {
-    if (!this.isActive || this.timeUntilWave <= 0.25) return false;
+    if (!this.isActive || this.isBossGateLocked() || this.timeUntilWave <= 0.25) return false;
     this.timeUntilWave = 0;
     return true;
+  }
+
+  getActiveBoss() {
+    return this.game.entityManager.entities
+      .find(entity => entity.isBoss && entity.isAlive) ?? null;
+  }
+
+  isBossGateLocked() {
+    return resolveBossGate(this.bossGateActive, Boolean(this.getActiveBoss())).locked;
   }
 
   update(dt) {
@@ -129,6 +148,16 @@ export class WaveSystem {
     if (this.aiWaveCount >= MAX_WAVES) {
       this.updateFinalBattle(dt);
       return;
+    }
+
+    const bossGate = resolveBossGate(this.bossGateActive, Boolean(this.getActiveBoss()));
+    if (bossGate.locked) {
+      return;
+    }
+    if (bossGate.completed) {
+      this.bossGateActive = false;
+      this.timeUntilWave = BOSS_RECOVERY_DELAY;
+      this.lastActionLog = `[정비]: 대악마 격퇴 · ${BOSS_RECOVERY_DELAY}초 후 진군`;
     }
 
     this.timeUntilWave -= dt;
@@ -226,6 +255,7 @@ export class WaveSystem {
       boss.makeBoss(bossProfile.id);
       boss.isWaveFighter = true;
       this.game.entityManager.addEntity(boss);
+      this.bossGateActive = bossProfile.wave < MAX_WAVES;
       this.game.focusCameraOn?.(boss.x);
       this.lastActionLog = `[대악마]: ${bossProfile.name} 강림 · ${bossProfile.counterHint}`;
       
@@ -300,7 +330,7 @@ export class WaveSystem {
   retirePreviousWave() {
     let recalledCount = 0;
     for (const entity of this.game.entityManager.entities) {
-      if (entity.isWaveFighter && entity.isAlive) {
+      if (entity.isWaveFighter && entity.isAlive && !entity.isBoss) {
         entity.isAlive = false;
         recalledCount++;
       }

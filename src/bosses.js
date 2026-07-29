@@ -32,10 +32,20 @@ const BOSS_BY_WAVE = Object.freeze({
   12: BOSS_PROFILES.sovereign
 });
 
+export const BOSS_RECOVERY_DELAY = 8;
+const BOSS_GATE_INACTIVE = Object.freeze({ locked: false, completed: false });
+const BOSS_GATE_LOCKED = Object.freeze({ locked: true, completed: false });
+const BOSS_GATE_COMPLETED = Object.freeze({ locked: false, completed: true });
+
 export function getBossProfile(id) {
   return BOSS_PROFILES[id] ?? null;
 }
 
 export function getBossProfileForWave(wave) {
   return BOSS_BY_WAVE[wave] ?? null;
+}
+
+export function resolveBossGate(gateActive, bossAlive) {
+  if (!gateActive) return BOSS_GATE_INACTIVE;
+  return bossAlive ? BOSS_GATE_LOCKED : BOSS_GATE_COMPLETED;
 }

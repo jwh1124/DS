@@ -33,7 +33,12 @@ import {
   getDoctrineChoices,
   getDoctrineUnitMultipliers
 } from '../src/doctrines.js';
-import { getBossProfile, getBossProfileForWave } from '../src/bosses.js';
+import {
+  BOSS_RECOVERY_DELAY,
+  getBossProfile,
+  getBossProfileForWave,
+  resolveBossGate
+} from '../src/bosses.js';
 import { FloatingText } from '../src/entities/FloatingText.js';
 
 assert.deepEqual(getUnlockedUnitTypes(1), ['melee', 'ranged']);
@@ -127,6 +132,10 @@ assert.notEqual(midBoss.spritePath, finalBoss.spritePath);
 assert.equal(midBoss.hpMultiplier, 5);
 assert.equal(finalBoss.damageMultiplier, 1.8);
 assert.equal(getBossProfile('executioner'), midBoss);
+assert.equal(BOSS_RECOVERY_DELAY, 8);
+assert.deepEqual(resolveBossGate(true, true), { locked: true, completed: false });
+assert.deepEqual(resolveBossGate(true, false), { locked: false, completed: true });
+assert.deepEqual(resolveBossGate(false, false), { locked: false, completed: false });
 
 const criticalDamageText = new FloatingText({}, 'CRIT! -100', 0, 0, '#fff', true);
 const emphasizedStatusText = new FloatingText({}, '웨이브 개시', 0, 0, '#fff', 'emphasis');
