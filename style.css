@@ -292,6 +292,12 @@ body.developer-mode .utility-controls {
   place-items: center;
 }
 
+.utility-btn.active {
+  color: #17110b;
+  background: #b79a67;
+  border-color: #d4bb87;
+}
+
 .base-health {
   width: 320px;
   padding: 12px 16px;

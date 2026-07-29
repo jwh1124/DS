@@ -24,6 +24,11 @@ import {
   getDoctrineChoices
 } from './src/doctrines.js';
 import { iconMarkup, labeledIconMarkup } from './src/ui/icons.js';
+import {
+  getCameraTargetX,
+  getFrontlineFocusX,
+  smoothCameraX
+} from './src/cameraDirector.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -70,6 +75,7 @@ class Game {
     this.cameraSpeed = 650;
     this.moveCameraLeft = false;
     this.moveCameraRight = false;
+    this.followFrontline = true;
     
     this.gameSpeed = 1;
     this.difficulty = 1.0;
@@ -109,6 +115,32 @@ class Game {
   
   addScreenShake(intensity) {
     this.screenShake = Math.max(this.screenShake, Math.min(1, intensity / 20));
+  }
+
+  setFrontlineFollow(enabled) {
+    this.followFrontline = Boolean(enabled);
+    const button = document.getElementById('frontline-btn');
+    if (!button) return;
+
+    button.classList.toggle('active', this.followFrontline);
+    button.setAttribute('aria-pressed', String(this.followFrontline));
+    button.setAttribute('aria-label', this.followFrontline ? '전선 자동 추적 끄기' : '전선 자동 추적 켜기');
+    button.title = this.followFrontline
+      ? '[Space] 전선 자동 추적 중'
+      : '[Space] 전선 자동 추적 꺼짐';
+  }
+
+  updateFrontlineCamera(dt) {
+    const focusX = getFrontlineFocusX(this.entityManager.getEntities());
+    if (focusX === null) return;
+
+    const targetX = getCameraTargetX({
+      currentX: this.cameraX,
+      focusX,
+      viewportWidth: this.canvas.width,
+      worldWidth: WORLD_WIDTH
+    });
+    this.cameraX = smoothCameraX(this.cameraX, targetX, dt);
   }
 
   createRunStats() {
@@ -163,6 +195,7 @@ class Game {
     this.ultimateCooldown = 0;
     this.screenShake = 0;
     this.cameraX = 0;
+    this.setFrontlineFollow(true);
     this.gameSpeed = 1;
     this.autoSpend = false;
     this.runStats = this.createRunStats();
@@ -455,9 +488,10 @@ class Game {
     
     if (this.moveCameraLeft) {
       this.cameraX -= this.cameraSpeed * dt;
-    }
-    if (this.moveCameraRight) {
+    } else if (this.moveCameraRight) {
       this.cameraX += this.cameraSpeed * dt;
+    } else if (this.followFrontline) {
+      this.updateFrontlineCamera(dt);
     }
     
     if (this.cameraX < 0) this.cameraX = 0;
@@ -712,6 +746,9 @@ class Game {
     document.getElementById('resume-btn')?.addEventListener('click', () => this.togglePause());
     document.getElementById('pause-restart-btn')?.addEventListener('click', () => this.resetGame());
     document.getElementById('launch-wave-btn')?.addEventListener('click', () => this.launchNextWaveEarly());
+    document.getElementById('frontline-btn')?.addEventListener('click', () => {
+      this.setFrontlineFollow(!this.followFrontline);
+    });
     
     document.querySelectorAll('.cheat-btn[data-speed]').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -773,8 +810,14 @@ class Game {
 
       if (!this.isRunning || this.isPaused) return;
 
-      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.moveCameraLeft = true;
-      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.moveCameraRight = true;
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') {
+        this.setFrontlineFollow(false);
+        this.moveCameraLeft = true;
+      }
+      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') {
+        this.setFrontlineFollow(false);
+        this.moveCameraRight = true;
+      }
       
       const key = e.key.toLowerCase();
       
@@ -817,6 +860,9 @@ class Game {
         if (btn) this.triggerAction('ultimate', parseInt(btn.dataset.cost), btn);
       } else if (key === 'f') {
         this.launchNextWaveEarly();
+      } else if (key === ' ') {
+        e.preventDefault();
+        this.setFrontlineFollow(!this.followFrontline);
       }
     });
     
