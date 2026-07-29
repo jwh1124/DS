@@ -34,7 +34,7 @@
         </div>
         
         <button id="start-btn" class="glow-btn"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-cathedral"></use></svg><span>엑소시즘 개시</span></button>
-        <p class="start-hint">12웨이브 정화전 · 첫 웨이브까지 15초 · [1]~[6] 편성 · [Q] 헌금 · [W] 계시 · [F] 조기 개시 · [A/D] 수동 이동 · [Space] 전선 추적</p>
+        <p class="start-hint">12웨이브 정화전 · 첫 웨이브까지 15초 · [1]~[6] 편성 · [7]~[9] 전술 명령 · [Q] 헌금 · [W] 계시 · [F] 조기 개시 · [Space] 전선 추적</p>
         <div class="credits">개발: Antigravity</div>
       </div>
       
@@ -126,6 +126,18 @@
           <div class="doctrine-summary">
             <span>채택 교리</span>
             <strong id="doctrine-summary">아직 선택하지 않음</strong>
+          </div>
+          <div class="tactical-orders">
+            <div class="tactical-orders-heading">
+              <span>전술 명령</span>
+              <small>[7]–[9]</small>
+            </div>
+            <div class="tactical-order-buttons" role="group" aria-label="성직자 표적 우선순위">
+              <button type="button" class="tactical-order-btn active" data-tactical-order="balanced" aria-pressed="true">균형</button>
+              <button type="button" class="tactical-order-btn" data-tactical-order="rear" aria-pressed="false">후열</button>
+              <button type="button" class="tactical-order-btn" data-tactical-order="boss" aria-pressed="false">대형</button>
+            </div>
+            <p id="tactical-order-hint">거리와 병종 상성을 함께 판단합니다.</p>
           </div>
         </div>
 

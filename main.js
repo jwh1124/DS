@@ -31,6 +31,7 @@ import {
   smoothCameraX
 } from './src/cameraDirector.js';
 import { buildAfterActionReport } from './src/afterAction.js';
+import { getTacticalOrderDefinition } from './src/tacticalOrders.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -53,6 +54,7 @@ class Game {
     this.shakeTime = 0;
     this.ultimateCooldown = 0;
     this.autoSpend = false;
+    this.tacticalOrder = 'balanced';
     this.isDeveloperMode = new URLSearchParams(window.location.search).has('dev');
     this.runStats = this.createRunStats();
     
@@ -132,6 +134,33 @@ class Game {
       : '[Space] 전선 자동 추적 꺼짐';
   }
 
+  setTacticalOrder(orderId, announce = true) {
+    const order = getTacticalOrderDefinition(orderId);
+    const changed = this.tacticalOrder !== order.id;
+    this.tacticalOrder = order.id;
+
+    document.querySelectorAll('[data-tactical-order]').forEach(button => {
+      const isActive = button.dataset.tacticalOrder === order.id;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-pressed', String(isActive));
+    });
+    const hint = document.getElementById('tactical-order-hint');
+    if (hint) hint.textContent = order.hint;
+
+    if (changed && announce && this.isRunning) {
+      this.audio.playClick();
+      this.waveSystem.lastActionLog = `[전술 명령]: ${order.label} · ${order.hint}`;
+      this.entityManager.addEntity(new FloatingText(
+        this,
+        `전술 명령 · ${order.label}`,
+        this.cameraX + this.canvas.width / 2,
+        160,
+        '#d8bf8a',
+        'emphasis'
+      ));
+    }
+  }
+
   updateFrontlineCamera(dt) {
     const focusX = getFrontlineFocusX(this.entityManager.getEntities());
     if (focusX === null) return;
@@ -200,6 +229,7 @@ class Game {
     this.setFrontlineFollow(true);
     this.gameSpeed = 1;
     this.autoSpend = false;
+    this.setTacticalOrder('balanced', false);
     this.runStats = this.createRunStats();
     
     // Reset Tech button UI
@@ -279,6 +309,7 @@ class Game {
       earlyStarts: this.runStats.earlyStarts,
       incomeRites: this.runStats.incomeRites,
       ultimates: this.runStats.ultimates,
+      tacticalOrderLabel: getTacticalOrderDefinition(this.tacticalOrder).label,
       doctrineNames: this.doctrineBonuses.selected
         .map(id => getDoctrineById(id)?.title)
         .filter(Boolean)
@@ -782,6 +813,9 @@ class Game {
     document.getElementById('frontline-btn')?.addEventListener('click', () => {
       this.setFrontlineFollow(!this.followFrontline);
     });
+    document.querySelectorAll('[data-tactical-order]').forEach(button => {
+      button.addEventListener('click', () => this.setTacticalOrder(button.dataset.tacticalOrder));
+    });
     
     document.querySelectorAll('.cheat-btn[data-speed]').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -893,6 +927,12 @@ class Game {
         if (btn) this.triggerAction('ultimate', parseInt(btn.dataset.cost), btn);
       } else if (key === 'f') {
         this.launchNextWaveEarly();
+      } else if (key === '7') {
+        this.setTacticalOrder('balanced');
+      } else if (key === '8') {
+        this.setTacticalOrder('rear');
+      } else if (key === '9') {
+        this.setTacticalOrder('boss');
       } else if (key === ' ') {
         e.preventDefault();
         this.setFrontlineFollow(!this.followFrontline);

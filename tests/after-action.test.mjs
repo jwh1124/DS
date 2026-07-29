@@ -84,6 +84,7 @@ test('victory report includes grade, composition, and doctrine record', () => {
   assert.equal(report.kicker, '원정 완료 · AFTER ACTION');
   assert.ok(report.grade);
   assert.match(report.summary, /최종 편성: 수도승 4 · 엑소시스트 3/);
+  assert.match(report.summary, /전술 균형 전투/);
   assert.match(report.summary, /선택 교리: 은탄 의식 · 순교자의 맹세/);
   assert.equal(report.metrics.find(metric => metric.label === '최종 편성').value, '16명');
 });

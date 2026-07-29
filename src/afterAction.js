@@ -57,7 +57,7 @@ function getRecommendation({
   if (endReason === 'finalJudgement') {
     return {
       title: '최후 심판에서 지옥문 압박이 부족했습니다',
-      text: `판정 당시 성당 ${playerIntegrity}% 대 지옥문 ${enemyIntegrity}%였습니다. 계시와 심판관 비중을 높여 후반 공성 화력을 확보하세요.`
+      text: `판정 당시 성당 ${playerIntegrity}% 대 지옥문 ${enemyIntegrity}%였습니다. [8] 후열 처단으로 지원 악마를 걷어낸 뒤 심판관의 공성 시간을 확보하세요.`
     };
   }
   if (wave <= 4 && frontLine < 3) {
@@ -69,7 +69,7 @@ function getRecommendation({
   if ((wave === 6 || wave === 12) && bossSupport < 2) {
     return {
       title: '대악마 대응 병종이 부족했습니다',
-      text: '사제로 전열을 유지하고 심판관의 대형·보스 추가 피해를 준비한 뒤 보스 웨이브를 시작하세요.'
+      text: '[9] 대악마 집중 명령을 켜고, 사제로 전열을 유지하면서 심판관의 대형·보스 추가 피해를 집중하세요.'
     };
   }
   if (wave >= 5 && techLevel < 2) {
@@ -103,7 +103,8 @@ export function buildAfterActionReport({
   earlyStarts = 0,
   incomeRites = 0,
   ultimates = 0,
-  doctrineNames = []
+  doctrineNames = [],
+  tacticalOrderLabel = '균형 전투'
 }) {
   const safeWave = Math.max(1, Math.min(maxWaves, Math.round(wave)));
   const safePlayerIntegrity = clampPercent(playerIntegrity);
@@ -148,7 +149,7 @@ export function buildAfterActionReport({
     ],
     summary: [
       outcome,
-      `계시 Lv.${techLevel} · 천벌 ${ultimates}회 · 조기 진군 ${earlyStarts}회 · 계약 ${contractsSigned}회`,
+      `전술 ${tacticalOrderLabel} · 계시 Lv.${techLevel} · 천벌 ${ultimates}회 · 조기 진군 ${earlyStarts}회 · 계약 ${contractsSigned}회`,
       `최종 편성: ${getRosterSummary(roster)}`,
       `선택 교리: ${doctrineRecord}`
     ].join('\n'),

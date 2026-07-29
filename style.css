@@ -590,6 +590,66 @@ body.developer-mode .boss-hud {
   font-size: 10px;
 }
 
+.tactical-orders {
+  width: 190px;
+  padding: 8px 10px 9px;
+  border: 1px solid rgba(183, 154, 103, 0.38);
+  border-radius: 8px;
+  background: rgba(15, 10, 20, 0.84);
+}
+
+.tactical-orders-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #d8c9aa;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+}
+
+.tactical-orders-heading small {
+  color: #83796d;
+  font-size: 8px;
+}
+
+.tactical-order-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.tactical-order-btn {
+  padding: 5px 3px;
+  border: 1px solid rgba(183, 154, 103, 0.28);
+  border-radius: 4px;
+  background: rgba(7, 6, 9, 0.72);
+  color: #8f877d;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tactical-order-btn:hover,
+.tactical-order-btn:focus-visible {
+  border-color: #a98d5b;
+  color: #d8c9aa;
+}
+
+.tactical-order-btn.active {
+  border-color: #b79a67;
+  background: rgba(183, 154, 103, 0.16);
+  color: #eadbbb;
+}
+
+#tactical-order-hint {
+  margin-top: 6px;
+  color: #8f877d;
+  font-size: 8px;
+  line-height: 1.35;
+}
+
 /* Bottom Controls Layout */
 .bottom-controls {
   position: absolute;

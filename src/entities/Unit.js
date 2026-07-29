@@ -6,6 +6,7 @@ import { getAttackRangeAgainst, getCombatDistance, isBaseTarget } from '../comba
 import { getCounterProfile, getTargetPriorityBonus } from '../unitRoles.js';
 import { getDoctrineUnitMultipliers } from '../doctrines.js';
 import { getBossProfile } from '../bosses.js';
+import { getTacticalOrderTargetBonus } from '../tacticalOrders.js';
 
 const UNIT_STATS = {
   melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#f1c40f' },     // Monk / Imp
@@ -359,7 +360,12 @@ export class Unit {
     for (let i = 0; i < enemies.length; i++) {
       const enemy = enemies[i];
       const actualDist = getCombatDistance(this, enemy);
-      const targetScore = actualDist - getTargetPriorityBonus(this, enemy);
+      const tacticalBonus = getTacticalOrderTargetBonus(
+        this.game.tacticalOrder,
+        this,
+        enemy
+      );
+      const targetScore = actualDist - getTargetPriorityBonus(this, enemy) - tacticalBonus;
       
       if (targetScore < bestTargetScore) {
         bestTargetScore = targetScore;
