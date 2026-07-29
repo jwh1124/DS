@@ -17,6 +17,12 @@ import {
   UNIT_TECH_REQUIREMENTS
 } from './src/gameConfig.js';
 import { PLAYER_UNIT_ROLE_INFO } from './src/unitRoles.js';
+import {
+  applyDoctrineToBonuses,
+  createDoctrineBonuses,
+  getDoctrineById,
+  getDoctrineChoices
+} from './src/doctrines.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -32,6 +38,9 @@ class Game {
     
     this.isRunning = false;
     this.isPaused = false;
+    this.isDoctrineChoosing = false;
+    this.pendingDoctrineChoices = [];
+    this.doctrineBonuses = createDoctrineBonuses();
     this.screenShake = 0;
     this.shakeTime = 0;
     this.ultimateCooldown = 0;
@@ -116,9 +125,12 @@ class Game {
   start() {
     this.isRunning = true;
     this.isPaused = false;
+    this.isDoctrineChoosing = false;
+    this.pendingDoctrineChoices = [];
     const gameOverScreen = document.getElementById('game-over-screen');
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     document.getElementById('pause-screen')?.classList.add('hidden');
+    document.getElementById('doctrine-screen')?.classList.add('hidden');
     this.loop.start();
     this.waveSystem.start();
     this.economy.start();
@@ -127,6 +139,9 @@ class Game {
   resetGame() {
     this.isRunning = false;
     this.isPaused = false;
+    this.isDoctrineChoosing = false;
+    this.pendingDoctrineChoices = [];
+    this.doctrineBonuses = createDoctrineBonuses();
     this.loop.stop();
     this.waveSystem.stop();
     this.economy.stop();
@@ -172,6 +187,8 @@ class Game {
     const gameOverScreen = document.getElementById('game-over-screen');
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     document.getElementById('pause-screen')?.classList.add('hidden');
+    document.getElementById('doctrine-screen')?.classList.add('hidden');
+    this.updateDoctrineSummary();
     
     document.getElementById('title-screen').style.display = 'none';
     document.getElementById('ui-layer').style.display = 'block';
@@ -182,9 +199,12 @@ class Game {
   stop(winner) {
     this.isRunning = false;
     this.isPaused = false;
+    this.isDoctrineChoosing = false;
+    this.pendingDoctrineChoices = [];
     this.loop.stop();
     this.waveSystem.stop();
     this.economy.stop();
+    document.getElementById('doctrine-screen')?.classList.add('hidden');
     
     const gameOverScreen = document.getElementById('game-over-screen');
     const title = document.getElementById('game-over-title');
@@ -207,20 +227,124 @@ class Game {
         ? Math.round((this.playerBase.hp / this.playerBase.maxHp) * 100)
         : 0;
       const record = `편성 ${this.runStats.contractsSigned} · 조기 개시 ${this.runStats.earlyStarts} · 계시 ${this.runStats.techUpgrades}`;
+      const doctrineRecord = this.doctrineBonuses.selected
+        .map(id => getDoctrineById(id)?.title)
+        .filter(Boolean)
+        .join(' · ') || '없음';
       if (winner === 'player') {
         const score = integrity + this.runStats.earlyStarts * 2 + this.runStats.techUpgrades * 4 + this.runStats.incomeRites * 2;
         const grade = score >= 112 ? 'S' : score >= 92 ? 'A' : score >= 72 ? 'B' : 'C';
-        summary.textContent = `${wave}웨이브 정화 성공 · 전술 등급 ${grade} · 성당 보전 ${integrity}%\n${record}`;
+        summary.textContent = `${wave}웨이브 정화 성공 · 전술 등급 ${grade} · 성당 보전 ${integrity}%\n${record}\n선택 교리: ${doctrineRecord}`;
       } else {
-        summary.textContent = `${wave}/12웨이브에서 성당이 무너졌습니다.\n${record} · 조합을 바꿔 다시 도전하세요.`;
+        summary.textContent = `${wave}/12웨이브에서 성당이 무너졌습니다.\n${record}\n선택 교리: ${doctrineRecord} · 조합을 바꿔 다시 도전하세요.`;
       }
     }
   }
 
   togglePause() {
-    if (!this.isRunning) return;
+    if (!this.isRunning || this.isDoctrineChoosing) return;
     this.isPaused = !this.isPaused;
     document.getElementById('pause-screen')?.classList.toggle('hidden', !this.isPaused);
+  }
+
+  offerDoctrineChoice(wave) {
+    const choices = getDoctrineChoices(wave)
+      .filter(doctrine => !this.doctrineBonuses.selected.includes(doctrine.id));
+    if (!this.isRunning || choices.length === 0) return;
+
+    this.pendingDoctrineChoices = choices.map(doctrine => doctrine.id);
+    this.isDoctrineChoosing = true;
+    this.isPaused = true;
+
+    const screen = document.getElementById('doctrine-screen');
+    const waveText = document.getElementById('doctrine-wave');
+    const choiceRoot = document.getElementById('doctrine-choices');
+    if (!screen || !choiceRoot) return;
+
+    if (waveText) waveText.textContent = `WAVE ${wave} 교단 회의`;
+    choiceRoot.innerHTML = choices.map((doctrine, index) => `
+      <button class="doctrine-card" type="button" data-doctrine="${doctrine.id}">
+        <span class="doctrine-key">[${index + 1}]</span>
+        <span class="doctrine-icon" aria-hidden="true">${doctrine.icon}</span>
+        <span class="doctrine-role">${doctrine.role}</span>
+        <strong>${doctrine.title}</strong>
+        <span class="doctrine-description">${doctrine.description}</span>
+      </button>
+    `).join('');
+
+    choiceRoot.querySelectorAll('.doctrine-card').forEach(button => {
+      button.addEventListener('click', () => this.selectDoctrine(button.dataset.doctrine));
+    });
+    screen.classList.remove('hidden');
+    requestAnimationFrame(() => choiceRoot.querySelector('.doctrine-card')?.focus());
+  }
+
+  selectDoctrine(doctrineId) {
+    if (!this.isDoctrineChoosing || !this.pendingDoctrineChoices.includes(doctrineId)) return;
+    const doctrine = getDoctrineById(doctrineId);
+    if (!doctrine) return;
+
+    const effect = doctrine.effect;
+    this.doctrineBonuses = applyDoctrineToBonuses(this.doctrineBonuses, doctrineId);
+
+    if (effect.kind === 'income') {
+      this.economy.increaseIncome(effect.amount);
+    } else if (effect.kind === 'baseFortify' && this.playerBase) {
+      this.playerBase.maxHp += effect.amount;
+      this.playerBase.hp = Math.min(this.playerBase.maxHp, this.playerBase.hp + effect.amount);
+    } else if (effect.kind === 'unitHp' || effect.kind === 'unitDamage') {
+      const affectsAll = effect.types.includes('all');
+      this.entityManager.entities
+        .filter(entity => entity.team === 'player' && entity.type && entity.isAlive)
+        .forEach(unit => {
+          if (!affectsAll && !effect.types.includes(unit.type)) return;
+          if (effect.kind === 'unitHp') {
+            const hpRatio = unit.maxHp > 0 ? unit.hp / unit.maxHp : 1;
+            unit.maxHp = Math.round(unit.maxHp * effect.multiplier);
+            unit.hp = Math.round(unit.maxHp * hpRatio);
+          } else if (unit.damage > 0) {
+            unit.damage = Math.round(unit.damage * effect.multiplier);
+          }
+        });
+    }
+
+    this.audio.playMagic();
+    for (let i = 0; i < 20; i++) {
+      this.entityManager.addEntity(new Particle(
+        this,
+        this.playerBase.x,
+        this.playerBase.y - 30,
+        '#d8bf8a',
+        0.65,
+        70,
+        Math.random() * Math.PI * 2,
+        3,
+        'spark'
+      ));
+    }
+    this.entityManager.addEntity(new FloatingText(
+      this,
+      `교리 채택 · ${doctrine.title}`,
+      this.playerBase.x,
+      this.playerBase.y - 120,
+      '#d8bf8a',
+      true
+    ));
+
+    this.pendingDoctrineChoices = [];
+    this.isDoctrineChoosing = false;
+    this.isPaused = false;
+    document.getElementById('doctrine-screen')?.classList.add('hidden');
+    this.updateDoctrineSummary();
+  }
+
+  updateDoctrineSummary() {
+    const summary = document.getElementById('doctrine-summary');
+    if (!summary) return;
+    const names = this.doctrineBonuses.selected
+      .map(id => getDoctrineById(id)?.title)
+      .filter(Boolean);
+    summary.textContent = names.length ? names.join(' · ') : '아직 선택하지 않음';
   }
 
   setupViewportPolicy() {
@@ -616,6 +740,15 @@ class Game {
     }
     
     window.addEventListener('keydown', (e) => {
+      if (this.isDoctrineChoosing) {
+        const choiceIndex = ['1', '2', '3'].indexOf(e.key);
+        if (choiceIndex >= 0 && this.pendingDoctrineChoices[choiceIndex]) {
+          e.preventDefault();
+          this.selectDoctrine(this.pendingDoctrineChoices[choiceIndex]);
+        }
+        return;
+      }
+
       if (e.key === 'Escape') {
         this.togglePause();
         return;

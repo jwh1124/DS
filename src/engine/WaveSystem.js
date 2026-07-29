@@ -275,6 +275,10 @@ export class WaveSystem {
         this.game, `전열 교대 · 이전 분대 ${recalledCount}명 귀환`, WORLD_WIDTH / 2, 252, '#c9c1b6', false
       ));
     }
+
+    if ([3, 6, 9].includes(this.aiWaveCount) && this.game.offerDoctrineChoice) {
+      this.game.offerDoctrineChoice(this.aiWaveCount);
+    }
   }
 
   retirePreviousWave() {

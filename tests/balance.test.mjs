@@ -26,6 +26,13 @@ import {
   getTargetPriorityBonus,
   PLAYER_UNIT_ROLE_INFO
 } from '../src/unitRoles.js';
+import {
+  applyDoctrineToBonuses,
+  createDoctrineBonuses,
+  getDoctrineById,
+  getDoctrineChoices,
+  getDoctrineUnitMultipliers
+} from '../src/doctrines.js';
 
 assert.deepEqual(getUnlockedUnitTypes(1), ['melee', 'ranged']);
 assert.deepEqual(getUnlockedUnitTypes(2), ['melee', 'ranged', 'medic', 'sniper']);
@@ -86,6 +93,28 @@ assert.equal(getCounterProfile(meleeAttacker, backlineTarget).multiplier, 1.15);
 assert.equal(getCounterProfile(sniperAttacker, enemyBase).multiplier, 1);
 assert.equal(getTargetPriorityBonus(sniperAttacker, heavyTarget), 120);
 assert.equal(PLAYER_UNIT_ROLE_INFO.ranged.tag, '대공 +25%');
+
+assert.deepEqual(getDoctrineChoices(3).map(doctrine => doctrine.id), [
+  'shieldWall',
+  'silverRite',
+  'faithfulTithe'
+]);
+assert.equal(getDoctrineChoices(6).length, 3);
+assert.equal(getDoctrineChoices(9).length, 3);
+assert.equal(getDoctrineChoices(4).length, 0);
+
+const initialDoctrines = createDoctrineBonuses();
+const shieldDoctrine = applyDoctrineToBonuses(initialDoctrines, 'shieldWall');
+const fortifiedDoctrine = applyDoctrineToBonuses(shieldDoctrine, 'martyrVow');
+const silverDoctrine = applyDoctrineToBonuses(fortifiedDoctrine, 'silverRite');
+const exorcismDoctrine = applyDoctrineToBonuses(silverDoctrine, 'grandExorcism');
+assert.equal(getDoctrineUnitMultipliers(shieldDoctrine, 'melee').hp, 1.25);
+assert.equal(getDoctrineUnitMultipliers(shieldDoctrine, 'ranged').hp, 1);
+assert.ok(Math.abs(getDoctrineUnitMultipliers(fortifiedDoctrine, 'melee').hp - 1.4) < 1e-10);
+assert.ok(Math.abs(getDoctrineUnitMultipliers(silverDoctrine, 'ranged').damage - 1.18) < 1e-10);
+assert.equal(exorcismDoctrine.baseDamageMultiplier, 1.15);
+assert.equal(applyDoctrineToBonuses(shieldDoctrine, 'shieldWall'), shieldDoctrine);
+assert.equal(getDoctrineById('sanctuary').effect.amount, 1500);
 
 // A level-one AI may not counter with a late-game Pit Lord/Crusader equivalent.
 assert.equal(chooseAffordableUnit('crusader', 300, 1, () => 0), 'melee');

@@ -4,6 +4,7 @@ import { FloatingText } from './FloatingText.js';
 import { getUnitVsBaseDamageMultiplier } from '../gameConfig.js';
 import { getAttackRangeAgainst, getCombatDistance, isBaseTarget } from '../combatMath.js';
 import { getCounterProfile, getTargetPriorityBonus } from '../unitRoles.js';
+import { getDoctrineUnitMultipliers } from '../doctrines.js';
 
 const UNIT_STATS = {
   melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#f1c40f' },     // Monk / Imp
@@ -177,6 +178,13 @@ export class Unit {
       if (this.damage > 0) this.damage = Math.round(this.damage * techMultiplier);
       this.tier = techLevel;
       this.scale = 1 + (this.tier - 1) * 0.1;
+    }
+
+    if (this.team === 'player' && this.game.doctrineBonuses) {
+      const doctrine = getDoctrineUnitMultipliers(this.game.doctrineBonuses, this.type);
+      this.maxHp = Math.round(this.maxHp * doctrine.hp);
+      this.hp = this.maxHp;
+      if (this.damage > 0) this.damage = Math.round(this.damage * doctrine.damage);
     }
     
     if (this.team === 'enemy') {
@@ -422,7 +430,10 @@ export class Unit {
   performAttack(target) {
     if (this.type === 'medic') {
       if (target && target.isAlive && target.type !== undefined) {
-        const healAmt = 30 * this.tier;
+        const healMultiplier = this.team === 'player'
+          ? (this.game.doctrineBonuses?.healingMultiplier ?? 1)
+          : 1;
+        const healAmt = Math.round(30 * this.tier * healMultiplier);
         target.hp = Math.min(target.maxHp, target.hp + healAmt);
         
         if (this.game.audio) this.game.audio.playMagic();
@@ -450,6 +461,9 @@ export class Unit {
     
     if (target.maxHp && target.techLevel !== undefined) {
       currentDamage *= getUnitVsBaseDamageMultiplier(this.team);
+      if (this.team === 'player') {
+        currentDamage *= this.game.doctrineBonuses?.baseDamageMultiplier ?? 1;
+      }
     }
     
     if (this.game.audio) {
