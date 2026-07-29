@@ -5,6 +5,7 @@ import { getUnitVsBaseDamageMultiplier } from '../gameConfig.js';
 import { getAttackRangeAgainst, getCombatDistance, isBaseTarget } from '../combatMath.js';
 import { getCounterProfile, getTargetPriorityBonus } from '../unitRoles.js';
 import { getDoctrineUnitMultipliers } from '../doctrines.js';
+import { getBossProfile } from '../bosses.js';
 
 const UNIT_STATS = {
   melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#f1c40f' },     // Monk / Imp
@@ -102,6 +103,15 @@ INFERNAL_ROSTER.src = baseUrl + 'sprites/infernal-roster-v3.png';
 HOLY_ROSTER.hasNativeAlpha = true;
 INFERNAL_ROSTER.hasNativeAlpha = true;
 
+const BOSS_IMAGES = {};
+['executioner', 'sovereign'].forEach(id => {
+  const profile = getBossProfile(id);
+  const image = new Image();
+  image.src = baseUrl + profile.spritePath;
+  image.hasNativeAlpha = true;
+  BOSS_IMAGES[id] = image;
+});
+
 const SPRITE_IMAGES = {
   player: { melee: HOLY_ROSTER, ranged: HOLY_ROSTER, medic: HOLY_ROSTER, sniper: HOLY_ROSTER, tank: HOLY_ROSTER, crusader: HOLY_ROSTER },
   enemy: { melee: INFERNAL_ROSTER, ranged: INFERNAL_ROSTER, medic: INFERNAL_ROSTER, sniper: INFERNAL_ROSTER, tank: INFERNAL_ROSTER, crusader: INFERNAL_ROSTER }
@@ -159,7 +169,12 @@ export class Unit {
     this.counterCueCooldown = 0;
     this.formationRow = 0;
     this.hasAura = false;
-    this.isBoss = false; 
+    this.isBoss = false;
+    this.bossVariant = null;
+    this.bossName = '';
+    this.bossTierLabel = '';
+    this.bossCounterHint = '';
+    this.bossDrawHeight = 0;
     this.scale = 1;
     this.tier = 1;
     this.recoil = 0;
@@ -196,15 +211,22 @@ export class Unit {
     }
   }
   
-  makeBoss() {
+  makeBoss(profileId = 'executioner') {
+    const profile = getBossProfile(profileId) ?? getBossProfile('executioner');
     this.isBoss = true;
     this.isAirUnit = false;
-    this.scale = 2.5;
-    this.maxHp *= 5;
+    this.bossVariant = profile.id;
+    this.bossName = profile.name;
+    this.bossTierLabel = profile.tierLabel;
+    this.bossCounterHint = profile.counterHint;
+    this.bossDrawHeight = profile.drawHeight;
+    this.scale = profile.worldScale;
+    this.maxHp *= profile.hpMultiplier;
     this.hp = this.maxHp;
-    this.damage *= 1.8;
-    this.radius *= 2.2;
-    this.color = '#ff0055';
+    this.damage *= profile.damageMultiplier;
+    this.radius *= profile.radiusMultiplier;
+    this.color = '#8e3f3b';
+    return this;
   }
 
   takeDamage(amount, isCritical = false, counterLabel = '') {
@@ -244,7 +266,17 @@ export class Unit {
       const bounty = this.isBoss ? 100 : (bountyMap[this.type] || 10);
       if (this.team === 'enemy' && this.game.economy) {
         this.game.economy.minerals += bounty;
-        this.game.entityManager.addEntity(new FloatingText(this.game, `+${bounty} ✝️`, this.x, this.y - 55 * this.scale, '#f1c40f', true));
+        const bountyLabel = this.isBoss && this.bossName
+          ? `${this.bossName} 격퇴 · +${bounty} ✝️`
+          : `+${bounty} ✝️`;
+        this.game.entityManager.addEntity(new FloatingText(
+          this.game,
+          bountyLabel,
+          this.x,
+          this.y - 55 * this.scale,
+          this.isBoss ? '#d8bf8a' : '#f1c40f',
+          'emphasis'
+        ));
       } else if (this.team === 'player' && this.game.waveSystem) {
         this.game.waveSystem.aiMinerals += bounty;
       }
@@ -615,18 +647,29 @@ export class Unit {
     ctx.translate(0, walkBobY);
     ctx.rotate(walkTilt);
     
-    // Boss Aura
+    // Boss ground seal: restrained iron-and-blood markings instead of a neon halo.
     if (this.isBoss) {
+      const sealPulse = 1 + Math.sin(this.animTime * 0.8) * 0.04;
+      ctx.save();
+      ctx.scale(sealPulse, sealPulse * 0.44);
       ctx.beginPath();
-      ctx.arc(0, 0, 34 + Math.sin(Date.now() * 0.008) * 5, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 0, 85, 0.25)';
+      ctx.arc(0, 34, 48, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(73, 28, 26, 0.24)';
       ctx.fill();
-      ctx.strokeStyle = '#ff0055';
-      ctx.lineWidth = 3;
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = '#ff0055';
+      ctx.strokeStyle = 'rgba(169, 102, 76, 0.72)';
+      ctx.lineWidth = 2;
       ctx.stroke();
-      ctx.shadowBlur = 0;
+
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI * 2 * i) / 6;
+        ctx.moveTo(Math.cos(angle) * 29, 34 + Math.sin(angle) * 29);
+        ctx.lineTo(Math.cos(angle) * 43, 34 + Math.sin(angle) * 43);
+      }
+      ctx.strokeStyle = 'rgba(120, 75, 58, 0.7)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
     }
     
     const nativeFacing = SPRITE_FACING[this.team]?.[this.type] ?? this.dir;
@@ -637,15 +680,18 @@ export class Unit {
     ctx.scale(this.scale, this.scale);
     
     const imgGroup = SPRITE_IMAGES[this.team];
-    const img = imgGroup ? imgGroup[this.type] : null;
-    const frame = SPRITE_FRAMES[this.team]?.[this.type];
+    const img = this.isBoss
+      ? BOSS_IMAGES[this.bossVariant]
+      : (imgGroup ? imgGroup[this.type] : null);
+    const frame = this.isBoss ? null : SPRITE_FRAMES[this.team]?.[this.type];
     
     if (img && img.complete && img.naturalWidth > 0) {
       const transparentCanvas = img.hasNativeAlpha ? img : removeBackground(img);
       const sourceW = frame ? img.naturalWidth / 3 : img.naturalWidth;
       const sourceH = frame ? img.naturalHeight / 2 : img.naturalHeight;
-      const drawH = this.isBoss ? 62 : 58;
+      const drawH = this.isBoss ? this.bossDrawHeight : 58;
       const drawW = drawH * (sourceW / sourceH);
+      const drawY = this.isBoss ? -drawH + 18 : -drawH / 2 - 6;
       
       ctx.drawImage(
         transparentCanvas,
@@ -654,7 +700,7 @@ export class Unit {
         sourceW,
         sourceH,
         -drawW / 2,
-        -drawH / 2 - 6,
+        drawY,
         drawW,
         drawH
       );
@@ -755,11 +801,11 @@ export class Unit {
     ctx.restore();
     
     const hpPercent = Math.max(0, this.hp / this.maxHp);
-    // Healthy regular units do not need a permanent label. This keeps late waves readable.
-    if (this.isBoss || hpPercent < 0.995) {
+    // Boss health lives in a dedicated HUD; only injured regulars need a world-space bar.
+    if (!this.isBoss && hpPercent < 0.995) {
       ctx.save();
       const barW = Math.max(34, 34 * this.scale);
-      const barH = this.isBoss ? 7 : 5;
+      const barH = 5;
       const barX = this.x - barW / 2;
       const barY = this.y - (this.radius * this.scale) - 18 + airOffsetY;
 

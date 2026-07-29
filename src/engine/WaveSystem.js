@@ -3,6 +3,7 @@ import { Particle } from '../entities/Particle.js';
 import { FloatingText } from '../entities/FloatingText.js';
 import { WORLD_WIDTH } from '../../main.js';
 import { getWaveFormationSlot } from '../combatMath.js';
+import { getBossProfileForWave } from '../bosses.js';
 import {
   AI_STARTING_INCOME,
   AI_STARTING_MINERALS,
@@ -82,10 +83,10 @@ export class WaveSystem {
       return '최후의 정화 진행 중 — 지옥문을 무너뜨리십시오';
     }
     if (nextWave === MAX_WAVES) {
-      return '최후의 정화: 지옥문 봉인 해제 · 권장 심판관 + 사제';
+      return '최후 보스: 지옥 군주 · 봉인 해제 · 권장 심판관 + 사제';
     }
-    if (nextWave % 6 === 0) {
-      return '정찰: 대악마 강림 · 대형 약점 · 권장 심판관 + 사제';
+    if (nextWave === 6) {
+      return '대악마: 심연의 집행관 · 대형 약점 · 권장 심판관 + 사제';
     }
 
     const pMelee = this.countSpawners('player', 'melee');
@@ -217,29 +218,42 @@ export class WaveSystem {
     
     const eBaseY = this.game.canvas.height / 2;
     
-    // Boss wave check (mid-boss and final boss)
-    if (this.aiWaveCount > 0 && this.aiWaveCount % 6 === 0) {
-      const tempBoss = new Unit(this.game, WORLD_WIDTH - 200, eBaseY, 'enemy', 'tank');
-      tempBoss.makeBoss();
-      tempBoss.isWaveFighter = true;
-      this.game.entityManager.addEntity(tempBoss);
+    const bossProfile = getBossProfileForWave(this.aiWaveCount);
+    if (bossProfile) {
+      const bossX = WORLD_WIDTH - 350;
+      const bossY = Math.min(this.game.canvas.height - 200, eBaseY + 160);
+      const boss = new Unit(this.game, bossX, bossY, 'enemy', 'tank');
+      boss.makeBoss(bossProfile.id);
+      boss.isWaveFighter = true;
+      this.game.entityManager.addEntity(boss);
+      this.game.focusCameraOn?.(boss.x);
+      this.lastActionLog = `[대악마]: ${bossProfile.name} 강림 · ${bossProfile.counterHint}`;
       
       if (this.game.audio) {
         this.game.audio.playBossAlarm();
       }
       if (this.game.addScreenShake) {
-        this.game.addScreenShake(8);
+        this.game.addScreenShake(this.finalWaveStarted ? 12 : 8);
       }
 
-      if (this.finalWaveStarted) {
-        this.game.entityManager.addEntity(new FloatingText(
-          this.game, '✝️ 지옥문 봉인 해제 — 지금 정화하십시오!', WORLD_WIDTH / 2, 140, '#e7c56f', true
+      this.game.entityManager.addEntity(new Particle(
+        this.game, boss.x, boss.y + 18, '#6e3c32', 0.55, 0, 0, 58, 'shockwave'
+      ));
+      for (let i = 0; i < 18; i++) {
+        const angle = Math.PI + Math.random() * Math.PI;
+        this.game.entityManager.addEntity(new Particle(
+          this.game,
+          boss.x + (Math.random() - 0.5) * 70,
+          boss.y + 10,
+          i % 2 === 0 ? '#6e3c32' : '#9c795a',
+          0.7,
+          55 + Math.random() * 95,
+          angle,
+          2 + Math.random() * 3,
+          'spark'
         ));
       }
-      
-      this.game.entityManager.addEntity(new FloatingText(this.game, `☠️ 경고: 대악마 강림! (Wave ${this.aiWaveCount}) ☠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
-    } else {
-      this.game.entityManager.addEntity(new FloatingText(this.game, `WAVE ${this.aiWaveCount} — 악마 웨이브 강림!`, WORLD_WIDTH/2, 220, '#c878ff', false));
+
     }
     
     // Spawn player units
@@ -267,7 +281,9 @@ export class WaveSystem {
     this.game.economy.triggerIncome();
     if (this.game.playerBase) {
       const incomeAmt = this.game.economy.income;
-      this.game.entityManager.addEntity(new FloatingText(this.game, `+${incomeAmt} ✝️`, this.game.playerBase.x, this.game.playerBase.y - 80, '#f1c40f', true));
+      this.game.entityManager.addEntity(new FloatingText(
+        this.game, `+${incomeAmt} ✝️`, this.game.playerBase.x, this.game.playerBase.y - 80, '#d8bf8a', 'emphasis'
+      ));
     }
 
     if (recalledCount > 0) {
@@ -320,7 +336,9 @@ export class WaveSystem {
       this.game.addScreenShake(22);
     }
     
-    this.game.entityManager.addEntity(new FloatingText(this.game, `☠️ 경고: 악마의 저주 폭풍 강림! (-150 피해) ☠️`, WORLD_WIDTH/2, 180, '#ff0055', true));
+    this.game.entityManager.addEntity(new FloatingText(
+      this.game, '악마의 저주 폭풍 · 부대 피해 150', WORLD_WIDTH / 2, 180, '#b97872', 'emphasis'
+    ));
 
     const players = this.game.entityManager.getEntitiesByTeam('player');
     players.forEach(p => {

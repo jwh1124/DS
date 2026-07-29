@@ -131,6 +131,7 @@ class Game {
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     document.getElementById('pause-screen')?.classList.add('hidden');
     document.getElementById('doctrine-screen')?.classList.add('hidden');
+    this.hideBossHud();
     this.loop.start();
     this.waveSystem.start();
     this.economy.start();
@@ -188,6 +189,7 @@ class Game {
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     document.getElementById('pause-screen')?.classList.add('hidden');
     document.getElementById('doctrine-screen')?.classList.add('hidden');
+    this.hideBossHud();
     this.updateDoctrineSummary();
     
     document.getElementById('title-screen').style.display = 'none';
@@ -205,6 +207,7 @@ class Game {
     this.waveSystem.stop();
     this.economy.stop();
     document.getElementById('doctrine-screen')?.classList.add('hidden');
+    this.hideBossHud();
     
     const gameOverScreen = document.getElementById('game-over-screen');
     const title = document.getElementById('game-over-title');
@@ -328,7 +331,7 @@ class Game {
       this.playerBase.x,
       this.playerBase.y - 120,
       '#d8bf8a',
-      true
+      'emphasis'
     ));
 
     this.pendingDoctrineChoices = [];
@@ -345,6 +348,18 @@ class Game {
       .map(id => getDoctrineById(id)?.title)
       .filter(Boolean);
     summary.textContent = names.length ? names.join(' · ') : '아직 선택하지 않음';
+  }
+
+  hideBossHud() {
+    const bossHud = document.getElementById('boss-hud');
+    bossHud?.classList.add('hidden');
+    bossHud?.setAttribute('aria-hidden', 'true');
+  }
+
+  focusCameraOn(worldX, viewportRatio = 0.72) {
+    const maxCameraX = Math.max(0, WORLD_WIDTH - this.canvas.width);
+    const targetX = worldX - this.canvas.width * viewportRatio;
+    this.cameraX = Math.max(0, Math.min(maxCameraX, targetX));
   }
 
   setupViewportPolicy() {
@@ -515,7 +530,7 @@ class Game {
     const reqTech = UNIT_TECH_REQUIREMENTS[type];
     if (reqTech && this.playerBase && this.playerBase.techLevel < reqTech) {
       this.entityManager.addEntity(new FloatingText(
-        this, `🔒 필요: 성서 계시 Lv.${reqTech}!`, this.playerBase.x, this.playerBase.y - 120, '#ff0055', true
+        this, `🔒 필요: 성서 계시 Lv.${reqTech}!`, this.playerBase.x, this.playerBase.y - 120, '#b97872', 'emphasis'
       ));
       return;
     }
@@ -562,7 +577,7 @@ class Game {
     } else {
       if (this.waveSystem.spawners.player.length >= MAX_SPAWNERS) {
         this.entityManager.addEntity(new FloatingText(
-          this, `⚠️ 교단 편성 한도 (${MAX_SPAWNERS}/${MAX_SPAWNERS} MAX)!`, this.playerBase.x, this.playerBase.y - 120, '#ff0055', true
+          this, `⚠️ 교단 편성 한도 (${MAX_SPAWNERS}/${MAX_SPAWNERS} MAX)!`, this.playerBase.x, this.playerBase.y - 120, '#b97872', 'emphasis'
         ));
         return;
       }
@@ -598,7 +613,7 @@ class Game {
       this.runStats.contractsRefunded++;
       
       this.entityManager.addEntity(new FloatingText(
-        this, `계약 해지: ${PLAYER_UNIT_NAMES[type]} ${recalledUnits.length}명 귀환 (+${refundAmount} 신앙석)`, this.playerBase.x, this.playerBase.y - 100, '#f1c40f', true
+        this, `계약 해지: ${PLAYER_UNIT_NAMES[type]} ${recalledUnits.length}명 귀환 (+${refundAmount} 신앙석)`, this.playerBase.x, this.playerBase.y - 100, '#d8bf8a', 'emphasis'
       ));
       
       for (let i = 0; i < 10; i++) {
@@ -623,7 +638,7 @@ class Game {
     this.runStats.earlyFaith += earlyBonus;
     this.audio.playClick();
     this.entityManager.addEntity(new FloatingText(
-      this, `정찰 돌파 · 웨이브 개시 (+${earlyBonus} 신앙심)`, WORLD_WIDTH / 2, 170, '#e7c56f', true
+      this, `정찰 돌파 · 웨이브 개시 (+${earlyBonus} 신앙심)`, WORLD_WIDTH / 2, 170, '#d8bf8a', 'emphasis'
     ));
   }
 
@@ -814,7 +829,9 @@ class Game {
     this.audio.playExplosion();
     this.addScreenShake(20);
 
-    this.entityManager.addEntity(new FloatingText(this, `⚡ 천벌이 내려옵니다! ⚡`, WORLD_WIDTH/2, 180, '#f1c40f', true));
+    this.entityManager.addEntity(new FloatingText(
+      this, '천벌 집행', WORLD_WIDTH / 2, 180, '#d8bf8a', 'emphasis'
+    ));
 
     const enemies = this.entityManager.getEntitiesByTeam('enemy');
     enemies.forEach(enemy => {

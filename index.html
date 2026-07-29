@@ -30,7 +30,7 @@
         </div>
         
         <button id="start-btn" class="glow-btn">⛪ 엑소시즘 개시</button>
-        <p class="start-hint">12웨이브 정화전 · 첫 웨이브까지 15초 · [1]~[6] 편성 · [Q] 헌금 · [W] 계시 · [F] 조기 개시</p>
+        <p class="start-hint">12웨이브 정화전 · 첫 웨이브까지 15초 · [1]~[6] 편성 · [Q] 헌금 · [W] 계시 · [F] 조기 개시 · [A/D] 전장 이동</p>
         <div class="credits">개발: Antigravity</div>
       </div>
       
@@ -89,6 +89,18 @@
             <button id="pause-btn" class="utility-btn" type="button" aria-label="게임 일시정지">Ⅱ</button>
           </div>
         </div>
+
+        <aside id="boss-hud" class="boss-hud hidden" aria-live="polite" aria-hidden="true">
+          <div class="boss-heading">
+            <span id="boss-tier" class="boss-tier">WAVE 6 · 대악마</span>
+            <strong id="boss-name">심연의 집행관</strong>
+            <span id="boss-health-text" class="boss-health-text">1500 / 1500</span>
+          </div>
+          <div class="boss-health-track" aria-hidden="true">
+            <span id="boss-health-fill"></span>
+          </div>
+          <span id="boss-counter-hint" class="boss-counter-hint">대형 약점 · 심판관 피해 +35%</span>
+        </aside>
 
         <!-- Economy HUD (Left Side) -->
         <div class="hud-economy">

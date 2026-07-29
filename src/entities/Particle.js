@@ -98,6 +98,15 @@ export class Particle {
       ctx.beginPath();
       ctx.ellipse(this.x, this.y, this.size * 1.3, this.size * 0.8, this.angle, 0, Math.PI * 2);
       ctx.fill();
+    } else if (this.type === 'shockwave') {
+      const progress = 1 - this.life / this.maxLife;
+      const radius = this.maxSize * (0.45 + progress * 0.55);
+      ctx.globalAlpha = alpha * 0.62;
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = Math.max(1.5, this.maxSize * 0.045 * (1 - progress * 0.35));
+      ctx.beginPath();
+      ctx.ellipse(this.x, this.y, radius, radius * 0.34, 0, 0, Math.PI * 2);
+      ctx.stroke();
     } else {
       ctx.fillStyle = this.color;
       ctx.shadowBlur = 8;

@@ -61,10 +61,12 @@ export class Base {
     if (this.game.audio) this.game.audio.playMagic();
 
     const upgradeText = this.team === 'player'
-      ? `Holy citadel upgraded to Lv.${this.techLevel}!`
-      : `Infernal gate upgraded to Lv.${this.techLevel}!`;
-    const upgradeColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
-    this.game.entityManager.addEntity(new FloatingText(this.game, upgradeText, this.x, this.y - 140, upgradeColor, true));
+      ? `성당 강화 · Lv.${this.techLevel}`
+      : `지옥문 각성 · Lv.${this.techLevel}`;
+    const upgradeColor = this.team === 'player' ? '#d8bf8a' : '#9c5d5b';
+    this.game.entityManager.addEntity(new FloatingText(
+      this.game, upgradeText, this.x, this.y - 140, upgradeColor, 'emphasis'
+    ));
     this.game.entityManager.addEntity(new Particle(
       this.game, this.x, this.y - 70, upgradeColor, 0.3, 0, Math.random() * Math.PI, 42, 'cross_flash'
     ));
@@ -97,7 +99,7 @@ export class Base {
       if (!this.sealWarningShown) {
         this.sealWarningShown = true;
         this.game.entityManager.addEntity(new FloatingText(
-          this.game, '지옥문 봉인: 최후의 정화까지 버텨냅니다', this.x, this.y - 125, '#b66c68', true
+          this.game, '지옥문 봉인: 최후의 정화까지 버텨냅니다', this.x, this.y - 125, '#b66c68', 'emphasis'
         ));
       }
       return;
@@ -108,7 +110,9 @@ export class Base {
       this.emergencyPhase1 = true;
       if (this.team === 'player' && this.game.economy) {
         this.game.economy.minerals += 300;
-        this.game.entityManager.addEntity(new FloatingText(this.game, 'Emergency supply +300', this.x, this.y - 100, '#f1c40f', true));
+        this.game.entityManager.addEntity(new FloatingText(
+          this.game, '긴급 지원 +300', this.x, this.y - 100, '#d8bf8a', 'emphasis'
+        ));
       } else if (this.team === 'enemy' && this.game.waveSystem) {
         this.game.waveSystem.aiMinerals += 300;
       }
@@ -119,7 +123,9 @@ export class Base {
       this.emergencyPhase2 = true;
       if (this.team === 'player' && this.game.economy) {
         this.game.economy.minerals += 500;
-        this.game.entityManager.addEntity(new FloatingText(this.game, 'Last stand supply +500', this.x, this.y - 120, '#ff0055', true));
+        this.game.entityManager.addEntity(new FloatingText(
+          this.game, '최후 저항 지원 +500', this.x, this.y - 120, '#b97872', 'emphasis'
+        ));
       } else if (this.team === 'enemy' && this.game.waveSystem) {
         this.game.waveSystem.aiMinerals += 500;
       }

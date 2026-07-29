@@ -16,6 +16,13 @@ export class HUD {
     this.eHealthText = document.getElementById('enemy-health-text');
     this.eHealthBar = document.getElementById('enemy-health-bar');
     this.eDefenseStatus = document.getElementById('enemy-defense-status');
+
+    this.bossHud = document.getElementById('boss-hud');
+    this.bossTier = document.getElementById('boss-tier');
+    this.bossName = document.getElementById('boss-name');
+    this.bossHealthText = document.getElementById('boss-health-text');
+    this.bossHealthFill = document.getElementById('boss-health-fill');
+    this.bossCounterHint = document.getElementById('boss-counter-hint');
     
     this.buildButtons = document.querySelectorAll('.build-btn');
   }
@@ -65,6 +72,8 @@ export class HUD {
         this.eDefenseStatus.classList.toggle('unsealed', sealWavesLeft === 0);
       }
     }
+
+    this.updateBossHud();
     
     // Keep affordability and rule locks in one place so a locked card can never look purchasable.
     const currentMinerals = this.game.economy.minerals;
@@ -82,6 +91,27 @@ export class HUD {
       btn.classList.toggle('locked-unit', isLocked);
       btn.disabled = isLocked || isMaxTech || isCoolingDown || currentMinerals < cost || (isUnit && queueIsFull);
     });
+  }
+
+  updateBossHud() {
+    if (!this.bossHud) return;
+    const boss = this.game.entityManager.entities
+      .find(entity => entity.isBoss && entity.isAlive);
+
+    if (!boss) {
+      this.bossHud.classList.add('hidden');
+      this.bossHud.setAttribute('aria-hidden', 'true');
+      return;
+    }
+
+    const hpRatio = Math.max(0, Math.min(1, boss.hp / boss.maxHp));
+    this.bossTier.textContent = boss.bossTierLabel;
+    this.bossName.textContent = boss.bossName;
+    this.bossHealthText.textContent = `${Math.ceil(boss.hp)} / ${Math.ceil(boss.maxHp)}`;
+    this.bossHealthFill.style.transform = `scaleX(${hpRatio})`;
+    this.bossCounterHint.textContent = boss.bossCounterHint;
+    this.bossHud.classList.remove('hidden');
+    this.bossHud.setAttribute('aria-hidden', 'false');
   }
 }
 import { MAX_SPAWNERS, MAX_TECH_LEVEL, MAX_WAVES, UNIT_TECH_REQUIREMENTS } from '../gameConfig.js';

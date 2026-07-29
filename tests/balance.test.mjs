@@ -33,6 +33,8 @@ import {
   getDoctrineChoices,
   getDoctrineUnitMultipliers
 } from '../src/doctrines.js';
+import { getBossProfile, getBossProfileForWave } from '../src/bosses.js';
+import { FloatingText } from '../src/entities/FloatingText.js';
 
 assert.deepEqual(getUnlockedUnitTypes(1), ['melee', 'ranged']);
 assert.deepEqual(getUnlockedUnitTypes(2), ['melee', 'ranged', 'medic', 'sniper']);
@@ -115,6 +117,23 @@ assert.ok(Math.abs(getDoctrineUnitMultipliers(silverDoctrine, 'ranged').damage -
 assert.equal(exorcismDoctrine.baseDamageMultiplier, 1.15);
 assert.equal(applyDoctrineToBonuses(shieldDoctrine, 'shieldWall'), shieldDoctrine);
 assert.equal(getDoctrineById('sanctuary').effect.amount, 1500);
+
+const midBoss = getBossProfileForWave(6);
+const finalBoss = getBossProfileForWave(12);
+assert.equal(midBoss.id, 'executioner');
+assert.equal(finalBoss.id, 'sovereign');
+assert.equal(getBossProfileForWave(9), null);
+assert.notEqual(midBoss.spritePath, finalBoss.spritePath);
+assert.equal(midBoss.hpMultiplier, 5);
+assert.equal(finalBoss.damageMultiplier, 1.8);
+assert.equal(getBossProfile('executioner'), midBoss);
+
+const criticalDamageText = new FloatingText({}, 'CRIT! -100', 0, 0, '#fff', true);
+const emphasizedStatusText = new FloatingText({}, '웨이브 개시', 0, 0, '#fff', 'emphasis');
+assert.equal(criticalDamageText.isCritical, true);
+assert.equal(emphasizedStatusText.isCritical, false);
+assert.equal(emphasizedStatusText.isEmphasis, true);
+assert.ok(emphasizedStatusText.scale < criticalDamageText.scale);
 
 // A level-one AI may not counter with a late-game Pit Lord/Crusader equivalent.
 assert.equal(chooseAffordableUnit('crusader', 300, 1, () => 0), 'melee');
