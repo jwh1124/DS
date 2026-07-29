@@ -13,6 +13,7 @@ import {
   getUnlockedUnitTypes,
   MAX_SPAWNERS,
   MAX_TECH_LEVEL,
+  MAX_WAVES,
   UNIT_COSTS,
   UNIT_TECH_REQUIREMENTS
 } from './src/gameConfig.js';
@@ -29,6 +30,7 @@ import {
   getFrontlineFocusX,
   smoothCameraX
 } from './src/cameraDirector.js';
+import { buildAfterActionReport } from './src/afterAction.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -232,7 +234,7 @@ class Game {
     this.start();
   }
 
-  stop(winner) {
+  stop(winner, endReason = 'baseDestroyed') {
     this.isRunning = false;
     this.isPaused = false;
     this.isDoctrineChoosing = false;
@@ -246,6 +248,10 @@ class Game {
     const gameOverScreen = document.getElementById('game-over-screen');
     const title = document.getElementById('game-over-title');
     const summary = document.getElementById('game-over-summary');
+    const kicker = document.getElementById('game-over-kicker');
+    const metrics = document.getElementById('game-over-metrics');
+    const adviceTitle = document.getElementById('game-over-advice-title');
+    const adviceText = document.getElementById('game-over-advice-text');
     
     if (winner === 'player') {
       title.innerHTML = `${iconMarkup('cross', 'result-icon')}<span>승리!</span>`;
@@ -257,25 +263,46 @@ class Game {
       title.style.textShadow = '0 5px 18px rgba(0, 0, 0, 0.72)';
     }
     
-    if (gameOverScreen) gameOverScreen.classList.remove('hidden');
-    if (summary) {
-      const wave = Math.max(1, this.waveSystem.aiWaveCount);
-      const integrity = this.playerBase
-        ? Math.round((this.playerBase.hp / this.playerBase.maxHp) * 100)
-        : 0;
-      const record = `편성 ${this.runStats.contractsSigned} · 조기 개시 ${this.runStats.earlyStarts} · 계시 ${this.runStats.techUpgrades}`;
-      const doctrineRecord = this.doctrineBonuses.selected
+    const roster = Object.fromEntries(
+      Object.keys(PLAYER_UNIT_NAMES).map(type => [type, this.waveSystem.countSpawners('player', type)])
+    );
+    const report = buildAfterActionReport({
+      winner,
+      endReason,
+      wave: this.waveSystem.aiWaveCount,
+      maxWaves: MAX_WAVES,
+      playerIntegrity: this.playerBase ? (this.playerBase.hp / this.playerBase.maxHp) * 100 : 0,
+      enemyIntegrity: this.enemyBase ? (this.enemyBase.hp / this.enemyBase.maxHp) * 100 : 0,
+      roster,
+      techLevel: this.playerBase?.techLevel ?? 1,
+      contractsSigned: this.runStats.contractsSigned,
+      earlyStarts: this.runStats.earlyStarts,
+      incomeRites: this.runStats.incomeRites,
+      ultimates: this.runStats.ultimates,
+      doctrineNames: this.doctrineBonuses.selected
         .map(id => getDoctrineById(id)?.title)
         .filter(Boolean)
-        .join(' · ') || '없음';
-      if (winner === 'player') {
-        const score = integrity + this.runStats.earlyStarts * 2 + this.runStats.techUpgrades * 4 + this.runStats.incomeRites * 2;
-        const grade = score >= 112 ? 'S' : score >= 92 ? 'A' : score >= 72 ? 'B' : 'C';
-        summary.textContent = `${wave}웨이브 정화 성공 · 전술 등급 ${grade} · 성당 보전 ${integrity}%\n${record}\n선택 교리: ${doctrineRecord}`;
-      } else {
-        summary.textContent = `${wave}/12웨이브에서 성당이 무너졌습니다.\n${record}\n선택 교리: ${doctrineRecord} · 조합을 바꿔 다시 도전하세요.`;
+    });
+
+    if (kicker) kicker.textContent = report.kicker;
+    if (summary) summary.textContent = report.summary;
+    if (metrics) {
+      metrics.innerHTML = report.metrics.map(metric => `
+        <div class="result-metric">
+          <span>${metric.label}</span>
+          <strong>${metric.value}</strong>
+        </div>
+      `).join('');
+      if (report.grade) {
+        metrics.querySelector('.result-metric')?.classList.add('grade-metric');
+        const gradeValue = metrics.querySelector('.result-metric strong');
+        if (gradeValue) gradeValue.textContent = `${report.grade} · ${gradeValue.textContent}`;
       }
     }
+    if (adviceTitle) adviceTitle.textContent = report.recommendation.title;
+    if (adviceText) adviceText.textContent = report.recommendation.text;
+    if (gameOverScreen) gameOverScreen.classList.remove('hidden');
+    requestAnimationFrame(() => document.getElementById('restart-btn')?.focus());
   }
 
   togglePause() {

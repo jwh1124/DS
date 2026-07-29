@@ -420,7 +420,7 @@ export class WaveSystem {
       ? '[최후 심판]: 성당의 신성이 지옥문을 압도했습니다.'
       : '[최후 심판]: 지옥문의 잔존 마력이 성당을 삼켰습니다.';
     this.isActive = false;
-    this.game.stop(winner);
+    this.game.stop(winner, 'finalJudgement');
   }
 
   triggerAiOrbitalStrike() {

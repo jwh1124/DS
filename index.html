@@ -288,10 +288,19 @@
       </div>
       
       <!-- Game Over Screen -->
-      <div id="game-over-screen" class="hidden">
-        <h1 id="game-over-title">승리!</h1>
-        <p id="game-over-summary"></p>
-        <button id="restart-btn">다시 엑소시즘</button>
+      <div id="game-over-screen" class="hidden" role="dialog" aria-modal="true" aria-labelledby="game-over-title" aria-describedby="game-over-summary">
+        <section class="result-panel">
+          <span id="game-over-kicker" class="result-kicker">원정 완료 · AFTER ACTION</span>
+          <h1 id="game-over-title">승리!</h1>
+          <div id="game-over-metrics" class="result-metrics" aria-label="원정 핵심 기록"></div>
+          <div class="result-analysis">
+            <span>다음 원정 제안</span>
+            <strong id="game-over-advice-title">공세와 생존의 균형이 좋았습니다</strong>
+            <p id="game-over-advice-text"></p>
+          </div>
+          <p id="game-over-summary"></p>
+          <button id="restart-btn">다시 엑소시즘</button>
+        </section>
       </div>
 
       <div id="pause-screen" class="hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title">

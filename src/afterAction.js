@@ -1,0 +1,157 @@
+const ROSTER_LABELS = Object.freeze({
+  melee: '수도승',
+  ranged: '엑소시스트',
+  medic: '사제',
+  sniper: '심판관',
+  tank: '대천사',
+  crusader: '십자군'
+});
+
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function getRosterTotal(roster) {
+  return Object.values(roster).reduce((total, count) => total + (Number(count) || 0), 0);
+}
+
+function getRosterSummary(roster) {
+  const fielded = Object.entries(ROSTER_LABELS)
+    .filter(([type]) => (roster[type] ?? 0) > 0)
+    .map(([type, label]) => `${label} ${roster[type]}`);
+  return fielded.length ? fielded.join(' · ') : '편성 없음';
+}
+
+function getRecommendation({
+  winner,
+  endReason,
+  wave,
+  playerIntegrity,
+  enemyIntegrity,
+  roster,
+  techLevel,
+  ultimates
+}) {
+  const frontLine = (roster.melee ?? 0) + (roster.crusader ?? 0);
+  const bossSupport = (roster.medic ?? 0) + (roster.sniper ?? 0);
+
+  if (winner === 'player') {
+    if (playerIntegrity < 35) {
+      return {
+        title: '승리는 했지만 전열이 얇았습니다',
+        text: '다음 원정에서는 수도승·십자군 또는 사제를 늘려 성당 보전율을 높여보세요.'
+      };
+    }
+    if (endReason === 'finalJudgement' && enemyIntegrity > 20) {
+      return {
+        title: '판정은 이겼지만 마무리 화력이 부족했습니다',
+        text: '심판관과 고레벨 병종을 보강하면 최후 심판 전에 지옥문을 직접 무너뜨릴 수 있습니다.'
+      };
+    }
+    return {
+      title: '공세와 생존의 균형이 좋았습니다',
+      text: '현재 편성의 핵심 병종과 교리를 유지하면서 더 높은 난이도에 도전할 수 있습니다.'
+    };
+  }
+
+  if (endReason === 'finalJudgement') {
+    return {
+      title: '최후 심판에서 지옥문 압박이 부족했습니다',
+      text: `판정 당시 성당 ${playerIntegrity}% 대 지옥문 ${enemyIntegrity}%였습니다. 계시와 심판관 비중을 높여 후반 공성 화력을 확보하세요.`
+    };
+  }
+  if (wave <= 4 && frontLine < 3) {
+    return {
+      title: '초반 전열이 너무 얇았습니다',
+      text: '첫 편성에 수도승을 최소 3명 배치한 뒤 엑소시스트를 추가하면 성당으로 새는 적을 줄일 수 있습니다.'
+    };
+  }
+  if ((wave === 6 || wave === 12) && bossSupport < 2) {
+    return {
+      title: '대악마 대응 병종이 부족했습니다',
+      text: '사제로 전열을 유지하고 심판관의 대형·보스 추가 피해를 준비한 뒤 보스 웨이브를 시작하세요.'
+    };
+  }
+  if (wave >= 5 && techLevel < 2) {
+    return {
+      title: '성서 계시가 늦었습니다',
+      text: '웨이브 5 전까지 Lv.2 계시를 확보하면 사제·심판관과 강화 대포를 사용할 수 있습니다.'
+    };
+  }
+  if (wave >= 6 && ultimates === 0) {
+    return {
+      title: '신성 기적을 아껴두었습니다',
+      text: '적 후열이 겹치거나 보스 호위대가 모였을 때 천벌을 사용하면 성당 피해를 크게 줄일 수 있습니다.'
+    };
+  }
+  return {
+    title: '전열과 지원 병종의 비율을 조정하세요',
+    text: '전열 3~5명을 유지하고, 적 정찰 정보에 맞춰 사격·치유·심판 역할을 나눠 편성해 보세요.'
+  };
+}
+
+export function buildAfterActionReport({
+  winner,
+  endReason = 'baseDestroyed',
+  wave,
+  maxWaves,
+  playerIntegrity,
+  enemyIntegrity,
+  roster = {},
+  techLevel = 1,
+  contractsSigned = 0,
+  earlyStarts = 0,
+  incomeRites = 0,
+  ultimates = 0,
+  doctrineNames = []
+}) {
+  const safeWave = Math.max(1, Math.min(maxWaves, Math.round(wave)));
+  const safePlayerIntegrity = clampPercent(playerIntegrity);
+  const safeEnemyIntegrity = clampPercent(enemyIntegrity);
+  const rosterTotal = getRosterTotal(roster);
+  const isVictory = winner === 'player';
+  const isJudgement = endReason === 'finalJudgement';
+  const score = safePlayerIntegrity + earlyStarts * 2 + Math.max(0, techLevel - 1) * 4 + incomeRites * 2;
+  const grade = score >= 112 ? 'S' : score >= 92 ? 'A' : score >= 72 ? 'B' : 'C';
+
+  let outcome;
+  if (isJudgement) {
+    outcome = isVictory
+      ? '최후 심판에서 성당의 신성이 우세했습니다.'
+      : '최후 심판에서 지옥문의 잔존 마력이 우세했습니다.';
+  } else {
+    outcome = isVictory
+      ? `${safeWave}웨이브에서 지옥문을 직접 정화했습니다.`
+      : `${safeWave}/${maxWaves}웨이브에서 성당이 무너졌습니다.`;
+  }
+
+  const doctrineRecord = doctrineNames.length ? doctrineNames.join(' · ') : '없음';
+  const recommendation = getRecommendation({
+    winner,
+    endReason,
+    wave: safeWave,
+    playerIntegrity: safePlayerIntegrity,
+    enemyIntegrity: safeEnemyIntegrity,
+    roster,
+    techLevel,
+    ultimates
+  });
+
+  return {
+    kicker: isVictory ? '원정 완료 · AFTER ACTION' : '원정 실패 · AFTER ACTION',
+    grade: isVictory ? grade : null,
+    metrics: [
+      { label: '도달 웨이브', value: `${safeWave} / ${maxWaves}` },
+      { label: '성당 보전', value: `${safePlayerIntegrity}%` },
+      { label: '지옥문 잔존', value: `${safeEnemyIntegrity}%` },
+      { label: '최종 편성', value: `${rosterTotal}명` }
+    ],
+    summary: [
+      outcome,
+      `계시 Lv.${techLevel} · 천벌 ${ultimates}회 · 조기 진군 ${earlyStarts}회 · 계약 ${contractsSigned}회`,
+      `최종 편성: ${getRosterSummary(roster)}`,
+      `선택 교리: ${doctrineRecord}`
+    ].join('\n'),
+    recommendation
+  };
+}

@@ -144,7 +144,7 @@ export class Base {
           this.game, this.x, this.y, expColor, 1.2, speed, angle, 5, 'spark'
         ));
       }
-      this.game.stop(this.team === 'player' ? 'enemy' : 'player');
+      this.game.stop(this.team === 'player' ? 'enemy' : 'player', 'baseDestroyed');
     }
   }
 
