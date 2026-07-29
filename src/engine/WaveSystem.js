@@ -23,8 +23,10 @@ import {
   MAX_SPAWNERS,
   MAX_WAVES,
   UNIT_COSTS,
+  WAVE_CLEAR_PREP_TIME,
   WAVE_INTERVAL
 } from '../gameConfig.js';
+import { resolveClearedWavePrep } from '../wavePacing.js';
 
 export class WaveSystem {
   constructor(game) {
@@ -46,6 +48,7 @@ export class WaveSystem {
     this.finalWaveStarted = false;
     this.finalBattleTime = 0;
     this.bossGateActive = false;
+    this.clearPrepActive = false;
     this.lastActionLog = '[교단]: 첫 악마 웨이브에 대비하십시오.';
   }
 
@@ -149,6 +152,16 @@ export class WaveSystem {
     return resolveBossGate(this.bossGateActive, Boolean(this.getActiveBoss())).locked;
   }
 
+  hasActiveEnemyWave() {
+    return this.game.entityManager.entities.some(entity =>
+      entity.isWaveFighter && entity.team === 'enemy' && entity.isAlive
+    );
+  }
+
+  isClearPrepWindow() {
+    return this.clearPrepActive;
+  }
+
   update(dt) {
     if (!this.isActive) return;
 
@@ -168,7 +181,22 @@ export class WaveSystem {
     if (bossGate.completed) {
       this.bossGateActive = false;
       this.timeUntilWave = BOSS_RECOVERY_DELAY;
+      this.clearPrepActive = true;
       this.lastActionLog = `[정비]: 대악마 격퇴 · ${BOSS_RECOVERY_DELAY}초 후 진군`;
+    }
+
+    const pacing = resolveClearedWavePrep({
+      aiWaveCount: this.aiWaveCount,
+      maxWaves: MAX_WAVES,
+      bossGateLocked: false,
+      hasActiveEnemyWave: this.hasActiveEnemyWave(),
+      timeUntilWave: this.timeUntilWave,
+      clearPrepTime: WAVE_CLEAR_PREP_TIME
+    });
+    this.timeUntilWave = pacing.timeUntilWave;
+    this.clearPrepActive = pacing.clearPrepActive;
+    if (pacing.accelerated) {
+      this.lastActionLog = `[전장 정리]: 악마 전멸 · ${WAVE_CLEAR_PREP_TIME}초 정비 후 진군`;
     }
 
     this.timeUntilWave -= dt;
@@ -182,6 +210,7 @@ export class WaveSystem {
   spawnWave() {
     const recalledCount = this.retirePreviousWave();
     this.aiWaveCount++;
+    this.clearPrepActive = false;
     this.finalWaveStarted = this.aiWaveCount === MAX_WAVES;
     if (this.finalWaveStarted) this.finalBattleTime = 60;
     

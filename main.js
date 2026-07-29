@@ -665,6 +665,7 @@ class Game {
 
   launchNextWaveEarly() {
     if (!this.isRunning || this.isPaused) return;
+    const wasClearPrep = this.waveSystem.isClearPrepWindow?.() ?? false;
     if (!this.waveSystem.launchNextWaveEarly()) return;
 
     const earlyBonus = 20;
@@ -673,7 +674,12 @@ class Game {
     this.runStats.earlyFaith += earlyBonus;
     this.audio.playClick();
     this.entityManager.addEntity(new FloatingText(
-      this, `정찰 돌파 · 웨이브 개시 (+${earlyBonus} 신앙심)`, WORLD_WIDTH / 2, 170, '#d8bf8a', 'emphasis'
+      this,
+      `${wasClearPrep ? '정비 단축' : '정찰 돌파'} · 웨이브 개시 (+${earlyBonus} 신앙심)`,
+      WORLD_WIDTH / 2,
+      170,
+      '#d8bf8a',
+      'emphasis'
     ));
   }
 

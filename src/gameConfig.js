@@ -31,9 +31,12 @@ export const PLAYER_STARTING_MINERALS = 400;
 export const AI_STARTING_MINERALS = 180;
 export const PLAYER_STARTING_INCOME = 90;
 export const AI_STARTING_INCOME = 50;
-// A full twelve-wave campaign is roughly eight minutes without early starts.
+// Forty seconds is the maximum combat-to-combat cadence, not a forced idle
+// break. Once every enemy wave fighter is defeated, the remaining countdown
+// contracts to a short, readable preparation window.
 export const FIRST_WAVE_DELAY = 15;
 export const WAVE_INTERVAL = 40;
+export const WAVE_CLEAR_PREP_TIME = 12;
 export const BASE_TECH_HP_GAIN = 2000;
 
 // The enemy gate is sealed until wave 12, while the cathedral has no matching
