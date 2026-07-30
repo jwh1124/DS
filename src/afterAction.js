@@ -24,10 +24,8 @@ function getRosterSummary(roster) {
 
 function getRecommendation({
   winner,
-  endReason,
   wave,
   playerIntegrity,
-  enemyIntegrity,
   roster,
   techLevel,
   ultimates
@@ -42,24 +40,12 @@ function getRecommendation({
         text: '다음 원정에서는 수도승·십자군 또는 사제를 늘려 성당 보전율을 높여보세요.'
       };
     }
-    if (endReason === 'finalJudgement' && enemyIntegrity > 20) {
-      return {
-        title: '판정은 이겼지만 마무리 화력이 부족했습니다',
-        text: '심판관과 고레벨 병종을 보강하면 최후 심판 전에 지옥문을 직접 무너뜨릴 수 있습니다.'
-      };
-    }
     return {
       title: '공세와 생존의 균형이 좋았습니다',
       text: '현재 편성의 핵심 병종과 교리를 유지하면서 더 높은 난이도에 도전할 수 있습니다.'
     };
   }
 
-  if (endReason === 'finalJudgement') {
-    return {
-      title: '최후 심판에서 지옥문 압박이 부족했습니다',
-        text: `판정 당시 성당 ${playerIntegrity}% 대 지옥문 ${enemyIntegrity}%였습니다. [8] 후열 처단으로 원거리 악마를 걷어낸 뒤 심판관의 공성 시간을 확보하세요.`
-    };
-  }
   if (wave <= 4 && frontLine < 3) {
     return {
       title: '초반 전열이 너무 얇았습니다',
@@ -92,7 +78,6 @@ function getRecommendation({
 
 export function buildAfterActionReport({
   winner,
-  endReason = 'baseDestroyed',
   wave,
   maxWaves,
   playerIntegrity,
@@ -111,28 +96,18 @@ export function buildAfterActionReport({
   const safeEnemyIntegrity = clampPercent(enemyIntegrity);
   const rosterTotal = getRosterTotal(roster);
   const isVictory = winner === 'player';
-  const isJudgement = endReason === 'finalJudgement';
   const score = safePlayerIntegrity + earlyStarts * 2 + Math.max(0, techLevel - 1) * 4 + incomeRites * 2;
   const grade = score >= 112 ? 'S' : score >= 92 ? 'A' : score >= 72 ? 'B' : 'C';
 
-  let outcome;
-  if (isJudgement) {
-    outcome = isVictory
-      ? '최후 심판에서 성당의 신성이 우세했습니다.'
-      : '최후 심판에서 지옥문의 잔존 마력이 우세했습니다.';
-  } else {
-    outcome = isVictory
-      ? `${safeWave}웨이브에서 지옥문을 직접 정화했습니다.`
-      : `${safeWave}/${maxWaves}웨이브에서 성당이 무너졌습니다.`;
-  }
+  const outcome = isVictory
+    ? `${safeWave}웨이브에서 지옥문을 직접 정화했습니다.`
+    : `${safeWave}/${maxWaves}웨이브에서 성당이 무너졌습니다.`;
 
   const doctrineRecord = doctrineNames.length ? doctrineNames.join(' · ') : '없음';
   const recommendation = getRecommendation({
     winner,
-    endReason,
     wave: safeWave,
     playerIntegrity: safePlayerIntegrity,
-    enemyIntegrity: safeEnemyIntegrity,
     roster,
     techLevel,
     ultimates

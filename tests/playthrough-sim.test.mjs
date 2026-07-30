@@ -40,6 +40,7 @@ class TestEntityManager {
     return this.entities.filter(entity =>
       entity.team === team
       && entity.isAlive !== false
+      && entity.isTargetable !== false
       && typeof entity.takeDamage === 'function'
     );
   }
@@ -161,4 +162,39 @@ test('recommended normal roster defeats the wave-six mini-boss without base arti
     assert.ok(outcome.holySurvivors >= 2, JSON.stringify(outcome));
     assert.ok(outcome.elapsed < 55, JSON.stringify(outcome));
   }
+});
+
+test('surviving wave fighters retreat safely instead of vanishing at combat clear', () => {
+  const entityManager = new TestEntityManager();
+  const playerBase = createTestBase('player', 100);
+  const enemyBase = createTestBase('enemy', 1900);
+  const game = {
+    canvas: { height: 720 },
+    difficulty: 1,
+    entityManager,
+    playerBase,
+    enemyBase,
+    doctrineBonuses: createDoctrineBonuses(),
+    tacticalOrder: 'front',
+    economy: { minerals: 0 },
+    waveSystem: { aiMinerals: 0, aiWaveCount: 1 },
+    audio: {},
+    addScreenShake() {},
+    stop() {}
+  };
+  const survivor = new Unit(game, 1200, 360, 'player', 'melee');
+  survivor.isWaveFighter = true;
+  const hpBeforeRetreat = survivor.hp;
+
+  assert.equal(survivor.beginWithdrawal(), true);
+  assert.equal(survivor.isTargetable, false);
+  survivor.takeDamage(999);
+  assert.equal(survivor.hp, hpBeforeRetreat);
+
+  survivor.update(1);
+  assert.ok(survivor.x < 1200);
+  assert.equal(survivor.isAlive, true);
+
+  survivor.update(1.6);
+  assert.equal(survivor.isAlive, false);
 });

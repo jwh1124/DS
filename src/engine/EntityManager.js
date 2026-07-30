@@ -24,7 +24,12 @@ export class EntityManager {
   }
   
   getEntitiesByTeam(team) {
-    return this.entities.filter(e => e.team === team && e.isAlive !== false && typeof e.takeDamage === 'function');
+    return this.entities.filter(e =>
+      e.team === team
+      && e.isAlive !== false
+      && e.isTargetable !== false
+      && typeof e.takeDamage === 'function'
+    );
   }
 
   update(dt) {

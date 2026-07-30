@@ -11,25 +11,6 @@ const fullRoster = {
   crusader: 2
 };
 
-test('final judgement defeat reports a verdict instead of a destroyed cathedral', () => {
-  const report = buildAfterActionReport({
-    winner: 'enemy',
-    endReason: 'finalJudgement',
-    wave: 12,
-    maxWaves: 12,
-    playerIntegrity: 39,
-    enemyIntegrity: 61,
-    roster: fullRoster,
-    techLevel: 3,
-    ultimates: 1
-  });
-
-  assert.match(report.summary, /최후 심판에서 지옥문의 잔존 마력이 우세/);
-  assert.doesNotMatch(report.summary, /성당이 무너졌/);
-  assert.equal(report.recommendation.title, '최후 심판에서 지옥문 압박이 부족했습니다');
-  assert.match(report.recommendation.text, /성당 39% 대 지옥문 61%/);
-});
-
 test('early defeat with no frontline gives an actionable formation recommendation', () => {
   const report = buildAfterActionReport({
     winner: 'enemy',

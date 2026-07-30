@@ -34,52 +34,64 @@ export class HUD {
     
     // Update timer
     const waveSystem = this.game.waveSystem;
-    const isFinale = waveSystem.aiWaveCount >= MAX_WAVES;
+    const phase = waveSystem.phase;
+    const isFinale = phase === WAVE_PHASES.FINAL;
+    const isAssault = phase === WAVE_PHASES.ASSAULT;
+    const isPrepare = phase === WAVE_PHASES.PREPARE || phase === WAVE_PHASES.SCOUT;
     const activeBoss = waveSystem.getActiveBoss?.();
     const bossGateLocked = waveSystem.isBossGateLocked?.() ?? false;
     const activeEnemyWave = waveSystem.hasActiveEnemyWave?.() ?? false;
-    const clearPrepActive = waveSystem.isClearPrepWindow?.() ?? false;
-    this.timerText.textContent = bossGateLocked
-      ? '격퇴'
-      : isFinale
-        ? `${Math.ceil(waveSystem.finalBattleTime)}s`
-        : activeEnemyWave
-          ? '교전'
-        : Math.max(0, waveSystem.timeUntilWave).toFixed(1);
+    this.timerText.textContent = isFinale
+      ? (activeBoss ? '결전' : activeEnemyWave ? '잔당' : '공성')
+      : bossGateLocked || phase === WAVE_PHASES.COMBAT
+        ? '교전'
+        : isAssault
+          ? `공성 ${Math.ceil(waveSystem.timeUntilWave)}`
+          : Math.max(0, waveSystem.timeUntilWave).toFixed(1);
     if (this.waveLabel) {
-      this.waveLabel.textContent = bossGateLocked
-        ? `WAVE ${waveSystem.aiWaveCount}/${MAX_WAVES} · 보스 교전`
-        : isFinale
-          ? 'FINAL WAVE · 지옥문 정화'
+      this.waveLabel.textContent = isFinale
+        ? activeBoss
+          ? 'FINAL WAVE · 지옥 군주 결전'
           : activeEnemyWave
+            ? 'FINAL WAVE · 잔존 악마 격퇴'
+            : 'FINAL WAVE · 지옥문 최종 공성'
+        : bossGateLocked
+          ? `WAVE ${waveSystem.aiWaveCount}/${MAX_WAVES} · 보스 교전`
+          : phase === WAVE_PHASES.COMBAT
             ? `WAVE ${waveSystem.aiWaveCount}/${MAX_WAVES} · 악마 교전`
-          : clearPrepActive
-            ? `WAVE ${waveSystem.aiWaveCount + 1}/${MAX_WAVES} · 전장 정비`
-            : `WAVE ${waveSystem.aiWaveCount + 1}/${MAX_WAVES} · 악마 정찰`;
+            : isAssault
+              ? `WAVE ${waveSystem.aiWaveCount}/${MAX_WAVES} · 공성 기회`
+              : `WAVE ${waveSystem.aiWaveCount + 1}/${MAX_WAVES} · 전장 정비`;
     }
     if (this.wavePreview) {
-      this.wavePreview.textContent = bossGateLocked && activeBoss
-        ? `${activeBoss.bossName} 격퇴 후 진군 · ${activeBoss.bossCounterHint}`
-        : isFinale
-          ? `최후 심판까지 ${Math.ceil(waveSystem.finalBattleTime)}초 · 지옥문을 정화하십시오`
+      this.wavePreview.textContent = isFinale
+        ? activeBoss
+          ? `${activeBoss.bossName}과 호위대를 처치한 뒤 지옥문을 파괴하십시오`
           : activeEnemyWave
+            ? '잔존 악마를 격퇴하십시오 · 제한 시간 없음'
+            : '봉인이 해제되었습니다 · 지옥문을 파괴하면 승리합니다'
+        : bossGateLocked && activeBoss
+          ? `${activeBoss.bossName} 격퇴 후 공성 · ${activeBoss.bossCounterHint}`
+          : phase === WAVE_PHASES.COMBAT
             ? `현재 악마 부대를 격퇴하십시오 · 다음 ${waveSystem.getUpcomingWavePreview()}`
-          : clearPrepActive
-            ? `악마 전멸 · ${waveSystem.getUpcomingWavePreview()}`
-            : waveSystem.getUpcomingWavePreview();
+            : isAssault
+              ? `생존 부대가 지옥문을 공격합니다 · ${Math.ceil(waveSystem.timeUntilWave)}초 후 귀환`
+              : `편성·강화 시간 · ${waveSystem.getUpcomingWavePreview()}`;
     }
     if (this.launchWaveButton) {
       const canLaunchEarly = waveSystem.canLaunchNextWaveEarly?.() ?? false;
       this.launchWaveButton.disabled = isFinale || !canLaunchEarly;
-      this.launchWaveButton.textContent = bossGateLocked
-        ? '대악마 격퇴 필요'
-        : isFinale
-          ? '최후 정화 진행 중'
-          : activeEnemyWave
+      this.launchWaveButton.textContent = isFinale
+        ? '지옥문 파괴 시 승리'
+        : bossGateLocked
+          ? '대악마 격퇴 필요'
+          : phase === WAVE_PHASES.COMBAT
             ? '악마 교전 중'
-          : clearPrepActive
-            ? '[F] 즉시 진군 · +20'
-            : '[F] 조기 개시 · +20';
+            : isAssault
+              ? '공성 진행 중'
+              : isPrepare
+                ? '[F] 즉시 진군 · +20'
+                : '[F] 조기 개시 · +20';
     }
     
     // Update Base Health
@@ -145,3 +157,4 @@ export class HUD {
   }
 }
 import { MAX_SPAWNERS, MAX_TECH_LEVEL, MAX_WAVES, UNIT_TECH_REQUIREMENTS } from '../gameConfig.js';
+import { WAVE_PHASES } from '../wavePacing.js';

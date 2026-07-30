@@ -162,6 +162,9 @@ export class Unit {
     
     this.radius = (type === 'tank' || type === 'crusader') ? 30 : 20;
     this.isAlive = true;
+    this.isTargetable = true;
+    this.isWithdrawing = false;
+    this.withdrawalElapsed = 0;
     
     // Strict Air vs Ground Classification:
     // Air Units (공중): Archangel (tank), Priest (medic), Succubus (enemy ranged), Banshee (enemy sniper), Balrog (enemy tank)
@@ -244,8 +247,19 @@ export class Unit {
     return this;
   }
 
+  beginWithdrawal() {
+    if (!this.isAlive || this.isBoss) return false;
+    this.isWithdrawing = true;
+    this.isTargetable = false;
+    this.withdrawalElapsed = 0;
+    this.target = null;
+    this.state = 'withdrawing';
+    this.dir = this.team === 'player' ? -1 : 1;
+    return true;
+  }
+
   takeDamage(amount, isCritical = false, counterLabel = '') {
-    if (!this.isAlive) return;
+    if (!this.isAlive || !this.isTargetable) return;
     this.hp -= amount;
 
     if (counterLabel && this.counterCueCooldown <= 0) {
@@ -386,6 +400,22 @@ export class Unit {
     
     // Animation Speed
     this.animTime += dt * (this.isAirUnit ? 4 : 9);
+
+    if (this.isWithdrawing) {
+      this.withdrawalElapsed += dt;
+      const homeBase = this.team === 'player' ? this.game.playerBase : this.game.enemyBase;
+      const homeX = homeBase?.x ?? (this.team === 'player' ? 100 : 1900);
+      const direction = Math.sign(homeX - this.x);
+      this.dir = direction || this.dir;
+      this.x += direction * this.speed * 1.8 * dt;
+      if (homeBase) {
+        this.y += (homeBase.y - this.y) * Math.min(1, dt * 1.8);
+      }
+      if (Math.abs(homeX - this.x) <= 105 || this.withdrawalElapsed >= 2.5) {
+        this.isAlive = false;
+      }
+      return;
+    }
     
     if (this.attackCooldown > 0) {
       this.attackCooldown -= dt;
@@ -641,6 +671,9 @@ export class Unit {
     if (!this.isAlive) return;
     
     ctx.save();
+    if (this.isWithdrawing) {
+      ctx.globalAlpha = Math.max(0.15, 1 - this.withdrawalElapsed / 2.5);
+    }
     
     // Altitude calculation: Air Units fly high (-32px), Ground Units walk on terrain
     const airOffsetY = this.isAirUnit ? Math.sin(this.animTime) * 6 - 32 : 0;

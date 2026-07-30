@@ -14,14 +14,15 @@ import {
   AI_STARTING_INCOME,
   AI_STARTING_MINERALS,
   UNIT_MOVEMENT_SPEED_MULTIPLIER,
-  WAVE_CLEAR_PREP_TIME,
-  WAVE_INTERVAL,
+  WAVE_ASSAULT_TIME,
+  WAVE_PREP_TIME,
   UNIT_COSTS
 } from '../src/gameConfig.js';
 import {
   canLaunchNextWaveEarly,
-  resolveClearedWavePrep,
-  shouldTickWaveCountdown
+  resolveExpiredPhase,
+  resolvePostCombatPhase,
+  WAVE_PHASES
 } from '../src/wavePacing.js';
 import {
   getAttackRangeAgainst,
@@ -64,9 +65,8 @@ assert.equal(getTechUpgradeCost(2), 400);
 assert.equal(getTechUpgradeCost(3), Infinity);
 assert.equal(MAX_WAVES, 12);
 assert.equal(MAX_SPAWNERS, 16);
-assert.equal(WAVE_INTERVAL, 40);
-assert.equal(WAVE_CLEAR_PREP_TIME, 12);
-assert.equal(MAX_WAVES * WAVE_INTERVAL, 480);
+assert.equal(WAVE_ASSAULT_TIME, 8);
+assert.equal(WAVE_PREP_TIME, 10);
 assert.equal(PLAYER_STARTING_MINERALS, 400);
 assert.equal(PLAYER_STARTING_INCOME, 90);
 assert.equal(AI_STARTING_MINERALS, 180);
@@ -76,89 +76,97 @@ assert.equal(BASE_TECH_HP_GAIN, 2000);
 assert.equal(getUnitVsBaseDamageMultiplier('player'), 2);
 assert.equal(getUnitVsBaseDamageMultiplier('enemy'), 1);
 
-const clearedWavePrep = resolveClearedWavePrep({
-  aiWaveCount: 1,
+const clearedWaveAssault = resolvePostCombatPhase({
+  currentPhase: WAVE_PHASES.COMBAT,
+  wave: 1,
   maxWaves: MAX_WAVES,
-  bossGateLocked: false,
   hasActiveEnemyWave: false,
-  timeUntilWave: 35,
-  clearPrepTime: WAVE_CLEAR_PREP_TIME
+  hasActivePlayerWave: true,
+  assaultTime: WAVE_ASSAULT_TIME,
+  prepTime: WAVE_PREP_TIME
 });
-assert.deepEqual(clearedWavePrep, {
-  timeUntilWave: 12,
-  accelerated: true,
-  clearPrepActive: true
+assert.deepEqual(clearedWaveAssault, {
+  phase: WAVE_PHASES.ASSAULT,
+  timeRemaining: WAVE_ASSAULT_TIME,
+  shouldWithdraw: false
 });
-assert.equal(resolveClearedWavePrep({
-  aiWaveCount: 1,
+assert.deepEqual(resolvePostCombatPhase({
+  currentPhase: WAVE_PHASES.COMBAT,
+  wave: 1,
   maxWaves: MAX_WAVES,
-  bossGateLocked: false,
   hasActiveEnemyWave: false,
-  timeUntilWave: 8,
-  clearPrepTime: WAVE_CLEAR_PREP_TIME
-}).timeUntilWave, 8);
-assert.equal(resolveClearedWavePrep({
-  aiWaveCount: 1,
+  hasActivePlayerWave: false,
+  assaultTime: WAVE_ASSAULT_TIME,
+  prepTime: WAVE_PREP_TIME
+}), {
+  phase: WAVE_PHASES.PREPARE,
+  timeRemaining: WAVE_PREP_TIME,
+  shouldWithdraw: false
+});
+assert.equal(resolvePostCombatPhase({
+  currentPhase: WAVE_PHASES.COMBAT,
+  wave: 1,
   maxWaves: MAX_WAVES,
-  bossGateLocked: true,
+  hasActiveEnemyWave: true,
+  hasActivePlayerWave: true,
+  assaultTime: WAVE_ASSAULT_TIME,
+  prepTime: WAVE_PREP_TIME
+}), null);
+assert.equal(resolvePostCombatPhase({
+  currentPhase: WAVE_PHASES.COMBAT,
+  wave: MAX_WAVES,
+  maxWaves: MAX_WAVES,
   hasActiveEnemyWave: false,
-  timeUntilWave: 35,
-  clearPrepTime: WAVE_CLEAR_PREP_TIME
-}).timeUntilWave, 35);
+  hasActivePlayerWave: true,
+  assaultTime: WAVE_ASSAULT_TIME,
+  prepTime: WAVE_PREP_TIME
+}), null);
+assert.deepEqual(resolveExpiredPhase({
+  phase: WAVE_PHASES.ASSAULT,
+  prepTime: WAVE_PREP_TIME
+}), {
+  phase: WAVE_PHASES.PREPARE,
+  timeRemaining: WAVE_PREP_TIME,
+  shouldWithdraw: true,
+  shouldSpawnWave: false
+});
+assert.deepEqual(resolveExpiredPhase({
+  phase: WAVE_PHASES.PREPARE,
+  prepTime: WAVE_PREP_TIME
+}), {
+  phase: WAVE_PHASES.PREPARE,
+  timeRemaining: 0,
+  shouldWithdraw: false,
+  shouldSpawnWave: true
+});
 assert.equal(canLaunchNextWaveEarly({
   isActive: true,
+  phase: WAVE_PHASES.PREPARE,
   bossGateLocked: false,
   hasActiveEnemyWave: false,
-  timeUntilWave: 12
+  timeUntilWave: WAVE_PREP_TIME
 }), true);
 assert.equal(canLaunchNextWaveEarly({
   isActive: true,
+  phase: WAVE_PHASES.PREPARE,
   bossGateLocked: false,
   hasActiveEnemyWave: true,
-  timeUntilWave: 12
-}), false);
-assert.equal(shouldTickWaveCountdown({
-  bossGateLocked: false,
-  hasActiveEnemyWave: false
-}), true);
-assert.equal(shouldTickWaveCountdown({
-  bossGateLocked: false,
-  hasActiveEnemyWave: true
-}), false);
-assert.equal(shouldTickWaveCountdown({
-  bossGateLocked: true,
-  hasActiveEnemyWave: false
+  timeUntilWave: WAVE_PREP_TIME
 }), false);
 assert.equal(canLaunchNextWaveEarly({
   isActive: true,
+  phase: WAVE_PHASES.COMBAT,
+  bossGateLocked: false,
+  hasActiveEnemyWave: false,
+  timeUntilWave: WAVE_PREP_TIME
+}), false);
+assert.equal(canLaunchNextWaveEarly({
+  isActive: true,
+  phase: WAVE_PHASES.PREPARE,
   bossGateLocked: true,
   hasActiveEnemyWave: false,
-  timeUntilWave: 12
+  timeUntilWave: WAVE_PREP_TIME
 }), false);
-assert.equal(resolveClearedWavePrep({
-  aiWaveCount: 1,
-  maxWaves: MAX_WAVES,
-  bossGateLocked: false,
-  hasActiveEnemyWave: true,
-  timeUntilWave: 35,
-  clearPrepTime: WAVE_CLEAR_PREP_TIME
-}).timeUntilWave, 35);
-assert.equal(resolveClearedWavePrep({
-  aiWaveCount: 0,
-  maxWaves: MAX_WAVES,
-  bossGateLocked: false,
-  hasActiveEnemyWave: false,
-  timeUntilWave: 15,
-  clearPrepTime: WAVE_CLEAR_PREP_TIME
-}).clearPrepActive, false);
-assert.equal(resolveClearedWavePrep({
-  aiWaveCount: MAX_WAVES,
-  maxWaves: MAX_WAVES,
-  bossGateLocked: false,
-  hasActiveEnemyWave: false,
-  timeUntilWave: 35,
-  clearPrepTime: WAVE_CLEAR_PREP_TIME
-}).timeUntilWave, 35);
 
 const levelTwoTurret = getBaseTurretStats(2);
 const levelThreeTurret = getBaseTurretStats(3);

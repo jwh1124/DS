@@ -38,8 +38,10 @@ export const UNIT_MOVEMENT_SPEED_MULTIPLIER = 2;
 // break. Once every enemy wave fighter is defeated, the remaining countdown
 // contracts to a short, readable preparation window.
 export const FIRST_WAVE_DELAY = 15;
-export const WAVE_INTERVAL = 40;
-export const WAVE_CLEAR_PREP_TIME = 12;
+// A victorious squad gets a short, explicit chance to damage the opposing
+// fortress before withdrawing. Preparation starts only after that assault.
+export const WAVE_ASSAULT_TIME = 8;
+export const WAVE_PREP_TIME = 10;
 export const BASE_TECH_HP_GAIN = 2000;
 
 // The enemy gate is sealed until wave 12, while the cathedral has no matching

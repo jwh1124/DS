@@ -4,7 +4,6 @@ import { FloatingText } from '../entities/FloatingText.js';
 import { WORLD_WIDTH } from '../../main.js';
 import { getWaveFormationSlot } from '../combatMath.js';
 import {
-  BOSS_RECOVERY_DELAY,
   getBossProfileForWave,
   resolveBossGate,
   selectBossEscortContracts
@@ -24,13 +23,14 @@ import {
   MAX_SPAWNERS,
   MAX_WAVES,
   UNIT_COSTS,
-  WAVE_CLEAR_PREP_TIME,
-  WAVE_INTERVAL
+  WAVE_ASSAULT_TIME,
+  WAVE_PREP_TIME
 } from '../gameConfig.js';
 import {
   canLaunchNextWaveEarly,
-  resolveClearedWavePrep,
-  shouldTickWaveCountdown
+  resolveExpiredPhase,
+  resolvePostCombatPhase,
+  WAVE_PHASES
 } from '../wavePacing.js';
 
 export class WaveSystem {
@@ -40,7 +40,6 @@ export class WaveSystem {
   }
 
   reset() {
-    this.waveInterval = WAVE_INTERVAL;
     this.timeUntilWave = FIRST_WAVE_DELAY;
     this.isActive = false;
     this.spawners = { player: [], enemy: [] };
@@ -52,8 +51,9 @@ export class WaveSystem {
     this.aiUltimateCooldown = 0;
     this.finalWaveStarted = false;
     this.finalBattleTime = 0;
+    this.finalReinforcementTimer = 5;
     this.bossGateActive = false;
-    this.clearPrepActive = false;
+    this.phase = WAVE_PHASES.SCOUT;
     this.lastActionLog = '[교단]: 첫 악마 웨이브에 대비하십시오.';
   }
 
@@ -68,6 +68,8 @@ export class WaveSystem {
     this.aiTechReserve = Math.floor(AI_STARTING_MINERALS * diff * 0.6);
     this.aiIncome = Math.floor(AI_STARTING_INCOME * diff);
     this.aiUltimateCooldown = 20;
+    this.phase = WAVE_PHASES.SCOUT;
+    this.timeUntilWave = FIRST_WAVE_DELAY;
     this.lastActionLog = `[지옥문]: 악마 군단 소환력 ${this.aiMinerals} / 증원 +${this.aiIncome}`;
   }
 
@@ -151,6 +153,7 @@ export class WaveSystem {
   canLaunchNextWaveEarly() {
     return canLaunchNextWaveEarly({
       isActive: this.isActive,
+      phase: this.phase,
       bossGateLocked: this.isBossGateLocked(),
       hasActiveEnemyWave: this.hasActiveEnemyWave(),
       timeUntilWave: this.timeUntilWave
@@ -172,8 +175,18 @@ export class WaveSystem {
     );
   }
 
+  hasActivePlayerWave() {
+    return this.game.entityManager.entities.some(entity =>
+      entity.isWaveFighter && entity.team === 'player' && entity.isAlive
+    );
+  }
+
   isClearPrepWindow() {
-    return this.clearPrepActive;
+    return this.phase === WAVE_PHASES.PREPARE;
+  }
+
+  isAssaultWindow() {
+    return this.phase === WAVE_PHASES.ASSAULT;
   }
 
   update(dt) {
@@ -183,58 +196,76 @@ export class WaveSystem {
       this.aiUltimateCooldown -= dt;
     }
 
-    if (this.aiWaveCount >= MAX_WAVES) {
+    if (this.phase === WAVE_PHASES.FINAL || this.aiWaveCount >= MAX_WAVES) {
       this.updateFinalBattle(dt);
       return;
     }
 
     const bossGate = resolveBossGate(this.bossGateActive, Boolean(this.getActiveBoss()));
     if (bossGate.locked) {
+      this.phase = WAVE_PHASES.COMBAT;
       return;
     }
     if (bossGate.completed) {
       this.bossGateActive = false;
-      this.timeUntilWave = BOSS_RECOVERY_DELAY;
-      this.clearPrepActive = true;
-      this.lastActionLog = `[정비]: 대악마 격퇴 · ${BOSS_RECOVERY_DELAY}초 후 진군`;
     }
 
     const activeEnemyWave = this.hasActiveEnemyWave();
-    const pacing = resolveClearedWavePrep({
-      aiWaveCount: this.aiWaveCount,
-      maxWaves: MAX_WAVES,
-      bossGateLocked: false,
-      hasActiveEnemyWave: activeEnemyWave,
-      timeUntilWave: this.timeUntilWave,
-      clearPrepTime: WAVE_CLEAR_PREP_TIME
-    });
-    this.timeUntilWave = pacing.timeUntilWave;
-    this.clearPrepActive = pacing.clearPrepActive;
-    if (pacing.accelerated) {
-      this.lastActionLog = `[전장 정리]: 악마 전멸 · ${WAVE_CLEAR_PREP_TIME}초 정비 후 진군`;
+    if (activeEnemyWave) {
+      this.phase = WAVE_PHASES.COMBAT;
+      return;
     }
 
-    if (!shouldTickWaveCountdown({
-      bossGateLocked: false,
-      hasActiveEnemyWave: activeEnemyWave
-    })) {
+    const postCombat = resolvePostCombatPhase({
+      currentPhase: this.phase,
+      wave: this.aiWaveCount,
+      maxWaves: MAX_WAVES,
+      hasActiveEnemyWave: activeEnemyWave,
+      hasActivePlayerWave: this.hasActivePlayerWave(),
+      assaultTime: WAVE_ASSAULT_TIME,
+      prepTime: WAVE_PREP_TIME
+    });
+    if (postCombat) {
+      this.phase = postCombat.phase;
+      this.timeUntilWave = postCombat.timeRemaining;
+      this.lastActionLog = this.phase === WAVE_PHASES.ASSAULT
+        ? `[공성]: 생존 성직자 진군 · ${WAVE_ASSAULT_TIME}초간 지옥문 공격`
+        : `[정비]: 생존 분대 없음 · ${WAVE_PREP_TIME}초 후 다음 웨이브`;
       return;
     }
 
     this.timeUntilWave -= dt;
+    if (this.timeUntilWave > 0) return;
 
-    if (this.timeUntilWave <= 0) {
+    const expired = resolveExpiredPhase({
+      phase: this.phase,
+      prepTime: WAVE_PREP_TIME
+    });
+    if (!expired) return;
+
+    if (expired.shouldWithdraw) {
+      const withdrawing = this.beginPlayerWithdrawal();
+      this.phase = expired.phase;
+      this.timeUntilWave = expired.timeRemaining;
+      this.lastActionLog = `[귀환]: 생존 성직자 ${withdrawing}명 철수 · ${WAVE_PREP_TIME}초 재편성`;
+      return;
+    }
+
+    if (expired.shouldSpawnWave) {
       this.spawnWave();
-      this.timeUntilWave = this.waveInterval;
     }
   }
 
   spawnWave() {
     const recalledCount = this.retirePreviousWave();
     this.aiWaveCount++;
-    this.clearPrepActive = false;
     this.finalWaveStarted = this.aiWaveCount === MAX_WAVES;
-    if (this.finalWaveStarted) this.finalBattleTime = 60;
+    this.phase = this.finalWaveStarted ? WAVE_PHASES.FINAL : WAVE_PHASES.COMBAT;
+    this.timeUntilWave = 0;
+    if (this.finalWaveStarted) {
+      this.finalBattleTime = 0;
+      this.finalReinforcementTimer = 5;
+    }
     
     // AI Income addition
     this.aiMinerals += this.aiIncome;
@@ -343,7 +374,7 @@ export class WaveSystem {
       boss.makeBoss(bossProfile.id);
       boss.isWaveFighter = true;
       this.game.entityManager.addEntity(boss);
-      this.bossGateActive = bossProfile.wave < MAX_WAVES;
+      this.bossGateActive = true;
       this.game.focusCameraOn?.(boss.x);
       this.lastActionLog = `[대악마]: ${bossProfile.name} 강림 · ${bossProfile.counterHint}`;
       
@@ -430,23 +461,80 @@ export class WaveSystem {
     return recalledCount;
   }
 
-  updateFinalBattle(dt) {
-    if (this.finalBattleTime <= 0) return;
-    this.finalBattleTime = Math.max(0, this.finalBattleTime - dt);
-    if (this.finalBattleTime > 0) return;
+  beginPlayerWithdrawal() {
+    let withdrawing = 0;
+    for (const entity of this.game.entityManager.entities) {
+      if (
+        entity.isWaveFighter
+        && entity.team === 'player'
+        && entity.isAlive
+        && !entity.isBoss
+      ) {
+        entity.beginWithdrawal?.();
+        withdrawing++;
+      }
+    }
+    return withdrawing;
+  }
 
+  deployFinalReinforcements() {
+    const baseY = this.game.canvas.height / 2;
+    this.spawners.player.forEach((contract, index) => {
+      const slot = getWaveFormationSlot(150, baseY, index, 'player');
+      const unit = new Unit(this.game, slot.x, slot.y, 'player', contract.type);
+      unit.formationRow = slot.row;
+      unit.spawnerId = contract.id;
+      unit.isWaveFighter = true;
+      this.game.entityManager.addEntity(unit);
+    });
+
+    const finalProfile = getBossProfileForWave(MAX_WAVES);
+    const enemyContracts = selectBossEscortContracts(
+      this.spawners.enemy,
+      finalProfile?.escortCap ?? this.spawners.enemy.length
+    );
+    enemyContracts.forEach((contract, index) => {
+      const slot = getWaveFormationSlot(WORLD_WIDTH - 200, baseY, index, 'enemy');
+      const unit = new Unit(this.game, slot.x, slot.y, 'enemy', contract.type);
+      unit.formationRow = slot.row;
+      unit.spawnerId = contract.id;
+      unit.isWaveFighter = true;
+      this.game.entityManager.addEntity(unit);
+    });
+
+    this.lastActionLog = '[최종 증원]: 양 진영 잔존 계약 부대 재투입';
+    this.game.entityManager.addEntity(new FloatingText(
+      this.game,
+      '최종 증원 도착',
+      WORLD_WIDTH / 2,
+      230,
+      '#d8bf8a',
+      'emphasis'
+    ));
+  }
+
+  updateFinalBattle(dt) {
     const playerBase = this.game.playerBase;
     const enemyBase = this.game.enemyBase;
     if (!playerBase?.isAlive || !enemyBase?.isAlive) return;
 
-    const playerIntegrity = playerBase.hp / playerBase.maxHp;
-    const enemyIntegrity = enemyBase.hp / enemyBase.maxHp;
-    const winner = playerIntegrity >= enemyIntegrity ? 'player' : 'enemy';
-    this.lastActionLog = winner === 'player'
-      ? '[최후 심판]: 성당의 신성이 지옥문을 압도했습니다.'
-      : '[최후 심판]: 지옥문의 잔존 마력이 성당을 삼켰습니다.';
-    this.isActive = false;
-    this.game.stop(winner, 'finalJudgement');
+    this.finalBattleTime += dt;
+    if (!this.getActiveBoss()) this.bossGateActive = false;
+
+    const hasHolyFighters = this.hasActivePlayerWave();
+    const hasDemonFighters = this.hasActiveEnemyWave();
+    if (hasHolyFighters || hasDemonFighters) {
+      this.finalReinforcementTimer = 5;
+      return;
+    }
+
+    // A simultaneous wipe should not produce a silent soft-lock. The final
+    // objective remains fortress destruction, so both contract rosters return.
+    this.finalReinforcementTimer -= dt;
+    if (this.finalReinforcementTimer <= 0) {
+      this.deployFinalReinforcements();
+      this.finalReinforcementTimer = 5;
+    }
   }
 
   triggerAiOrbitalStrike() {
