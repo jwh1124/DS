@@ -9,7 +9,10 @@ import { getAttackRangeAgainst, getCombatDistance, isBaseTarget } from '../comba
 import { getCounterProfile, getTargetPriorityBonus } from '../unitRoles.js';
 import { getDoctrineUnitMultipliers } from '../doctrines.js';
 import { getBossProfile } from '../bosses.js';
-import { getTacticalOrderTargetBonus } from '../tacticalOrders.js';
+import {
+  getTacticalOrderHitLabel,
+  getTacticalOrderTargetBonus
+} from '../tacticalOrders.js';
 import {
   isValidMedicTarget,
   MEDIC_HEAL_RANGE,
@@ -529,7 +532,14 @@ export class Unit {
 
     const counterProfile = getCounterProfile(this, target);
     let currentDamage = (this.hasAura ? this.damage * 1.4 : this.damage) * counterProfile.multiplier;
-    const projectileProfile = counterProfile.label ? { hitTag: counterProfile.label } : {};
+    const tacticalHitLabel = getTacticalOrderHitLabel(this.game.tacticalOrder, this, target);
+    const isTacticalFocus = Boolean(tacticalHitLabel);
+    const hitTag = tacticalHitLabel || counterProfile.label;
+    const projectileProfile = {
+      hitTag,
+      orderId: this.team === 'player' ? this.game.tacticalOrder : '',
+      focused: isTacticalFocus
+    };
     
     if (target.maxHp && target.techLevel !== undefined) {
       currentDamage *= getUnitVsBaseDamageMultiplier(this.team);
@@ -600,7 +610,15 @@ export class Unit {
     } else if (this.type === 'crusader') {
       const isCrit = Math.random() < 0.25;
       const finalDmg = isCrit ? currentDamage * 1.6 : currentDamage;
-      target.takeDamage(finalDmg, isCrit, counterProfile.label);
+      const hpBefore = target.hp;
+      target.takeDamage(finalDmg, isCrit, hitTag);
+      if (this.team === 'player') {
+        this.game.recordTacticalDamage?.(
+          this.game.tacticalOrder,
+          Math.max(0, hpBefore - target.hp),
+          isTacticalFocus
+        );
+      }
       
       const shockColor = this.team === 'player' ? '#f1c40f' : '#ff0055';
       this.game.entityManager.addEntity(new Particle(
@@ -612,7 +630,15 @@ export class Unit {
     } else {
       const isCrit = Math.random() < 0.18;
       const finalDmg = isCrit ? currentDamage * 1.5 : currentDamage;
-      target.takeDamage(finalDmg, isCrit, counterProfile.label);
+      const hpBefore = target.hp;
+      target.takeDamage(finalDmg, isCrit, hitTag);
+      if (this.team === 'player') {
+        this.game.recordTacticalDamage?.(
+          this.game.tacticalOrder,
+          Math.max(0, hpBefore - target.hp),
+          isTacticalFocus
+        );
+      }
       
       const hitColor = this.team === 'player' ? '#f1c40f' : '#c0392b';
       for (let i = 0; i < 5; i++) {

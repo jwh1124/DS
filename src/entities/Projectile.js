@@ -14,6 +14,8 @@ export class Projectile {
     this.splashRadius = combatProfile.splashRadius ?? 90;
     this.splashRatio = combatProfile.splashRatio ?? 0.5;
     this.hitTag = combatProfile.hitTag ?? '';
+    this.orderId = combatProfile.orderId ?? '';
+    this.focused = combatProfile.focused ?? false;
     
     this.targetLastX = target ? target.x : x;
     this.targetLastY = target ? target.y : y;
@@ -79,7 +81,15 @@ export class Projectile {
     if (this.target && this.target.isAlive) {
       const isCrit = this.canCrit && Math.random() < 0.15;
       const finalDmg = isCrit ? this.damage * 1.5 : this.damage;
+      const hpBefore = this.target.hp;
       this.target.takeDamage(finalDmg, isCrit, this.hitTag);
+      if (this.team === 'player') {
+        this.game.recordTacticalDamage?.(
+          this.orderId,
+          Math.max(0, hpBefore - this.target.hp),
+          this.focused
+        );
+      }
     }
     
     const shockColor = this.team === 'player' ? '#f1c40f' : '#ff2d55';
@@ -101,7 +111,15 @@ export class Projectile {
             const edy = enemy.y - this.y;
             const edist = Math.sqrt(edx*edx + edy*edy);
             if (edist <= this.splashRadius) {
+              const hpBefore = enemy.hp;
               enemy.takeDamage(splashDmg, false);
+              if (this.team === 'player') {
+                this.game.recordTacticalDamage?.(
+                  this.orderId,
+                  Math.max(0, hpBefore - enemy.hp),
+                  false
+                );
+              }
             }
           }
         });

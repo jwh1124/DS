@@ -32,6 +32,13 @@ import {
 } from './src/cameraDirector.js';
 import { buildAfterActionReport } from './src/afterAction.js';
 import { getTacticalOrderDefinition } from './src/tacticalOrders.js';
+import {
+  createTacticalPerformance,
+  getTacticalPerformanceSummary,
+  recordTacticalDamage as recordTacticalDamageStat,
+  recordTacticalOrderChange,
+  recordTacticalOrderTime
+} from './src/tacticalPerformance.js';
 import { getCombatDistance } from './src/combatMath.js';
 import { cancelContractForNextWave } from './src/contractLifecycle.js';
 
@@ -151,6 +158,7 @@ class Game {
     if (hint) hint.textContent = order.hint;
 
     if (changed && announce && this.isRunning) {
+      recordTacticalOrderChange(this.runStats.tacticalPerformance);
       this.audio.playClick();
       this.waveSystem.lastActionLog = `[전술 명령]: ${order.label} · ${order.hint}`;
       this.entityManager.addEntity(new FloatingText(
@@ -185,8 +193,17 @@ class Game {
       earlyFaith: 0,
       incomeRites: 0,
       techUpgrades: 0,
-      ultimates: 0
+      ultimates: 0,
+      tacticalPerformance: createTacticalPerformance()
     };
+  }
+
+  recordTacticalDamage(orderId, damage, focused = false) {
+    recordTacticalDamageStat(this.runStats.tacticalPerformance, {
+      orderId,
+      damage,
+      focused
+    });
   }
   
   start() {
@@ -313,6 +330,7 @@ class Game {
       incomeRites: this.runStats.incomeRites,
       ultimates: this.runStats.ultimates,
       tacticalOrderLabel: getTacticalOrderDefinition(this.tacticalOrder).label,
+      tacticalPerformanceSummary: getTacticalPerformanceSummary(this.runStats.tacticalPerformance),
       doctrineNames: this.doctrineBonuses.selected
         .map(id => getDoctrineById(id)?.title)
         .filter(Boolean)
@@ -470,6 +488,7 @@ class Game {
     if (!this.isRunning || this.isPaused) return;
     
     const scaledDt = dt * this.gameSpeed;
+    recordTacticalOrderTime(this.runStats.tacticalPerformance, this.tacticalOrder, scaledDt);
     
     if (this.screenShake > 0) {
       this.screenShake = Math.max(0, this.screenShake - dt * 1.8);

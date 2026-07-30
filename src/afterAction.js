@@ -89,7 +89,8 @@ export function buildAfterActionReport({
   incomeRites = 0,
   ultimates = 0,
   doctrineNames = [],
-  tacticalOrderLabel = '균형 전투'
+  tacticalOrderLabel = '균형 전투',
+  tacticalPerformanceSummary = '명령 성과 없음'
 }) {
   const safeWave = Math.max(1, Math.min(maxWaves, Math.round(wave)));
   const safePlayerIntegrity = clampPercent(playerIntegrity);
@@ -125,6 +126,7 @@ export function buildAfterActionReport({
     summary: [
       outcome,
       `전술 ${tacticalOrderLabel} · 계시 Lv.${techLevel} · 천벌 ${ultimates}회 · 조기 진군 ${earlyStarts}회 · 계약 ${contractsSigned}회`,
+      `명령 성과: ${tacticalPerformanceSummary}`,
       `최종 편성: ${getRosterSummary(roster)}`,
       `선택 교리: ${doctrineRecord}`
     ].join('\n'),

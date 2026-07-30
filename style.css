@@ -689,6 +689,15 @@ body.developer-mode .boss-hud {
   line-height: 1.35;
 }
 
+#tactical-order-stats {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(183, 154, 103, 0.18);
+  color: #b7a989;
+  font-size: 8px;
+  line-height: 1.3;
+}
+
 /* Bottom Controls Layout */
 .bottom-controls {
   position: absolute;

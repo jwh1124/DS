@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   getTacticalOrderDefinition,
+  getTacticalOrderHitLabel,
   getTacticalOrderTargetBonus,
   TACTICAL_ORDERS
 } from '../src/tacticalOrders.js';
@@ -26,6 +27,8 @@ test('rear order redirects holy ranged attackers without overriding medic protec
   assert.equal(getTacticalOrderTargetBonus('rear', meleeHoly, enemyRear), 0);
   assert.equal(getTacticalOrderTargetBonus('rear', rangedHoly, enemyHeavy), 0);
   assert.equal(getTacticalOrderTargetBonus('rear', rangedHoly, enemyBase), 0);
+  assert.equal(getTacticalOrderHitLabel('rear', rangedHoly, enemyRear), '후열 집중');
+  assert.equal(getTacticalOrderHitLabel('rear', rangedHoly, enemyMedic), '');
 });
 
 test('boss order prioritizes bosses over ordinary heavy units without affecting enemy AI', () => {
@@ -34,6 +37,7 @@ test('boss order prioritizes bosses over ordinary heavy units without affecting 
   assert.equal(getTacticalOrderTargetBonus('boss', meleeHoly, enemyBoss), 0);
   assert.equal(getTacticalOrderTargetBonus('balanced', rangedHoly, enemyBoss), 0);
   assert.equal(getTacticalOrderTargetBonus('boss', { team: 'enemy', range: 250 }, enemyBoss), 0);
+  assert.equal(getTacticalOrderHitLabel('boss', rangedHoly, enemyBoss), '대악마 집중');
 });
 
 test('order bonuses can deliberately overturn a nearby default target', () => {

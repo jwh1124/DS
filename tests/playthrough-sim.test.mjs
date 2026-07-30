@@ -3,6 +3,10 @@ import test from 'node:test';
 
 import { getWaveFormationSlot } from '../src/combatMath.js';
 import { applyDoctrineToBonuses, createDoctrineBonuses } from '../src/doctrines.js';
+import {
+  createTacticalPerformance,
+  recordTacticalDamage
+} from '../src/tacticalPerformance.js';
 
 globalThis.Image = class {
   constructor() {
@@ -197,4 +201,41 @@ test('surviving wave fighters retreat safely instead of vanishing at combat clea
 
   survivor.update(1.6);
   assert.equal(survivor.isAlive, false);
+});
+
+test('rear order records focused damage when a real projectile hits a rear target', () => {
+  const entityManager = new TestEntityManager();
+  const playerBase = createTestBase('player', 100);
+  const enemyBase = createTestBase('enemy', 1900);
+  const tacticalPerformance = createTacticalPerformance();
+  const game = {
+    canvas: { height: 720 },
+    difficulty: 1,
+    entityManager,
+    playerBase,
+    enemyBase,
+    doctrineBonuses: createDoctrineBonuses(),
+    tacticalOrder: 'rear',
+    economy: { minerals: 0 },
+    waveSystem: { aiMinerals: 0, aiWaveCount: 4 },
+    recordTacticalDamage(orderId, damage, focused) {
+      recordTacticalDamage(tacticalPerformance, { orderId, damage, focused });
+    },
+    addScreenShake() {},
+    stop() {}
+  };
+  const attacker = new Unit(game, 700, 360, 'player', 'ranged');
+  const target = new Unit(game, 920, 360, 'enemy', 'sniper');
+  entityManager.addEntity(attacker);
+  entityManager.addEntity(target);
+
+  attacker.performAttack(target);
+  for (let elapsed = 0; elapsed < 1 && target.hp === target.maxHp; elapsed += 1 / 60) {
+    entityManager.update(1 / 60);
+  }
+
+  assert.ok(target.hp < target.maxHp);
+  assert.equal(tacticalPerformance.focusedHits.rear, 1);
+  assert.ok(tacticalPerformance.damage.rear > 0);
+  assert.equal(tacticalPerformance.focusedDamage.rear, tacticalPerformance.damage.rear);
 });

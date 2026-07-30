@@ -1,3 +1,8 @@
+import { MAX_SPAWNERS, MAX_TECH_LEVEL, MAX_WAVES, UNIT_TECH_REQUIREMENTS } from '../gameConfig.js';
+import { WAVE_PHASES } from '../wavePacing.js';
+import { getWaveReadiness } from '../waveReadiness.js';
+import { getTacticalPerformanceLiveText } from '../tacticalPerformance.js';
+
 export class HUD {
   constructor(game) {
     this.game = game;
@@ -12,6 +17,7 @@ export class HUD {
     this.waveReadinessLabel = document.getElementById('wave-readiness-label');
     this.waveReadinessAction = document.getElementById('wave-readiness-action');
     this.launchWaveButton = document.getElementById('launch-wave-btn');
+    this.tacticalOrderStats = document.getElementById('tactical-order-stats');
     
     this.pHealthText = document.getElementById('player-health-text');
     this.pHealthBar = document.getElementById('player-health-bar');
@@ -120,6 +126,12 @@ export class HUD {
     }
 
     this.updateBossHud();
+    if (this.tacticalOrderStats) {
+      this.tacticalOrderStats.textContent = getTacticalPerformanceLiveText(
+        this.game.runStats?.tacticalPerformance,
+        this.game.tacticalOrder
+      );
+    }
     
     // Keep affordability and rule locks in one place so a locked card can never look purchasable.
     const currentMinerals = this.game.economy.minerals;
@@ -185,6 +197,3 @@ export class HUD {
     this.bossHud.setAttribute('aria-hidden', 'false');
   }
 }
-import { MAX_SPAWNERS, MAX_TECH_LEVEL, MAX_WAVES, UNIT_TECH_REQUIREMENTS } from '../gameConfig.js';
-import { WAVE_PHASES } from '../wavePacing.js';
-import { getWaveReadiness } from '../waveReadiness.js';

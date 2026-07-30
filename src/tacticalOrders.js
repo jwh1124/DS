@@ -48,3 +48,8 @@ export function getTacticalOrderTargetBonus(orderId, attacker, target) {
 
   return 0;
 }
+
+export function getTacticalOrderHitLabel(orderId, attacker, target) {
+  if (getTacticalOrderTargetBonus(orderId, attacker, target) <= 0) return '';
+  return orderId === 'rear' ? '후열 집중' : orderId === 'boss' ? '대악마 집중' : '';
+}
