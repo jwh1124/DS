@@ -587,6 +587,29 @@ body.developer-mode .boss-hud {
   background: #a78a56;
 }
 
+.boss-response-btn {
+  width: 100%;
+  margin-top: 7px;
+  padding: 5px 9px;
+  border: 1px solid rgba(167, 138, 86, 0.55);
+  border-radius: 4px;
+  background: rgba(65, 52, 36, 0.72);
+  color: #d8c59e;
+  font: 800 10px 'Noto Sans KR', sans-serif;
+  pointer-events: auto;
+}
+
+.boss-response-btn.needs-response {
+  border-color: rgba(182, 108, 104, 0.86);
+  background: rgba(94, 47, 44, 0.82);
+  color: #f0d4ca;
+  cursor: pointer;
+}
+
+.boss-response-btn:disabled {
+  opacity: 0.78;
+}
+
 @keyframes boss-hud-enter {
   from { opacity: 0; transform: translate(-50%, -8px); }
   to { opacity: 1; transform: translate(-50%, 0); }

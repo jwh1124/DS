@@ -2,6 +2,7 @@ import { MAX_SPAWNERS, MAX_TECH_LEVEL, MAX_WAVES, UNIT_TECH_REQUIREMENTS } from 
 import { WAVE_PHASES } from '../wavePacing.js';
 import { getWaveReadiness } from '../waveReadiness.js';
 import { getTacticalPerformanceLiveText } from '../tacticalPerformance.js';
+import { getTacticalOrderDefinition } from '../tacticalOrders.js';
 
 export class HUD {
   constructor(game) {
@@ -36,6 +37,11 @@ export class HUD {
     this.bossAbilityName = document.getElementById('boss-ability-name');
     this.bossAbilityDetail = document.getElementById('boss-ability-detail');
     this.bossAbilityFill = document.getElementById('boss-ability-fill');
+    this.bossResponseButton = document.getElementById('boss-response-btn');
+    this.bossResponseButton?.addEventListener('click', () => {
+      const orderId = this.bossResponseButton.dataset.order;
+      if (orderId) this.game.setTacticalOrder(orderId);
+    });
     
     this.buildButtons = document.querySelectorAll('.build-btn');
   }
@@ -206,6 +212,16 @@ export class HUD {
       this.bossAbilityName.textContent = ability.name;
       this.bossAbilityDetail.textContent = ability.detail;
       this.bossAbilityFill.style.transform = `scaleX(${ability.progress})`;
+      const recommendedOrder = getTacticalOrderDefinition(ability.recommendedOrder);
+      const orderApplied = this.game.tacticalOrder === recommendedOrder.id;
+      if (this.bossResponseButton) {
+        this.bossResponseButton.dataset.order = recommendedOrder.id;
+        this.bossResponseButton.disabled = orderApplied;
+        this.bossResponseButton.classList.toggle('needs-response', !orderApplied);
+        this.bossResponseButton.textContent = orderApplied
+          ? `✓ [${ability.shortcut}] ${recommendedOrder.label} 적용 중`
+          : `지금 [${ability.shortcut}] ${recommendedOrder.label}으로 전환`;
+      }
     }
     this.bossHud.classList.remove('hidden');
     this.bossHud.setAttribute('aria-hidden', 'false');

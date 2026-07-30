@@ -170,11 +170,13 @@ test('recommended normal roster defeats the wave-six mini-boss without base arti
 
 test('final boss rite creates targetable rear anchors and breaks when they fall', () => {
   const entityManager = new TestEntityManager();
+  const patternEvents = [];
   const playerBase = createTestBase('player', 100);
   const enemyBase = createTestBase('enemy', 1900);
   const game = {
     canvas: { height: 720 },
     difficulty: 1,
+    gameSpeed: 3,
     entityManager,
     playerBase,
     enemyBase,
@@ -182,6 +184,9 @@ test('final boss rite creates targetable rear anchors and breaks when they fall'
     tacticalOrder: 'rear',
     economy: { minerals: 0 },
     waveSystem: { aiMinerals: 0, aiWaveCount: 12, lastActionLog: '' },
+    recordBossPatternEvent(eventType) {
+      patternEvents.push(eventType);
+    },
     audio: {
       playBossAlarm() {},
       playExplosion() {},
@@ -206,6 +211,13 @@ test('final boss rite creates targetable rear anchors and breaks when they fall'
     && anchor.speed === 0
   ));
 
+  const remainingBefore = boss.bossAbilityState.remaining;
+  boss.update(3);
+  assert.equal(
+    Number((remainingBefore - boss.bossAbilityState.remaining).toFixed(2)),
+    1
+  );
+
   const hpBeforeShieldedHit = boss.hp;
   boss.takeDamage(100, false, '대악마 집중');
   assert.equal(Math.round(hpBeforeShieldedHit - boss.hp), 35);
@@ -214,6 +226,24 @@ test('final boss rite creates targetable rear anchors and breaks when they fall'
   boss.update(1 / 60);
   assert.equal(boss.bossAbilityState.status, 'staggered');
   assert.match(game.waveSystem.lastActionLog, /패턴 저지/);
+  assert.deepEqual(patternEvents, ['started', 'interrupted']);
+
+  const doomedBoss = new Unit(game, 1600, 430, 'enemy', 'tank');
+  doomedBoss.makeBoss('sovereign');
+  doomedBoss.hp = doomedBoss.maxHp * 0.7;
+  entityManager.addEntity(doomedBoss);
+  doomedBoss.update(1 / 60);
+  doomedBoss.hp = 1;
+  doomedBoss.takeDamage(100, false, '대악마 집중');
+
+  assert.equal(doomedBoss.isAlive, false);
+  assert.equal(doomedBoss.getRitualAnchors().length, 0);
+  assert.deepEqual(patternEvents, [
+    'started',
+    'interrupted',
+    'started',
+    'interrupted'
+  ]);
 });
 
 test('surviving wave fighters retreat safely instead of vanishing at combat clear', () => {

@@ -42,8 +42,11 @@ test('sovereign rite shields the boss until rear ritual anchors are destroyed', 
 
   const hud = getBossAbilityHudState(state, { anchorsAlive: 2 });
   assert.match(hud.detail, /\[8\] 후열/);
+  assert.equal(hud.recommendedOrder, 'rear');
+  assert.equal(hud.shortcut, '8');
   assert.equal(updateBossAbilityState(state, 0.01, { anchorsAlive: 0 }).type, 'interrupted');
   assert.equal(getBossDamageTakenMultiplier(state), 1);
+  assert.equal(getBossAbilityHudState(state).recommendedOrder, 'boss');
 });
 
 test('infernal gate rejects stale damage while a living boss locks the objective', () => {

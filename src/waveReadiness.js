@@ -28,11 +28,12 @@ export const WAVE_READINESS_REQUIREMENTS = Object.freeze({
     techLevel: 2
   }),
   finale: Object.freeze({
-    minRoster: 13,
+    minRoster: 14,
     minFrontline: 4,
     minRanged: 2,
     minMedic: 2,
     minSniper: 2,
+    minDurable: 1,
     techLevel: 3
   })
 });
@@ -91,6 +92,14 @@ export function getWaveReadiness({ wave, techLevel, minerals, counts }) {
       action: `심판관 ${requirement.minSniper - roster.sniper}명 보강`
     });
   }
+  if (requirement.minDurable) {
+    const durable = roster.tank + roster.crusader;
+    checks.push({
+      id: 'durable',
+      met: durable >= requirement.minDurable,
+      action: '대천사 또는 십자군 1명 보강'
+    });
+  }
   checks.push({
     id: 'tech',
     met: currentTech >= requirement.techLevel,
@@ -100,6 +109,7 @@ export function getWaveReadiness({ wave, techLevel, minerals, counts }) {
   const missing = checks.filter(check => !check.met);
   const techGap = missing.find(check => check.id === 'tech');
   const supportGap = missing.find(check => check.id === 'medic' || check.id === 'sniper');
+  const durableGap = missing.find(check => check.id === 'durable');
   const nextTechCost = getTechUpgradeCost(currentTech);
   if (techGap) {
     techGap.action = currentMinerals >= nextTechCost
@@ -107,7 +117,11 @@ export function getWaveReadiness({ wave, techLevel, minerals, counts }) {
       : `Lv.${currentTech + 1} 계시 자금 ${nextTechCost} 비축`;
   }
 
-  const critical = Boolean(techGap || (targetWave === 6 && supportGap));
+  const critical = Boolean(
+    techGap
+    || (targetWave === 6 && supportGap)
+    || (targetWave >= 10 && durableGap)
+  );
   const level = missing.length === 0 ? 'ready' : critical ? 'critical' : 'caution';
   const label = missing.length === 0
     ? '준비 완료'
@@ -116,6 +130,7 @@ export function getWaveReadiness({ wave, techLevel, minerals, counts }) {
       : '보강 권장';
   const action = techGap?.action
     ?? supportGap?.action
+    ?? durableGap?.action
     ?? missing[0]?.action
     ?? '현재 편성 유지';
 

@@ -28,16 +28,32 @@ function getRecommendation({
   playerIntegrity,
   roster,
   techLevel,
-  ultimates
+  ultimates,
+  bossPatternPerformance
 }) {
   const frontLine = (roster.melee ?? 0) + (roster.crusader ?? 0);
   const bossSupport = (roster.medic ?? 0) + (roster.sniper ?? 0);
+  const patternStarts = Math.max(0, Number(bossPatternPerformance?.started) || 0);
+  const patternInterrupts = Math.max(0, Number(bossPatternPerformance?.interrupted) || 0);
+  const patternFailures = Math.max(0, Number(bossPatternPerformance?.failed) || 0);
 
   if (winner === 'player') {
+    if (patternFailures > 0) {
+      return {
+        title: `보스 패턴 ${patternFailures}회를 허용했습니다`,
+        text: '처형 선고는 [9] 대형, 왕좌 의식은 [8] 후열로 끊은 뒤 무력화 순간 [9] 대형으로 전환하세요.'
+      };
+    }
     if (playerIntegrity < 35) {
       return {
         title: '승리는 했지만 전열이 얇았습니다',
         text: '다음 원정에서는 수도승·십자군 또는 사제를 늘려 성당 보전율을 높여보세요.'
+      };
+    }
+    if (patternStarts > 0 && patternInterrupts === patternStarts) {
+      return {
+        title: '모든 보스 패턴을 저지했습니다',
+        text: '같은 전술 전환을 유지하면서 조기 진군과 성당 보전율을 높이면 S등급에 도전할 수 있습니다.'
       };
     }
     return {
@@ -90,14 +106,23 @@ export function buildAfterActionReport({
   ultimates = 0,
   doctrineNames = [],
   tacticalOrderLabel = '균형 전투',
-  tacticalPerformanceSummary = '명령 성과 없음'
+  tacticalPerformanceSummary = '명령 성과 없음',
+  bossPatternPerformance = {},
+  bossPatternSummary = '패턴 조우 없음'
 }) {
   const safeWave = Math.max(1, Math.min(maxWaves, Math.round(wave)));
   const safePlayerIntegrity = clampPercent(playerIntegrity);
   const safeEnemyIntegrity = clampPercent(enemyIntegrity);
   const rosterTotal = getRosterTotal(roster);
   const isVictory = winner === 'player';
-  const score = safePlayerIntegrity + earlyStarts * 2 + Math.max(0, techLevel - 1) * 4 + incomeRites * 2;
+  const patternInterrupts = Math.max(0, Number(bossPatternPerformance?.interrupted) || 0);
+  const patternFailures = Math.max(0, Number(bossPatternPerformance?.failed) || 0);
+  const score = safePlayerIntegrity
+    + earlyStarts * 2
+    + Math.max(0, techLevel - 1) * 4
+    + incomeRites * 2
+    + patternInterrupts * 3
+    - patternFailures * 3;
   const grade = score >= 112 ? 'S' : score >= 92 ? 'A' : score >= 72 ? 'B' : 'C';
 
   const outcome = isVictory
@@ -111,7 +136,8 @@ export function buildAfterActionReport({
     playerIntegrity: safePlayerIntegrity,
     roster,
     techLevel,
-    ultimates
+    ultimates,
+    bossPatternPerformance
   });
 
   return {
@@ -120,13 +146,22 @@ export function buildAfterActionReport({
     metrics: [
       { label: '도달 웨이브', value: `${safeWave} / ${maxWaves}` },
       { label: '성당 보전', value: `${safePlayerIntegrity}%` },
-      { label: '지옥문 잔존', value: `${safeEnemyIntegrity}%` },
+      isVictory
+        ? {
+            label: '패턴 저지',
+            value: `${patternInterrupts}/${Math.max(
+              patternInterrupts + patternFailures,
+              Number(bossPatternPerformance?.started) || 0
+            )}`
+          }
+        : { label: '지옥문 잔존', value: `${safeEnemyIntegrity}%` },
       { label: '최종 편성', value: `${rosterTotal}명` }
     ],
     summary: [
       outcome,
       `전술 ${tacticalOrderLabel} · 계시 Lv.${techLevel} · 천벌 ${ultimates}회 · 조기 진군 ${earlyStarts}회 · 계약 ${contractsSigned}회`,
       `명령 성과: ${tacticalPerformanceSummary}`,
+      `보스 대응: ${bossPatternSummary}`,
       `최종 편성: ${getRosterSummary(roster)}`,
       `선택 교리: ${doctrineRecord}`
     ].join('\n'),

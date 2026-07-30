@@ -59,6 +59,8 @@ test('victory report includes grade, composition, and doctrine record', () => {
     earlyStarts: 2,
     incomeRites: 4,
     ultimates: 2,
+    bossPatternPerformance: { started: 4, interrupted: 3, failed: 1 },
+    bossPatternSummary: '패턴 저지 3/4 · 실패 1회',
     tacticalPerformanceSummary: '전환 3회 · 후열 집중 8회/420 피해 · 대악마 집중 5회/610 피해',
     doctrineNames: ['은탄 의식', '순교자의 맹세']
   });
@@ -68,6 +70,26 @@ test('victory report includes grade, composition, and doctrine record', () => {
   assert.match(report.summary, /최종 편성: 수도승 4 · 엑소시스트 3/);
   assert.match(report.summary, /전술 균형 전투/);
   assert.match(report.summary, /명령 성과: 전환 3회 · 후열 집중 8회\/420 피해/);
+  assert.match(report.summary, /보스 대응: 패턴 저지 3\/4 · 실패 1회/);
   assert.match(report.summary, /선택 교리: 은탄 의식 · 순교자의 맹세/);
   assert.equal(report.metrics.find(metric => metric.label === '최종 편성').value, '16명');
+  assert.equal(report.metrics.find(metric => metric.label === '패턴 저지').value, '3/4');
+  assert.equal(report.recommendation.title, '보스 패턴 1회를 허용했습니다');
+});
+
+test('a clean boss run points toward score optimization instead of generic survival advice', () => {
+  const report = buildAfterActionReport({
+    winner: 'player',
+    wave: 12,
+    maxWaves: 12,
+    playerIntegrity: 76,
+    enemyIntegrity: 0,
+    roster: fullRoster,
+    techLevel: 3,
+    bossPatternPerformance: { started: 4, interrupted: 4, failed: 0 },
+    bossPatternSummary: '패턴 저지 4/4 · 실패 0회'
+  });
+
+  assert.equal(report.recommendation.title, '모든 보스 패턴을 저지했습니다');
+  assert.match(report.recommendation.text, /S등급/);
 });

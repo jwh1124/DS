@@ -129,7 +129,9 @@ export function getBossAbilityHudState(state, { anchorsAlive = 0 } = {}) {
       state: 'staggered',
       name: '대악마 무력화',
       detail: `${state.staggerRemaining.toFixed(1)}초 집중 공격 기회`,
-      progress: clamp01(state.staggerRemaining / profile.staggerDuration)
+      progress: clamp01(state.staggerRemaining / profile.staggerDuration),
+      recommendedOrder: 'boss',
+      shortcut: '9'
     };
   }
 
@@ -139,7 +141,9 @@ export function getBossAbilityHudState(state, { anchorsAlive = 0 } = {}) {
       state: 'casting',
       name: profile.name,
       detail: `${Math.floor(state.interruptDamage)} / ${state.interruptRequired} 집중 피해 · ${profile.instruction}`,
-      progress: clamp01(state.interruptDamage / state.interruptRequired)
+      progress: clamp01(state.interruptDamage / state.interruptRequired),
+      recommendedOrder: 'boss',
+      shortcut: '9'
     };
   }
 
@@ -148,6 +152,8 @@ export function getBossAbilityHudState(state, { anchorsAlive = 0 } = {}) {
     state: 'casting',
     name: profile.name,
     detail: `의식 시종 ${anchorsAlive}명 · ${profile.instruction}`,
-    progress: clamp01(1 - state.remaining / state.duration)
+    progress: clamp01(1 - state.remaining / state.duration),
+    recommendedOrder: 'rear',
+    shortcut: '8'
   };
 }

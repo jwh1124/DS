@@ -41,6 +41,11 @@ import {
 } from './src/tacticalPerformance.js';
 import { getCombatDistance } from './src/combatMath.js';
 import { cancelContractForNextWave } from './src/contractLifecycle.js';
+import {
+  createBossPatternPerformance,
+  getBossPatternSummary,
+  recordBossPatternEvent
+} from './src/bossPatternPerformance.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -194,7 +199,8 @@ class Game {
       incomeRites: 0,
       techUpgrades: 0,
       ultimates: 0,
-      tacticalPerformance: createTacticalPerformance()
+      tacticalPerformance: createTacticalPerformance(),
+      bossPatterns: createBossPatternPerformance()
     };
   }
 
@@ -204,6 +210,10 @@ class Game {
       damage,
       focused
     });
+  }
+
+  recordBossPatternEvent(eventType) {
+    recordBossPatternEvent(this.runStats.bossPatterns, eventType);
   }
   
   start() {
@@ -331,6 +341,8 @@ class Game {
       ultimates: this.runStats.ultimates,
       tacticalOrderLabel: getTacticalOrderDefinition(this.tacticalOrder).label,
       tacticalPerformanceSummary: getTacticalPerformanceSummary(this.runStats.tacticalPerformance),
+      bossPatternPerformance: this.runStats.bossPatterns,
+      bossPatternSummary: getBossPatternSummary(this.runStats.bossPatterns),
       doctrineNames: this.doctrineBonuses.selected
         .map(id => getDoctrineById(id)?.title)
         .filter(Boolean)

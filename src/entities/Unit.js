@@ -317,6 +317,11 @@ export class Unit {
       this.hp = 0;
       this.isAlive = false;
       if (this.isBoss) {
+        if (this.bossAbilityState?.status === 'casting') {
+          this.game.recordBossPatternEvent?.('interrupted');
+          this.bossAbilityState.status = 'idle';
+          this.bossAbilityState.lastResult = 'interrupted';
+        }
         this.getRitualAnchors().forEach(anchor => { anchor.isAlive = false; });
       }
 
@@ -412,6 +417,7 @@ export class Unit {
       this.spawnRitualAnchors();
     }
     const profile = getBossAbilityProfile(this.bossVariant);
+    this.game.recordBossPatternEvent?.('started');
     this.target = null;
     this.state = 'casting';
     this.announceBossAbility(`${profile.name} · ${profile.instruction}`);
@@ -423,6 +429,7 @@ export class Unit {
   }
 
   interruptBossAbility() {
+    this.game.recordBossPatternEvent?.('interrupted');
     this.target = null;
     this.state = 'staggered';
     this.announceBossAbility('패턴 저지 · 대악마 무력화', '#d8bf8a');
@@ -434,6 +441,7 @@ export class Unit {
   }
 
   executeBossAbility() {
+    this.game.recordBossPatternEvent?.('failed');
     if (this.bossVariant === 'executioner') {
       const targets = this.game.entityManager.getEntitiesByTeam('player')
         .filter(entity => entity.type !== undefined && !entity.isRitualAnchor)
@@ -481,7 +489,10 @@ export class Unit {
       return false;
     }
 
-    const event = updateBossAbilityState(this.bossAbilityState, dt, {
+    // Boss reaction windows use real time so 2x/3x remains a strategic speed
+    // choice instead of silently reducing a four-second prompt to one second.
+    const abilityDt = dt / Math.max(1, Number(this.game.gameSpeed) || 1);
+    const event = updateBossAbilityState(this.bossAbilityState, abilityDt, {
       anchorsAlive: this.getRitualAnchors().length
     });
     if (event?.type === 'interrupted') {

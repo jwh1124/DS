@@ -75,3 +75,24 @@ test('late waves prioritize level three before optional heavy units', () => {
   assert.equal(readiness.action, 'Lv.3 계시 자금 400 비축');
   assert.ok(readiness.missing.includes('tech'));
 });
+
+test('the finale does not call a fragile thirteen-unit roster ready', () => {
+  const fragile = getWaveReadiness({
+    wave: 12,
+    techLevel: 3,
+    minerals: 250,
+    counts: { melee: 4, ranged: 4, medic: 2, sniper: 3, tank: 0, crusader: 0 }
+  });
+  const reinforced = getWaveReadiness({
+    wave: 12,
+    techLevel: 3,
+    minerals: 0,
+    counts: { melee: 4, ranged: 4, medic: 2, sniper: 3, tank: 1, crusader: 0 }
+  });
+
+  assert.equal(fragile.level, 'critical');
+  assert.ok(fragile.missing.includes('roster'));
+  assert.ok(fragile.missing.includes('durable'));
+  assert.equal(fragile.action, '대천사 또는 십자군 1명 보강');
+  assert.equal(reinforced.level, 'ready');
+});
