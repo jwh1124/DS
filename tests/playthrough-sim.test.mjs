@@ -168,6 +168,54 @@ test('recommended normal roster defeats the wave-six mini-boss without base arti
   }
 });
 
+test('final boss rite creates targetable rear anchors and breaks when they fall', () => {
+  const entityManager = new TestEntityManager();
+  const playerBase = createTestBase('player', 100);
+  const enemyBase = createTestBase('enemy', 1900);
+  const game = {
+    canvas: { height: 720 },
+    difficulty: 1,
+    entityManager,
+    playerBase,
+    enemyBase,
+    doctrineBonuses: createDoctrineBonuses(),
+    tacticalOrder: 'rear',
+    economy: { minerals: 0 },
+    waveSystem: { aiMinerals: 0, aiWaveCount: 12, lastActionLog: '' },
+    audio: {
+      playBossAlarm() {},
+      playExplosion() {},
+      playHit() {}
+    },
+    addScreenShake() {},
+    stop() {}
+  };
+
+  const boss = new Unit(game, 1600, 430, 'enemy', 'tank');
+  boss.makeBoss('sovereign');
+  boss.hp = boss.maxHp * 0.7;
+  entityManager.addEntity(boss);
+
+  boss.update(1 / 60);
+  const anchors = boss.getRitualAnchors();
+  assert.equal(anchors.length, 2);
+  assert.ok(anchors.every(anchor =>
+    anchor.isTargetable
+    && anchor.type === 'sniper'
+    && anchor.damage === 0
+    && anchor.speed === 0
+  ));
+
+  const hpBeforeShieldedHit = boss.hp;
+  boss.takeDamage(100, false, '대악마 집중');
+  assert.equal(Math.round(hpBeforeShieldedHit - boss.hp), 35);
+
+  anchors.forEach(anchor => { anchor.isAlive = false; });
+  boss.update(1 / 60);
+  assert.equal(boss.bossAbilityState.status, 'staggered');
+  assert.match(game.waveSystem.lastActionLog, /패턴 저지/);
+});
+
 test('surviving wave fighters retreat safely instead of vanishing at combat clear', () => {
   const entityManager = new TestEntityManager();
   const playerBase = createTestBase('player', 100);

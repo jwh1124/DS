@@ -32,6 +32,10 @@ export class HUD {
     this.bossHealthText = document.getElementById('boss-health-text');
     this.bossHealthFill = document.getElementById('boss-health-fill');
     this.bossCounterHint = document.getElementById('boss-counter-hint');
+    this.bossAbility = document.getElementById('boss-ability');
+    this.bossAbilityName = document.getElementById('boss-ability-name');
+    this.bossAbilityDetail = document.getElementById('boss-ability-detail');
+    this.bossAbilityFill = document.getElementById('boss-ability-fill');
     
     this.buildButtons = document.querySelectorAll('.build-btn');
   }
@@ -193,6 +197,16 @@ export class HUD {
     this.bossHealthText.textContent = `${Math.ceil(boss.hp)} / ${Math.ceil(boss.maxHp)}`;
     this.bossHealthFill.style.transform = `scaleX(${hpRatio})`;
     this.bossCounterHint.textContent = boss.bossCounterHint;
+    const ability = boss.getBossAbilityHud?.() ?? { active: false };
+    if (this.bossAbility) {
+      this.bossAbility.hidden = !ability.active;
+      this.bossAbility.dataset.state = ability.state ?? '';
+    }
+    if (ability.active) {
+      this.bossAbilityName.textContent = ability.name;
+      this.bossAbilityDetail.textContent = ability.detail;
+      this.bossAbilityFill.style.transform = `scaleX(${ability.progress})`;
+    }
     this.bossHud.classList.remove('hidden');
     this.bossHud.setAttribute('aria-hidden', 'false');
   }

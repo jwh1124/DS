@@ -4,6 +4,7 @@ import { Projectile } from './Projectile.js';
 import { BASE_TECH_HP_GAIN, BASE_TURRET_BALANCE, getBaseTurretStats } from '../gameConfig.js';
 import { getPointToTargetDistance } from '../combatMath.js';
 import { selectCombatTarget } from '../targeting.js';
+import { resolveInfernalGateDamage } from '../baseDefense.js';
 
 const BASE_ART = {
   player: `${import.meta.env.BASE_URL}bases/holy-cathedral-v2.png`,
@@ -83,20 +84,44 @@ export class Base {
   takeDamage(amount) {
     if (!this.isAlive) return;
 
-    const gateIsSealed = this.team === 'enemy'
-      && this.game.waveSystem
-      && this.game.waveSystem.aiWaveCount < 12;
-    const sealFloor = Math.ceil(this.maxHp * 0.12);
-    const nextHp = this.hp - amount;
+    const wave = this.game.waveSystem?.aiWaveCount ?? 0;
+    const damageResult = this.team === 'enemy'
+      ? resolveInfernalGateDamage({
+          hp: this.hp,
+          maxHp: this.maxHp,
+          amount,
+          wave,
+          bossGateLocked: this.game.waveSystem?.isBossGateLocked?.() ?? false
+        })
+      : {
+          nextHp: this.hp - amount,
+          blockedByBoss: false,
+          heldBySeal: false
+        };
+
+    this.hp = damageResult.nextHp;
+    this.shieldHitTimer = 0.4;
+    if (this.game.addScreenShake) this.game.addScreenShake(3);
+
+    if (damageResult.blockedByBoss) {
+      if (this.bossSealWarningWave !== wave) {
+        this.bossSealWarningWave = wave;
+        this.game.entityManager.addEntity(new FloatingText(
+          this.game,
+          '왕좌의 봉인 · 대악마를 먼저 격퇴하십시오',
+          this.x,
+          this.y - 125,
+          '#b66c68',
+          'emphasis'
+        ));
+      }
+      return;
+    }
 
     // Earlier waves wear down the gate, but only the twelfth wave can end the
     // run. This protects the intended campaign arc from a lucky early snowball
     // while preserving all damage already dealt.
-    this.hp = gateIsSealed ? Math.max(sealFloor, nextHp) : nextHp;
-    this.shieldHitTimer = 0.4;
-    if (this.game.addScreenShake) this.game.addScreenShake(3);
-
-    if (gateIsSealed && nextHp <= sealFloor) {
+    if (damageResult.heldBySeal) {
       if (!this.sealWarningShown) {
         this.sealWarningShown = true;
         this.game.entityManager.addEntity(new FloatingText(

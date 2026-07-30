@@ -10,6 +10,15 @@ import { getCounterProfile, getTargetPriorityBonus } from '../unitRoles.js';
 import { getDoctrineUnitMultipliers } from '../doctrines.js';
 import { getBossProfile } from '../bosses.js';
 import {
+  createBossAbilityState,
+  getBossAbilityHudState,
+  getBossAbilityProfile,
+  getBossDamageTakenMultiplier,
+  recordBossFocusedDamage,
+  tryBeginBossAbility,
+  updateBossAbilityState
+} from '../bossAbilities.js';
+import {
   getTacticalOrderHitLabel,
   getTacticalOrderTargetBonus
 } from '../tacticalOrders.js';
@@ -193,6 +202,9 @@ export class Unit {
     this.bossSplashRadius = 90;
     this.bossSplashRatio = 0.5;
     this.bossCanCrit = true;
+    this.bossAbilityState = null;
+    this.isRitualAnchor = false;
+    this.ritualOwner = null;
     this.scale = 1;
     this.tier = 1;
     this.recoil = 0;
@@ -241,6 +253,7 @@ export class Unit {
     this.bossSplashRadius = profile.splashRadius;
     this.bossSplashRatio = profile.splashRatio;
     this.bossCanCrit = profile.canCrit;
+    this.bossAbilityState = createBossAbilityState(profile.id);
     this.scale = profile.worldScale;
     this.maxHp *= profile.hpMultiplier;
     this.hp = this.maxHp;
@@ -263,7 +276,17 @@ export class Unit {
 
   takeDamage(amount, isCritical = false, counterLabel = '') {
     if (!this.isAlive || !this.isTargetable) return;
-    this.hp -= amount;
+    const damageMultiplier = this.isBoss
+      ? getBossDamageTakenMultiplier(this.bossAbilityState)
+      : 1;
+    const appliedAmount = Math.max(0, amount * damageMultiplier);
+    const hpBefore = this.hp;
+    this.hp -= appliedAmount;
+    const actualDamage = Math.max(0, Math.min(hpBefore, appliedAmount));
+
+    if (this.isBoss) {
+      recordBossFocusedDamage(this.bossAbilityState, actualDamage, counterLabel);
+    }
 
     if (counterLabel && this.counterCueCooldown <= 0) {
       this.counterCueCooldown = 1.8;
@@ -277,7 +300,7 @@ export class Unit {
       ));
     }
     
-    const textStr = isCritical ? `CRIT! -${Math.floor(amount)}` : `-${Math.floor(amount)}`;
+    const textStr = isCritical ? `CRIT! -${Math.floor(appliedAmount)}` : `-${Math.floor(appliedAmount)}`;
     const textColor = isCritical ? '#e0b75f' : '#efe4d3';
     this.game.entityManager.addEntity(new FloatingText(this.game, textStr, this.x, this.y - 38 * this.scale, textColor, isCritical));
     
@@ -293,6 +316,9 @@ export class Unit {
     if (this.hp <= 0) {
       this.hp = 0;
       this.isAlive = false;
+      if (this.isBoss) {
+        this.getRitualAnchors().forEach(anchor => { anchor.isAlive = false; });
+      }
 
       const bountyMap = { melee: 5, ranged: 10, medic: 12, sniper: 15, tank: 20, crusader: 25 };
       const bounty = this.isBoss ? 100 : (bountyMap[this.type] || 10);
@@ -320,6 +346,150 @@ export class Unit {
         this.game, this.x, this.y - 10, sparkColor, 0.16, 0, Math.random() * Math.PI, 13 * this.scale, 'cross_flash'
       ));
     }
+  }
+
+  getRitualAnchors() {
+    if (!this.isBoss) return [];
+    return this.game.entityManager.entities.filter(entity =>
+      entity.isRitualAnchor
+      && entity.ritualOwner === this
+      && entity.isAlive
+    );
+  }
+
+  getBossAbilityHud() {
+    return getBossAbilityHudState(this.bossAbilityState, {
+      anchorsAlive: this.getRitualAnchors().length
+    });
+  }
+
+  announceBossAbility(text, color = '#b97872') {
+    this.game.entityManager.addEntity(new FloatingText(
+      this.game,
+      text,
+      this.x,
+      this.y - 92 * this.scale,
+      color,
+      'emphasis'
+    ));
+    if (this.game.waveSystem) {
+      this.game.waveSystem.lastActionLog = `[보스 패턴]: ${text}`;
+    }
+  }
+
+  spawnRitualAnchors() {
+    const profile = getBossAbilityProfile('sovereign');
+    const offsets = [
+      { x: 105, y: -72 },
+      { x: 150, y: 68 }
+    ];
+
+    offsets.slice(0, profile.anchorCount).forEach((offset, index) => {
+      const anchor = new Unit(
+        this.game,
+        this.x + offset.x,
+        Math.max(250, Math.min(this.game.canvas.height - 150, this.y + offset.y)),
+        'enemy',
+        'sniper'
+      );
+      anchor.maxHp = Math.round(anchor.maxHp * 0.75);
+      anchor.hp = anchor.maxHp;
+      anchor.speed = 0;
+      anchor.damage = 0;
+      anchor.scale = 0.82;
+      anchor.isAirUnit = false;
+      anchor.isRitualAnchor = true;
+      anchor.ritualOwner = this;
+      anchor.isWaveFighter = true;
+      anchor.state = 'channeling';
+      anchor.formationRow = 2 + index;
+      this.game.entityManager.addEntity(anchor);
+    });
+  }
+
+  beginBossAbility() {
+    if (this.bossVariant === 'sovereign') {
+      this.spawnRitualAnchors();
+    }
+    const profile = getBossAbilityProfile(this.bossVariant);
+    this.target = null;
+    this.state = 'casting';
+    this.announceBossAbility(`${profile.name} · ${profile.instruction}`);
+    this.game.audio?.playBossAlarm?.();
+    this.game.addScreenShake?.(5);
+    this.game.entityManager.addEntity(new Particle(
+      this.game, this.x, this.y + 18, '#8d4f42', 0.7, 0, 0, 64, 'shockwave'
+    ));
+  }
+
+  interruptBossAbility() {
+    this.target = null;
+    this.state = 'staggered';
+    this.announceBossAbility('패턴 저지 · 대악마 무력화', '#d8bf8a');
+    this.game.audio?.playHit?.();
+    this.game.addScreenShake?.(7);
+    this.game.entityManager.addEntity(new Particle(
+      this.game, this.x, this.y, '#d8bf8a', 0.5, 0, 0, 42, 'cross_flash'
+    ));
+  }
+
+  executeBossAbility() {
+    if (this.bossVariant === 'executioner') {
+      const targets = this.game.entityManager.getEntitiesByTeam('player')
+        .filter(entity => entity.type !== undefined && !entity.isRitualAnchor)
+        .sort((a, b) => {
+          const medicOrder = Number(a.type === 'medic') - Number(b.type === 'medic');
+          if (medicOrder !== 0) return medicOrder;
+          return Math.hypot(a.x - this.x, a.y - this.y)
+            - Math.hypot(b.x - this.x, b.y - this.y);
+        })
+        .slice(0, getBossAbilityProfile('executioner').executionTargetCount);
+      const executionDamage = Math.max(55, this.damage * 1.7);
+      targets.forEach(target => {
+        target.takeDamage(executionDamage, false);
+        this.game.entityManager.addEntity(new Particle(
+          this.game, target.x, target.y, '#8d4f42', 0.35, 0, 0, 30, 'slash_arc'
+        ));
+      });
+      this.announceBossAbility(`처형 집행 · 성직자 ${targets.length}명 피격`);
+    } else {
+      const targets = this.game.entityManager.getEntitiesByTeam('player')
+        .filter(entity => entity.type !== undefined && !entity.isRitualAnchor);
+      targets.forEach(target => {
+        target.takeDamage(Math.max(8, target.maxHp * 0.14), false);
+      });
+      this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.05);
+      this.getRitualAnchors().forEach(anchor => { anchor.isAlive = false; });
+      this.announceBossAbility(`왕좌 의식 완성 · 전군 ${targets.length}명 쇠약`);
+    }
+    this.game.audio?.playExplosion?.({ major: true });
+    this.game.addScreenShake?.(10);
+  }
+
+  updateBossAbility(dt) {
+    if (!this.isBoss || !this.bossAbilityState) return false;
+
+    if (tryBeginBossAbility(this.bossAbilityState, this.hp, this.maxHp)) {
+      this.beginBossAbility();
+      return true;
+    }
+
+    if (
+      this.bossAbilityState.status !== 'casting'
+      && this.bossAbilityState.status !== 'staggered'
+    ) {
+      return false;
+    }
+
+    const event = updateBossAbilityState(this.bossAbilityState, dt, {
+      anchorsAlive: this.getRitualAnchors().length
+    });
+    if (event?.type === 'interrupted') {
+      this.interruptBossAbility();
+    } else if (event?.type === 'executed') {
+      this.executeBossAbility();
+    }
+    return true;
   }
 
   explode() {
@@ -428,6 +598,16 @@ export class Unit {
     }
     if (this.recoil > 0) {
       this.recoil = Math.max(0, this.recoil - dt * 10);
+    }
+
+    if (this.isRitualAnchor) {
+      this.state = 'channeling';
+      this.target = null;
+      return;
+    }
+
+    if (this.updateBossAbility(dt)) {
+      return;
     }
     
     if (this.type === 'crusader') {
@@ -745,6 +925,20 @@ export class Unit {
       }
       ctx.strokeStyle = 'rgba(120, 75, 58, 0.7)';
       ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (this.isRitualAnchor) {
+      const ritualPulse = 1 + Math.sin(this.animTime * 1.4) * 0.06;
+      ctx.save();
+      ctx.scale(ritualPulse, ritualPulse * 0.45);
+      ctx.beginPath();
+      ctx.arc(0, 30, 29, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(73, 28, 26, 0.2)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(181, 117, 89, 0.78)';
+      ctx.lineWidth = 2;
       ctx.stroke();
       ctx.restore();
     }
