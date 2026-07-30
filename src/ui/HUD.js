@@ -8,6 +8,9 @@ export class HUD {
     this.timerText = document.getElementById('timer-text');
     this.waveLabel = document.getElementById('wave-label');
     this.wavePreview = document.getElementById('wave-preview');
+    this.waveReadiness = document.getElementById('wave-readiness');
+    this.waveReadinessLabel = document.getElementById('wave-readiness-label');
+    this.waveReadinessAction = document.getElementById('wave-readiness-action');
     this.launchWaveButton = document.getElementById('launch-wave-btn');
     
     this.pHealthText = document.getElementById('player-health-text');
@@ -78,6 +81,7 @@ export class HUD {
               ? `생존 부대가 지옥문을 공격합니다 · ${Math.ceil(waveSystem.timeUntilWave)}초 후 귀환`
               : `편성·강화 시간 · ${waveSystem.getUpcomingWavePreview()}`;
     }
+    this.updateWaveReadiness(isFinale);
     if (this.launchWaveButton) {
       const canLaunchEarly = waveSystem.canLaunchNextWaveEarly?.() ?? false;
       this.launchWaveButton.disabled = isFinale || !canLaunchEarly;
@@ -135,6 +139,31 @@ export class HUD {
     });
   }
 
+  updateWaveReadiness(isFinale) {
+    if (!this.waveReadiness) return;
+    this.waveReadiness.hidden = isFinale;
+    if (isFinale) return;
+
+    const counts = Object.fromEntries(
+      Object.keys(UNIT_TECH_REQUIREMENTS)
+        .map(type => [type, this.game.waveSystem.countSpawners('player', type)])
+    );
+    const readiness = getWaveReadiness({
+      wave: Math.min(MAX_WAVES, this.game.waveSystem.aiWaveCount + 1),
+      techLevel: this.game.playerBase?.techLevel ?? 1,
+      minerals: this.game.economy.minerals,
+      counts
+    });
+    this.waveReadiness.dataset.level = readiness.level;
+    if (this.waveReadinessLabel) {
+      this.waveReadinessLabel.textContent =
+        `W${readiness.wave} ${readiness.label} ${readiness.met}/${readiness.total}`;
+    }
+    if (this.waveReadinessAction) {
+      this.waveReadinessAction.textContent = readiness.action;
+    }
+  }
+
   updateBossHud() {
     if (!this.bossHud) return;
     const boss = this.game.entityManager.entities
@@ -158,3 +187,4 @@ export class HUD {
 }
 import { MAX_SPAWNERS, MAX_TECH_LEVEL, MAX_WAVES, UNIT_TECH_REQUIREMENTS } from '../gameConfig.js';
 import { WAVE_PHASES } from '../wavePacing.js';
+import { getWaveReadiness } from '../waveReadiness.js';

@@ -374,7 +374,7 @@ body.developer-mode .utility-controls {
   background: rgba(15, 10, 20, 0.9);
   border: 1px solid rgba(183, 154, 103, 0.68);
   border-radius: 12px;
-  width: 248px;
+  width: 292px;
   padding: 9px 16px 10px;
   display: flex;
   flex-direction: column;
@@ -403,6 +403,45 @@ body.developer-mode .utility-controls {
   font-size: 10px;
   font-weight: 700;
   text-align: center;
+}
+
+.wave-readiness {
+  width: 100%;
+  margin-top: 5px;
+  padding-top: 5px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px;
+  align-items: center;
+  border-top: 1px solid rgba(183, 154, 103, 0.2);
+  color: #b9afa1;
+  font-size: 9.5px;
+  line-height: 1.2;
+}
+
+#wave-readiness-label {
+  padding: 2px 5px;
+  border: 1px solid rgba(183, 154, 103, 0.46);
+  border-radius: 3px;
+  color: #d7c59f;
+  white-space: nowrap;
+}
+
+#wave-readiness-action {
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wave-readiness[data-level="ready"] #wave-readiness-label {
+  border-color: rgba(114, 145, 118, 0.64);
+  color: #b9c8b7;
+}
+
+.wave-readiness[data-level="critical"] #wave-readiness-label {
+  border-color: rgba(169, 93, 83, 0.72);
+  color: #d0aaa3;
 }
 
 .launch-wave-btn {
