@@ -114,6 +114,7 @@ export function buildAfterActionReport({
   doctrineNames = [],
   boonNames = [],
   infernalHostName = '미확인 군단',
+  infernalBossAdvice = '보스 패턴 경고에 맞춰 전술 명령을 전환하십시오.',
   battlefieldEventName = null,
   tacticalOrderLabel = '균형 전투',
   tacticalPerformanceSummary = '명령 성과 없음',
@@ -188,6 +189,7 @@ export function buildAfterActionReport({
       `선택 교리: ${doctrineRecord}`,
       `전장 보급: ${boonRecord}`,
       `적 군단: ${infernalHostName}`,
+      `보스 대응: ${infernalBossAdvice}`,
       `전장 대응: ${battlefieldEventName ?? '전장 사건 이전에 원정 종료'}`
       , `원정 서약: ${mandateResult.mandate.name} · ${mandateResult.fulfilled ? `달성 +${mandateResult.scoreBonus}점` : '미달'}`
     ].join('\n'),

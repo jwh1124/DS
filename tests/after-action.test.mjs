@@ -104,11 +104,13 @@ test('after action preserves the battlefield response that shaped the midgame', 
     enemyIntegrity: 0,
     roster: fullRoster,
     infernalHostName: '묘지의 성가대',
+    infernalBossAdvice: '의식 시종과 리치 호위를 후열 명령으로 함께 끊으십시오.',
     battlefieldEventName: '장례 기도'
   });
 
   assert.match(report.summary, /적 군단: 묘지의 성가대/);
   assert.match(report.summary, /전장 대응: 장례 기도/);
+  assert.match(report.summary, /보스 대응: 의식 시종/);
 });
 
 test('a clean boss run points toward score optimization instead of generic survival advice', () => {

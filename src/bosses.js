@@ -53,13 +53,17 @@ export function getBossProfileForWave(wave) {
   return BOSS_BY_WAVE[wave] ?? null;
 }
 
-export function selectBossEscortContracts(contracts, cap) {
+export function selectBossEscortContracts(contracts, cap, priorityTypes = []) {
   const safeContracts = Array.isArray(contracts) ? contracts : [];
   const safeCap = Math.max(0, Math.floor(Number(cap) || 0));
   if (safeContracts.length <= safeCap) return safeContracts.slice();
 
-  const medic = safeContracts.find(contract => contract.type === 'medic');
-  const combatants = safeContracts.filter(contract => contract !== medic);
+  const safePriorityTypes = Array.isArray(priorityTypes) ? priorityTypes : [];
+  const prioritized = safePriorityTypes.flatMap(type => safeContracts.filter(contract => contract.type === type));
+  const remaining = safeContracts.filter(contract => !prioritized.includes(contract));
+  const ordered = [...prioritized, ...remaining];
+  const medic = ordered.find(contract => contract.type === 'medic');
+  const combatants = ordered.filter(contract => contract !== medic);
   if (!medic || safeCap === 0) return combatants.slice(0, safeCap);
   return [...combatants.slice(0, safeCap - 1), medic];
 }

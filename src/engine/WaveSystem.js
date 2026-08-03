@@ -8,6 +8,7 @@ import {
   resolveBossGate,
   selectBossEscortContracts
 } from '../bosses.js';
+import { getInfernalHostBossTactics } from '../infernalHosts.js';
 import {
   AI_TECH_RESERVE_PER_WAVE,
   getAiRosterCap,
@@ -383,6 +384,7 @@ export class WaveSystem {
     const eBaseY = this.game.canvas.height / 2;
     
     const bossProfile = getBossProfileForWave(this.aiWaveCount);
+    const hostBossTactics = getInfernalHostBossTactics(this.game.infernalHost);
     if (bossProfile) {
       const bossX = WORLD_WIDTH - 350;
       const bossY = Math.min(this.game.canvas.height - 200, eBaseY + 160);
@@ -392,7 +394,7 @@ export class WaveSystem {
       this.game.entityManager.addEntity(boss);
       this.bossGateActive = true;
       this.game.focusCameraOn?.(boss.x);
-      this.lastActionLog = `[대악마]: ${bossProfile.name} 강림 · ${bossProfile.counterHint}`;
+      this.lastActionLog = `[대악마]: ${bossProfile.name} 강림 · ${bossProfile.counterHint} · ${hostBossTactics.advice}`;
       
       if (this.game.audio) {
         this.game.audio.playBossAlarm();
@@ -435,7 +437,7 @@ export class WaveSystem {
     // Boss waves deploy authored escort sizes instead of stacking the boss on
     // top of the full persistent roster.
     const deployedEnemyContracts = bossProfile
-      ? selectBossEscortContracts(this.spawners.enemy, bossProfile.escortCap)
+      ? selectBossEscortContracts(this.spawners.enemy, bossProfile.escortCap, hostBossTactics.priorityTypes)
       : this.spawners.enemy;
     deployedEnemyContracts.forEach((contract, idx) => {
       const slot = getWaveFormationSlot(WORLD_WIDTH - 200, eBaseY, idx, 'enemy');
@@ -539,9 +541,11 @@ export class WaveSystem {
     });
 
     const finalProfile = getBossProfileForWave(MAX_WAVES);
+    const hostBossTactics = getInfernalHostBossTactics(this.game.infernalHost);
     const enemyContracts = selectBossEscortContracts(
       this.spawners.enemy,
-      finalProfile?.escortCap ?? this.spawners.enemy.length
+      finalProfile?.escortCap ?? this.spawners.enemy.length,
+      hostBossTactics.priorityTypes
     );
     enemyContracts.forEach((contract, index) => {
       const slot = getWaveFormationSlot(WORLD_WIDTH - 200, baseY, index, 'enemy');

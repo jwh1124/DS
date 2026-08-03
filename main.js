@@ -68,6 +68,7 @@ import { getInfernalChronicleSummary, getInfernalMasteryBonus, recordInfernalCle
 import {
   getInfernalHost,
   getInfernalHostBackgroundFit,
+  getInfernalHostBossTactics,
   getInfernalHostBackgroundPath,
   getInfernalHostBriefing
 } from './src/infernalHosts.js';
@@ -469,6 +470,7 @@ class Game {
         .map(id => getBoonById(id)?.title)
         .filter(Boolean),
       infernalHostName: this.infernalHost?.name,
+      infernalBossAdvice: getInfernalHostBossTactics(this.infernalHost).advice,
       battlefieldEventName: this.selectedBattlefieldEvent?.title
     });
     const recordResult = recordRunResult(window.localStorage, { difficulty: this.difficulty, report });

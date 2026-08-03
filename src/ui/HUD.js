@@ -4,6 +4,7 @@ import { getWaveReadiness } from '../waveReadiness.js';
 import { getTacticalPerformanceLiveText } from '../tacticalPerformance.js';
 import { getTacticalOrderDefinition } from '../tacticalOrders.js';
 import { getExpeditionMandateLiveStatus } from '../expeditionMandates.js';
+import { getInfernalHostBossTactics } from '../infernalHosts.js';
 
 export class HUD {
   constructor(game) {
@@ -222,7 +223,8 @@ export class HUD {
     this.bossName.textContent = boss.bossName;
     this.bossHealthText.textContent = `${Math.ceil(boss.hp)} / ${Math.ceil(boss.maxHp)}`;
     this.bossHealthFill.style.transform = `scaleX(${hpRatio})`;
-    this.bossCounterHint.textContent = boss.bossCounterHint;
+    const hostTactics = getInfernalHostBossTactics(this.game.infernalHost);
+    this.bossCounterHint.textContent = `${boss.bossCounterHint} · ${hostTactics.advice}`;
     const ability = boss.getBossAbilityHud?.() ?? { active: false };
     if (this.bossAbility) {
       this.bossAbility.hidden = !ability.active;

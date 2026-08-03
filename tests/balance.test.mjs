@@ -297,6 +297,8 @@ const midBossEscorts = selectBossEscortContracts(bossEscortPool, midBoss.escortC
 assert.equal(midBossEscorts.length, midBoss.escortCap);
 assert.ok(midBossEscorts.some(contract => contract.type === 'medic'));
 assert.equal(selectBossEscortContracts(bossEscortPool, 0).length, 0);
+const rangedPriorityEscorts = selectBossEscortContracts(bossEscortPool, 3, ['ranged']);
+assert.equal(rangedPriorityEscorts[0].type, 'ranged');
 
 assert.equal(AI_TECH_RESERVE_PER_WAVE, 80);
 assert.equal(getAiRosterCap(1), 3);
