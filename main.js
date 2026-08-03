@@ -47,6 +47,7 @@ import {
   recordBossPatternEvent
 } from './src/bossPatternPerformance.js';
 import { getAutoFormationAction } from './src/autoFormation.js';
+import { getRunRecordSummary, recordRunResult } from './src/runRecords.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -112,6 +113,7 @@ class Game {
     
     this.setupInput();
     this.setupViewportPolicy();
+    this.updateRunRecordSummary();
     document.body.classList.toggle('developer-mode', this.isDeveloperMode);
     
     document.getElementById('ui-layer').style.display = 'none';
@@ -121,6 +123,7 @@ class Game {
         document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.difficulty = parseFloat(btn.dataset.diff);
+        this.updateRunRecordSummary();
       });
     });
     
@@ -327,6 +330,7 @@ class Game {
     const metrics = document.getElementById('game-over-metrics');
     const adviceTitle = document.getElementById('game-over-advice-title');
     const adviceText = document.getElementById('game-over-advice-text');
+    const recordText = document.getElementById('game-over-record');
     
     if (winner === 'player') {
       title.innerHTML = `${iconMarkup('cross', 'result-icon')}<span>승리!</span>`;
@@ -365,6 +369,7 @@ class Game {
         .map(id => getBoonById(id)?.title)
         .filter(Boolean)
     });
+    const recordResult = recordRunResult(window.localStorage, { difficulty: this.difficulty, report });
 
     if (kicker) kicker.textContent = report.kicker;
     if (summary) summary.textContent = report.summary;
@@ -383,6 +388,12 @@ class Game {
     }
     if (adviceTitle) adviceTitle.textContent = report.recommendation.title;
     if (adviceText) adviceText.textContent = report.recommendation.text;
+    if (recordText) {
+      recordText.textContent = recordResult.isPersonalBest
+        ? `새 ${recordResult.difficultyLabel} 최고 기록 · ${report.grade} · ${report.score}점`
+        : getRunRecordSummary(window.localStorage, this.difficulty);
+    }
+    this.updateRunRecordSummary();
     if (gameOverScreen) gameOverScreen.classList.remove('hidden');
     requestAnimationFrame(() => document.getElementById('restart-btn')?.focus());
   }
@@ -569,6 +580,11 @@ class Game {
       .map(id => getDoctrineById(id)?.title)
       .filter(Boolean);
     summary.textContent = names.length ? names.join(' · ') : '아직 선택하지 않음';
+  }
+
+  updateRunRecordSummary() {
+    const summary = document.getElementById('run-record-summary');
+    if (summary) summary.textContent = getRunRecordSummary(window.localStorage, this.difficulty);
   }
 
   hideBossHud() {

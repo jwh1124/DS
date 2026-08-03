@@ -1191,6 +1191,14 @@ body.developer-mode .boss-hud {
   text-align: center;
 }
 
+.run-record-summary {
+  min-height: 18px;
+  margin-top: 12px;
+  color: #b7a47b;
+  font: 700 11px 'Cinzel', 'Noto Sans KR', sans-serif;
+  letter-spacing: 0.7px;
+}
+
 .result-kicker {
   color: #a99672;
   font: 700 10px 'Cinzel', 'Noto Sans KR', sans-serif;
@@ -1557,6 +1565,13 @@ button:focus-visible {
   font-size: 11px;
   line-height: 1.65;
   white-space: pre-line;
+}
+
+.result-record {
+  margin: -8px 0 16px;
+  color: #c7b07e;
+  font: 700 11px 'Cinzel', 'Noto Sans KR', sans-serif;
+  letter-spacing: 0.55px;
 }
 
 #restart-btn {

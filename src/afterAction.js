@@ -145,6 +145,8 @@ export function buildAfterActionReport({
   return {
     kicker: isVictory ? '원정 완료 · AFTER ACTION' : '원정 실패 · AFTER ACTION',
     grade: isVictory ? grade : null,
+    score,
+    playerIntegrity: safePlayerIntegrity,
     metrics: [
       { label: '도달 웨이브', value: `${safeWave} / ${maxWaves}` },
       { label: '성당 보전', value: `${safePlayerIntegrity}%` },
