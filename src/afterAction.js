@@ -6,6 +6,7 @@ const ROSTER_LABELS = Object.freeze({
   tank: '대천사',
   crusader: '십자군'
 });
+import { evaluateExpeditionMandate } from './expeditionMandates.js';
 
 function clampPercent(value) {
   return Math.max(0, Math.min(100, Math.round(value)));
@@ -115,7 +116,8 @@ export function buildAfterActionReport({
   tacticalOrderLabel = '균형 전투',
   tacticalPerformanceSummary = '명령 성과 없음',
   bossPatternPerformance = {},
-  bossPatternSummary = '패턴 조우 없음'
+  bossPatternSummary = '패턴 조우 없음',
+  expeditionMandate = null
 }) {
   const safeWave = Math.max(1, Math.min(maxWaves, Math.round(wave)));
   const safePlayerIntegrity = clampPercent(playerIntegrity);
@@ -124,12 +126,19 @@ export function buildAfterActionReport({
   const isVictory = winner === 'player';
   const patternInterrupts = Math.max(0, Number(bossPatternPerformance?.interrupted) || 0);
   const patternFailures = Math.max(0, Number(bossPatternPerformance?.failed) || 0);
+  const mandateResult = evaluateExpeditionMandate(expeditionMandate, {
+    winner,
+    playerIntegrity: safePlayerIntegrity,
+    earlyStarts,
+    bossPatternPerformance
+  });
   const score = safePlayerIntegrity
     + earlyStarts * 2
     + Math.max(0, techLevel - 1) * 4
     + incomeRites * 2
     + patternInterrupts * 3
-    - patternFailures * 3;
+    - patternFailures * 3
+    + mandateResult.scoreBonus;
   const grade = score >= 112 ? 'S' : score >= 92 ? 'A' : score >= 72 ? 'B' : 'C';
 
   const outcome = isVictory
@@ -165,7 +174,8 @@ export function buildAfterActionReport({
             )}`
           }
         : { label: '지옥문 잔존', value: `${safeEnemyIntegrity}%` },
-      { label: '최종 편성', value: `${rosterTotal}명` }
+      { label: '최종 편성', value: `${rosterTotal}명` },
+      { label: '원정 서약', value: mandateResult.status }
     ],
     summary: [
       outcome,
@@ -175,7 +185,9 @@ export function buildAfterActionReport({
       `최종 편성: ${getRosterSummary(roster)}`,
       `선택 교리: ${doctrineRecord}`,
       `전장 보급: ${boonRecord}`
+      , `원정 서약: ${mandateResult.mandate.name} · ${mandateResult.fulfilled ? `달성 +${mandateResult.scoreBonus}점` : '미달'}`
     ].join('\n'),
-    recommendation
+    recommendation,
+    mandateResult
   };
 }

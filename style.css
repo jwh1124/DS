@@ -1429,10 +1429,41 @@ body.developer-mode .boss-hud {
 .relic-choice.active { border-color: #c6a35c; background: rgba(78, 58, 29, 0.92); }
 .relic-choice.locked { cursor: default; opacity: 0.54; }
 
+.mandate-board {
+  width: min(650px, calc(100% - 36px));
+  margin: 9px auto 0;
+}
+
+.mandate-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.mandate-choice {
+  min-height: 74px;
+  padding: 9px 8px;
+  border: 1px solid rgba(147, 124, 91, 0.34);
+  border-radius: 5px;
+  background: rgba(20, 16, 18, 0.78);
+  color: #c8bcac;
+  cursor: pointer;
+  text-align: left;
+}
+
+.mandate-choice strong,
+.mandate-choice span,
+.mandate-choice em { display: block; }
+.mandate-choice strong { color: #ddd0b0; font-size: 11px; }
+.mandate-choice span { margin-top: 4px; color: #aaa093; font-size: 9px; line-height: 1.35; }
+.mandate-choice em { margin-top: 5px; color: #bca05e; font-size: 9px; font-style: normal; }
+.mandate-choice.active { border-color: #c6a35c; background: rgba(74, 54, 29, 0.9); }
+
 @media (max-width: 620px) {
   .relic-armory-heading { display: block; }
   .relic-armory-heading small { display: block; margin-top: 4px; }
   .relic-choices { grid-template-columns: 1fr; }
+  .mandate-choices { grid-template-columns: 1fr; }
 }
 
 .field-guide-panel h2 {

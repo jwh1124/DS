@@ -61,6 +61,7 @@ import {
   getRunOmenBriefing,
   getRunOmenDoctrineAdvice
 } from './src/runOmens.js';
+import { EXPEDITION_MANDATES, getExpeditionMandate } from './src/expeditionMandates.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -89,6 +90,7 @@ class Game {
     this.tacticalOrder = 'balanced';
     this.runOmen = getRunOmen();
     this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
+    this.expeditionMandate = getExpeditionMandate('bastionPledge');
     this.isDeveloperMode = new URLSearchParams(window.location.search).has('dev');
     this.runStats = this.createRunStats();
     
@@ -131,6 +133,7 @@ class Game {
     this.updateRunRecordSummary();
     this.updateRunOmenBriefing();
     this.updateCampaignRelicArmory();
+    this.updateExpeditionMandateBoard();
     document.body.classList.toggle('developer-mode', this.isDeveloperMode);
     
     document.getElementById('ui-layer').style.display = 'none';
@@ -160,6 +163,13 @@ class Game {
       selectCampaignRelic(window.localStorage, button.dataset.campaignRelic);
       this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
       this.updateCampaignRelicArmory();
+    });
+
+    document.getElementById('expedition-mandate-choices')?.addEventListener('click', event => {
+      const button = event.target.closest('[data-expedition-mandate]');
+      if (!button) return;
+      this.expeditionMandate = getExpeditionMandate(button.dataset.expeditionMandate);
+      this.updateExpeditionMandateBoard();
     });
 
     document.getElementById('field-guide-start-btn')?.addEventListener('click', () => {
@@ -413,6 +423,7 @@ class Game {
       tacticalPerformanceSummary: getTacticalPerformanceSummary(this.runStats.tacticalPerformance),
       bossPatternPerformance: this.runStats.bossPatterns,
       bossPatternSummary: getBossPatternSummary(this.runStats.bossPatterns),
+      expeditionMandate: this.expeditionMandate,
       doctrineNames: this.doctrineBonuses.selected
         .map(id => getDoctrineById(id)?.title)
         .filter(Boolean),
@@ -673,6 +684,15 @@ class Game {
         <span>${unlocked ? relic.short : `해금: ${relic.unlockDifficulty === 1 ? '시련' : relic.unlockDifficulty === 1.25 ? '연옥' : '지옥'} 정화`}</span>
       </button>`;
     }).join('');
+  }
+
+  updateExpeditionMandateBoard() {
+    const choices = document.getElementById('expedition-mandate-choices');
+    if (!choices) return;
+    choices.innerHTML = Object.values(EXPEDITION_MANDATES).map(mandate => `
+      <button class="mandate-choice${this.expeditionMandate?.id === mandate.id ? ' active' : ''}" type="button" data-expedition-mandate="${mandate.id}">
+        <strong>${mandate.name}</strong><span>${mandate.description}</span><em>달성 +${mandate.scoreBonus}점</em>
+      </button>`).join('');
   }
 
   applyCampaignRelic() {
