@@ -48,6 +48,7 @@ import {
 } from './src/bossPatternPerformance.js';
 import { getAutoFormationAction } from './src/autoFormation.js';
 import { getRunRecordSummary, recordRunResult } from './src/runRecords.js';
+import { getRunOmen } from './src/runOmens.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -74,6 +75,7 @@ class Game {
     this.ultimateCooldown = 0;
     this.autoSpend = false;
     this.tacticalOrder = 'balanced';
+    this.runOmen = getRunOmen();
     this.isDeveloperMode = new URLSearchParams(window.location.search).has('dev');
     this.runStats = this.createRunStats();
     
@@ -273,6 +275,7 @@ class Game {
     this.setFrontlineFollow(true);
     this.gameSpeed = 1;
     this.autoSpend = false;
+    this.runOmen = getRunOmen();
     this.setTacticalOrder('balanced', false);
     this.runStats = this.createRunStats();
     

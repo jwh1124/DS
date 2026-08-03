@@ -37,6 +37,7 @@ import {
   getWaveMutator,
   getWaveMutatorPreview
 } from '../waveMutators.js';
+import { applyRunOmen } from '../runOmens.js';
 
 export class WaveSystem {
   constructor(game) {
@@ -75,7 +76,8 @@ export class WaveSystem {
     this.aiUltimateCooldown = 20;
     this.phase = WAVE_PHASES.SCOUT;
     this.timeUntilWave = FIRST_WAVE_DELAY;
-    this.lastActionLog = `[지옥문]: 악마 군단 소환력 ${this.aiMinerals} / 증원 +${this.aiIncome}`;
+    const omen = this.game.runOmen;
+    this.lastActionLog = `[지옥문]: ${omen?.name ?? '불길한 정적'} · ${omen?.summary ?? ''} · ${omen?.advice ?? '정찰을 확인하십시오.'}`;
   }
 
   stop() {
@@ -121,8 +123,9 @@ export class WaveSystem {
     }
 
     const mutator = getWaveMutator(nextWave);
+    const omen = this.game.runOmen;
     if (mutator) {
-      return `정찰: ${getWaveMutatorPreview(nextWave)} · 권장 ${mutator.advice}`;
+      return `정찰: ${getWaveMutatorPreview(nextWave)} · 징조 ${omen?.name ?? '미확인'}: ${omen?.summary ?? ''} · 권장 ${mutator.advice}`;
     }
 
     const pMelee = this.countSpawners('player', 'melee');
@@ -151,7 +154,7 @@ export class WaveSystem {
       advice = '심판관';
     }
 
-    return `정찰: ${threat} · 권장 ${advice}${ascends ? ' · 각성 임박' : ''}`;
+    return `정찰: ${threat} · 징조 ${omen?.name ?? '미확인'}: ${omen?.summary ?? ''} · 권장 ${advice}${ascends ? ' · 각성 임박' : ''}`;
   }
 
   launchNextWaveEarly() {
@@ -439,6 +442,7 @@ export class WaveSystem {
       unit.spawnerId = contract.id;
       unit.isWaveFighter = true;
       applyWaveMutator(unit, waveMutator);
+      applyRunOmen(unit, this.game.runOmen);
       this.game.entityManager.addEntity(unit);
     });
     
@@ -464,6 +468,18 @@ export class WaveSystem {
         `${waveMutator.name} · ${waveMutator.summary}`,
         WORLD_WIDTH / 2,
         228,
+        '#b97872',
+        'emphasis'
+      ));
+    }
+
+    if (this.aiWaveCount === 1 && this.game.runOmen) {
+      const omen = this.game.runOmen;
+      this.game.entityManager.addEntity(new FloatingText(
+        this.game,
+        `지옥의 징조 · ${omen.name} · ${omen.summary}`,
+        WORLD_WIDTH / 2,
+        200,
         '#b97872',
         'emphasis'
       ));
