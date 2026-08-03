@@ -15,7 +15,7 @@ const RUN_OMENS = Object.freeze([
 
 const OMEN_DOCTRINE_ADVICE = Object.freeze({
   bloodMoon: Object.freeze({ 3: 'shieldWall', 6: 'mercyHymn', 9: 'sanctuary' }),
-  ironCovenant: Object.freeze({ 3: 'silverRite', 6: 'heavenlyFire', 9: 'finalCrusade' }),
+  ironCovenant: Object.freeze({ 3: 'silverRite', 6: 'martyrVow', 9: 'finalCrusade' }),
   nightChoir: Object.freeze({ 3: 'silverRite', 6: 'mercyHymn', 9: 'sanctuary' })
 });
 

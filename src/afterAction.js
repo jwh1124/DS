@@ -74,6 +74,12 @@ function getRecommendation({
       text: '[9] 대악마 집중 명령을 켜고, 사제로 전열을 유지하면서 심판관의 대형·보스 추가 피해를 집중하세요.'
     };
   }
+  if (patternFailures > 0) {
+    return {
+      title: `보스 패턴 ${patternFailures}회를 허용했습니다`,
+      text: '왕좌 의식은 [8] 후열 처단을 시종이 사라질 때까지 유지한 뒤 [9] 대악마 집중으로 전환하세요. 무력화 직후 천벌을 겹치면 결전 시간을 줄일 수 있습니다.'
+    };
+  }
   if (wave >= 5 && techLevel < 2) {
     return {
       title: '성서 계시가 늦었습니다',

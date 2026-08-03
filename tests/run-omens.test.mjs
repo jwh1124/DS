@@ -32,6 +32,6 @@ test('run omen briefing turns the modifier into a player-facing response', () =>
 
 test('each omen points the player at a doctrine that counters its threat', () => {
   assert.equal(getRunOmenDoctrineAdvice(getRunOmen(0), 3), 'shieldWall');
-  assert.equal(getRunOmenDoctrineAdvice(getRunOmen(0.34), 6), 'heavenlyFire');
+  assert.equal(getRunOmenDoctrineAdvice(getRunOmen(0.34), 6), 'martyrVow');
   assert.equal(getRunOmenDoctrineAdvice(getRunOmen(0.8), 9), 'sanctuary');
 });

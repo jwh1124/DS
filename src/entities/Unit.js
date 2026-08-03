@@ -27,6 +27,7 @@ import {
   MEDIC_HEAL_RANGE,
   selectCombatTarget
 } from '../targeting.js';
+import { getDifficultyProfile } from '../difficultyProfiles.js';
 
 const UNIT_STATS = {
   melee: { hp: 120, damage: 25, range: 45, speed: 85, attackSpeed: 1.0, color: '#f1c40f' },     // Monk / Imp
@@ -233,11 +234,10 @@ export class Unit {
     }
     
     if (this.team === 'enemy') {
-      const diff = this.game.difficulty || 1.0;
-      const diffMultiplier = diff === 1.0 ? 1.0 : (1 + (diff - 1) * 0.5);
-      this.maxHp *= diffMultiplier;
+      const difficulty = getDifficultyProfile(this.game.difficulty);
+      this.maxHp *= difficulty.enemyHp;
       this.hp = this.maxHp;
-      if (this.damage > 0) this.damage *= diffMultiplier;
+      if (this.damage > 0) this.damage *= difficulty.enemyDamage;
     }
   }
   
@@ -258,6 +258,10 @@ export class Unit {
     this.maxHp *= profile.hpMultiplier;
     this.hp = this.maxHp;
     this.damage *= profile.damageMultiplier;
+    const difficulty = getDifficultyProfile(this.game.difficulty);
+    this.maxHp *= difficulty.bossHp;
+    this.hp = this.maxHp;
+    this.damage *= difficulty.bossDamage;
     this.radius *= profile.radiusMultiplier;
     this.color = '#8e3f3b';
     return this;

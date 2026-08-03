@@ -45,6 +45,24 @@ test('boss defeat recognizes missing support roles', () => {
   assert.match(report.recommendation.text, /사제.*심판관/);
 });
 
+test('a late defeat with a failed boss pattern teaches the exact response sequence', () => {
+  const report = buildAfterActionReport({
+    winner: 'enemy',
+    endReason: 'baseDestroyed',
+    wave: 12,
+    maxWaves: 12,
+    playerIntegrity: 0,
+    enemyIntegrity: 12,
+    roster: fullRoster,
+    techLevel: 3,
+    ultimates: 1,
+    bossPatternPerformance: { started: 2, interrupted: 1, failed: 1 }
+  });
+
+  assert.equal(report.recommendation.title, '보스 패턴 1회를 허용했습니다');
+  assert.match(report.recommendation.text, /\[8\].*\[9\].*천벌/);
+});
+
 test('victory report includes grade, composition, and doctrine record', () => {
   const report = buildAfterActionReport({
     winner: 'player',
