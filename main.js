@@ -65,6 +65,7 @@ import {
 import { EXPEDITION_MANDATES, getExpeditionMandate } from './src/expeditionMandates.js';
 import { getMandateChronicleSummary, recordMandateClear } from './src/mandateChronicle.js';
 import { getInfernalChronicleSummary, getInfernalMasteryBonus, recordInfernalClear } from './src/infernalChronicle.js';
+import { getInfernalBounty } from './src/infernalBounties.js';
 import {
   getInfernalHost,
   getInfernalHostBackgroundFit,
@@ -470,6 +471,7 @@ class Game {
         .map(id => getBoonById(id)?.title)
         .filter(Boolean),
       infernalHostName: this.infernalHost?.name,
+      infernalBounty: getInfernalBounty(this.infernalHost),
       infernalBossAdvice: getInfernalHostBossTactics(this.infernalHost).advice,
       battlefieldEventName: this.selectedBattlefieldEvent?.title
     });
@@ -794,7 +796,8 @@ class Game {
     const detail = document.getElementById('infernal-host-detail');
     if (title) title.textContent = briefing.title;
     const mastery = getInfernalMasteryBonus(window.localStorage, this.infernalHost);
-    if (detail) detail.textContent = `권장: ${briefing.detail} · ${getInfernalChronicleSummary(window.localStorage, this.infernalHost)}${mastery ? ` · 숙련: ${mastery.name} (${mastery.short})` : ''}`;
+    const bounty = getInfernalBounty(this.infernalHost);
+    if (detail) detail.textContent = `권장: ${briefing.detail} · ${getInfernalChronicleSummary(window.localStorage, this.infernalHost)}${mastery ? ` · 숙련: ${mastery.name} (${mastery.short})` : ''}${bounty ? ` · 특명: ${bounty.name} (${bounty.description})` : ''}`;
   }
 
   updateBattlefieldBackdrop() {

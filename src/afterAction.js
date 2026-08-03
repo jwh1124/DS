@@ -7,6 +7,7 @@ const ROSTER_LABELS = Object.freeze({
   crusader: '십자군'
 });
 import { evaluateExpeditionMandate } from './expeditionMandates.js';
+import { evaluateInfernalBounty } from './infernalBounties.js';
 
 function clampPercent(value) {
   return Math.max(0, Math.min(100, Math.round(value)));
@@ -114,6 +115,7 @@ export function buildAfterActionReport({
   doctrineNames = [],
   boonNames = [],
   infernalHostName = '미확인 군단',
+  infernalBounty = null,
   infernalBossAdvice = '보스 패턴 경고에 맞춰 전술 명령을 전환하십시오.',
   battlefieldEventName = null,
   tacticalOrderLabel = '균형 전투',
@@ -135,13 +137,15 @@ export function buildAfterActionReport({
     earlyStarts,
     bossPatternPerformance
   });
+  const bountyResult = evaluateInfernalBounty({ id: infernalBounty?.hostId }, mandateResult);
   const score = safePlayerIntegrity
     + earlyStarts * 2
     + Math.max(0, techLevel - 1) * 4
     + incomeRites * 2
     + patternInterrupts * 3
     - patternFailures * 3
-    + mandateResult.scoreBonus;
+    + mandateResult.scoreBonus
+    + bountyResult.scoreBonus;
   const grade = score >= 112 ? 'S' : score >= 92 ? 'A' : score >= 72 ? 'B' : 'C';
 
   const outcome = isVictory
@@ -179,6 +183,7 @@ export function buildAfterActionReport({
         : { label: '지옥문 잔존', value: `${safeEnemyIntegrity}%` },
       { label: '최종 편성', value: `${rosterTotal}명` },
       { label: '원정 서약', value: mandateResult.status }
+      , { label: '군단 특명', value: bountyResult.status }
     ],
     summary: [
       outcome,
@@ -191,6 +196,7 @@ export function buildAfterActionReport({
       `적 군단: ${infernalHostName}`,
       `보스 대응: ${infernalBossAdvice}`,
       `전장 대응: ${battlefieldEventName ?? '전장 사건 이전에 원정 종료'}`
+      , `군단 특명: ${bountyResult.fulfilled ? `${bountyResult.bounty.name} 달성 +${bountyResult.scoreBonus}점` : bountyResult.bounty?.description ?? '없음'}`
       , `원정 서약: ${mandateResult.mandate.name} · ${mandateResult.fulfilled ? `달성 +${mandateResult.scoreBonus}점` : '미달'}`
     ].join('\n'),
     recommendation,
