@@ -10,7 +10,6 @@ import { AudioEngine } from './src/engine/AudioEngine.js';
 import { FloatingText } from './src/entities/FloatingText.js';
 import {
   getTechUpgradeCost,
-  getUnlockedUnitTypes,
   MAX_SPAWNERS,
   MAX_TECH_LEVEL,
   MAX_WAVES,
@@ -47,6 +46,7 @@ import {
   getBossPatternSummary,
   recordBossPatternEvent
 } from './src/bossPatternPerformance.js';
+import { getAutoFormationAction } from './src/autoFormation.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -609,13 +609,24 @@ class Game {
     
     const currentTech = this.playerBase ? this.playerBase.techLevel : 1;
 
-    // Auto-Spend
-    if (this.autoSpend && this.economy.minerals >= UNIT_COSTS.melee && this.waveSystem.spawners.player.length < MAX_SPAWNERS) {
-      const unlockedTypes = getUnlockedUnitTypes(currentTech);
-      const affordable = unlockedTypes.filter(type => UNIT_COSTS[type] <= this.economy.minerals);
-      if (affordable.length > 0) {
-        const pick = affordable[Math.floor(Math.random() * affordable.length)];
-        this.triggerAction(pick, UNIT_COSTS[pick], null);
+    // Auto-formation follows the same readiness milestones shown to the player:
+    // secure the opening line, bank for support tech, then prepare a durable finale roster.
+    if (this.autoSpend) {
+      const counts = Object.fromEntries(
+        Object.keys(PLAYER_UNIT_NAMES).map(type => [type, this.waveSystem.countSpawners('player', type)])
+      );
+      const action = getAutoFormationAction({
+        currentWave: this.waveSystem.aiWaveCount,
+        techLevel: currentTech,
+        minerals: this.economy.minerals,
+        counts,
+        maxSpawners: MAX_SPAWNERS
+      });
+      if (action) {
+        const actionButton = action.type === 'tech'
+          ? document.querySelector('.build-btn[data-type="tech"]')
+          : null;
+        this.triggerAction(action.type, action.cost, actionButton);
       }
     }
     
