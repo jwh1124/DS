@@ -1,5 +1,10 @@
 const STORAGE_KEY = 'exorcism-infernal-chronicle-v1';
 const HOST_IDS = new Set(['cinderVanguard', 'graveCoven', 'ironLegion']);
+const MASTERY_BONUSES = Object.freeze({
+  cinderVanguard: Object.freeze({ id: 'cinderScouts', name: '재의 정찰로', short: '시작 신앙심 +25', effect: Object.freeze({ kind: 'startingMinerals', amount: 25 }) }),
+  graveCoven: Object.freeze({ id: 'graveMercy', name: '장례의 자비', short: '치유 효율 +4%', effect: Object.freeze({ kind: 'healing', multiplier: 1.04 }) }),
+  ironLegion: Object.freeze({ id: 'ironMasonry', name: '흑철 방벽', short: '성당 보호 +180', effect: Object.freeze({ kind: 'baseFortify', amount: 180 }) })
+});
 
 function parse(value) {
   try {
@@ -37,4 +42,9 @@ export function getInfernalChronicleSummary(storage, host) {
   return record?.clears
     ? `지역 정화 ${record.clears}회 · 최고 ${record.bestScore}점`
     : '첫 지역 정화 대기';
+}
+
+export function getInfernalMasteryBonus(storage, host) {
+  const cleared = (loadInfernalChronicle(storage)[host?.id]?.clears ?? 0) > 0;
+  return cleared ? MASTERY_BONUSES[host?.id] ?? null : null;
 }

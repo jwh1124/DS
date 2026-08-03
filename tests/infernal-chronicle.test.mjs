@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getInfernalChronicleSummary, recordInfernalClear } from '../src/infernalChronicle.js';
+import { getInfernalChronicleSummary, getInfernalMasteryBonus, recordInfernalClear } from '../src/infernalChronicle.js';
 
 function storage() {
   const values = new Map();
@@ -14,6 +14,11 @@ test('infernal regions persist clears and retain their highest score', () => {
   const second = recordInfernalClear(store, { host, won: true, score: 88 });
   assert.deepEqual(second.record, { clears: 2, bestScore: 96 });
   assert.equal(getInfernalChronicleSummary(store, host), '지역 정화 2회 · 최고 96점');
+  assert.equal(getInfernalMasteryBonus(store, host).effect.kind, 'healing');
+});
+
+test('mastery stays locked before the first regional clear', () => {
+  assert.equal(getInfernalMasteryBonus(storage(), { id: 'cinderVanguard' }), null);
 });
 
 test('a defeat does not advance the infernal region chronicle', () => {

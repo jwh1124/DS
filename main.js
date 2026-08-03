@@ -64,7 +64,7 @@ import {
 } from './src/runOmens.js';
 import { EXPEDITION_MANDATES, getExpeditionMandate } from './src/expeditionMandates.js';
 import { getMandateChronicleSummary, recordMandateClear } from './src/mandateChronicle.js';
-import { getInfernalChronicleSummary, recordInfernalClear } from './src/infernalChronicle.js';
+import { getInfernalChronicleSummary, getInfernalMasteryBonus, recordInfernalClear } from './src/infernalChronicle.js';
 import {
   getInfernalHost,
   getInfernalHostBackgroundFit,
@@ -305,6 +305,7 @@ class Game {
     this.pendingBattlefieldEventChoices = [];
     this.selectedBattlefieldEvent = null;
     this.applyCampaignRelic();
+    this.applyInfernalMastery();
     const gameOverScreen = document.getElementById('game-over-screen');
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     document.getElementById('pause-screen')?.classList.add('hidden');
@@ -790,7 +791,8 @@ class Game {
     const title = document.getElementById('infernal-host-title');
     const detail = document.getElementById('infernal-host-detail');
     if (title) title.textContent = briefing.title;
-    if (detail) detail.textContent = `권장: ${briefing.detail} · ${getInfernalChronicleSummary(window.localStorage, this.infernalHost)}`;
+    const mastery = getInfernalMasteryBonus(window.localStorage, this.infernalHost);
+    if (detail) detail.textContent = `권장: ${briefing.detail} · ${getInfernalChronicleSummary(window.localStorage, this.infernalHost)}${mastery ? ` · 숙련: ${mastery.name} (${mastery.short})` : ''}`;
   }
 
   updateBattlefieldBackdrop() {
@@ -836,6 +838,20 @@ class Game {
       this.economy.minerals += effect.amount;
     } else if (effect.kind === 'healing') {
       this.doctrineBonuses.healingMultiplier *= effect.multiplier;
+    }
+  }
+
+  applyInfernalMastery() {
+    const mastery = getInfernalMasteryBonus(window.localStorage, this.infernalHost);
+    if (!mastery) return;
+    const effect = mastery.effect;
+    if (effect.kind === 'startingMinerals') {
+      this.economy.minerals += effect.amount;
+    } else if (effect.kind === 'healing') {
+      this.doctrineBonuses.healingMultiplier *= effect.multiplier;
+    } else if (effect.kind === 'baseFortify' && this.playerBase) {
+      this.playerBase.maxHp += effect.amount;
+      this.playerBase.hp += effect.amount;
     }
   }
 
