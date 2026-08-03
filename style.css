@@ -1273,6 +1273,29 @@ body.developer-mode .boss-hud {
   color: #c9a77c;
 }
 
+.infernal-host-briefing {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(183, 154, 103, 0.22);
+}
+
+.infernal-host-briefing strong,
+.infernal-host-briefing small {
+  display: block;
+}
+
+.infernal-host-briefing strong {
+  color: #c8b69c;
+  font: 700 11px 'Cinzel', 'Noto Sans KR', sans-serif;
+}
+
+.infernal-host-briefing small {
+  margin-top: 3px;
+  color: #9f968b;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
 .result-kicker {
   color: #a99672;
   font: 700 10px 'Cinzel', 'Noto Sans KR', sans-serif;

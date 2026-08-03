@@ -20,15 +20,21 @@ export function getAiRecruitmentPriority({
   wave,
   playerCounts,
   enemyCounts,
-  enemyRosterSize
+  enemyRosterSize,
+  infernalHost
 }) {
-  if (enemyRosterSize >= 5 && enemyCounts.medic < 1) {
+  const hostId = infernalHost?.id;
+  const medicWave = hostId === 'graveCoven' ? 3 : 5;
+  const sniperWave = hostId === 'graveCoven' ? 6 : 7;
+  const tankWave = hostId === 'ironLegion' ? 8 : 9;
+
+  if (enemyRosterSize >= medicWave && enemyCounts.medic < 1) {
     return { type: 'medic', saveForRole: true };
   }
-  if (wave >= 7 && enemyCounts.sniper < 1) {
+  if (wave >= sniperWave && enemyCounts.sniper < 1) {
     return { type: 'sniper', saveForRole: true };
   }
-  if (wave >= 9 && enemyCounts.tank < 1) {
+  if (wave >= tankWave && enemyCounts.tank < 1) {
     return { type: 'tank', saveForRole: true };
   }
   if (wave >= 10 && enemyCounts.crusader < 1) {
@@ -37,6 +43,9 @@ export function getAiRecruitmentPriority({
 
   // Counter the player without collapsing the whole early roster into one
   // answer. A two-unit gap is the hard limit between basic front and fire lines.
+  if (hostId === 'cinderVanguard' && wave <= 5 && enemyCounts.melee <= enemyCounts.ranged) {
+    return { type: 'melee', saveForRole: false };
+  }
   if (enemyCounts.ranged >= enemyCounts.melee + 2) {
     return { type: 'melee', saveForRole: false };
   }

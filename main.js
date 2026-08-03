@@ -63,6 +63,7 @@ import {
 } from './src/runOmens.js';
 import { EXPEDITION_MANDATES, getExpeditionMandate } from './src/expeditionMandates.js';
 import { getMandateChronicleSummary, recordMandateClear } from './src/mandateChronicle.js';
+import { getInfernalHost, getInfernalHostBriefing } from './src/infernalHosts.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -90,6 +91,7 @@ class Game {
     this.autoSpend = false;
     this.tacticalOrder = 'balanced';
     this.runOmen = getRunOmen();
+    this.infernalHost = getInfernalHost();
     this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
     this.expeditionMandate = getExpeditionMandate('bastionPledge');
     this.isDeveloperMode = new URLSearchParams(window.location.search).has('dev');
@@ -133,6 +135,7 @@ class Game {
     this.setupViewportPolicy();
     this.updateRunRecordSummary();
     this.updateRunOmenBriefing();
+    this.updateInfernalHostBriefing();
     this.updateCampaignRelicArmory();
     this.updateExpeditionMandateBoard();
     document.body.classList.toggle('developer-mode', this.isDeveloperMode);
@@ -333,7 +336,9 @@ class Game {
     this.gameSpeed = 1;
     this.autoSpend = false;
     this.runOmen = getRunOmen();
+    this.infernalHost = getInfernalHost();
     this.updateRunOmenBriefing();
+    this.updateInfernalHostBriefing();
     this.updateCampaignRelicArmory();
     this.setTacticalOrder('balanced', false);
     this.runStats = this.createRunStats();
@@ -689,6 +694,14 @@ class Game {
     if (title) title.textContent = briefing.title;
     if (detail) detail.textContent = briefing.detail;
     if (advice) advice.textContent = `권장: ${briefing.advice}`;
+  }
+
+  updateInfernalHostBriefing() {
+    const briefing = getInfernalHostBriefing(this.infernalHost);
+    const title = document.getElementById('infernal-host-title');
+    const detail = document.getElementById('infernal-host-detail');
+    if (title) title.textContent = briefing.title;
+    if (detail) detail.textContent = `권장: ${briefing.detail}`;
   }
 
   updateCampaignRelicArmory() {

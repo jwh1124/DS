@@ -77,7 +77,8 @@ export class WaveSystem {
     this.phase = WAVE_PHASES.SCOUT;
     this.timeUntilWave = FIRST_WAVE_DELAY;
     const omen = this.game.runOmen;
-    this.lastActionLog = `[지옥문]: ${omen?.name ?? '불길한 정적'} · ${omen?.summary ?? ''} · ${omen?.advice ?? '정찰을 확인하십시오.'}`;
+    const host = this.game.infernalHost;
+    this.lastActionLog = `[지옥문]: ${host?.name ?? '미확인 군단'} · ${host?.summary ?? ''} · 징조 ${omen?.name ?? '불길한 정적'} · ${omen?.advice ?? '정찰을 확인하십시오.'}`;
   }
 
   stop() {
@@ -125,7 +126,7 @@ export class WaveSystem {
     const mutator = getWaveMutator(nextWave);
     const omen = this.game.runOmen;
     if (mutator) {
-      return `정찰: ${getWaveMutatorPreview(nextWave)} · 징조 ${omen?.name ?? '미확인'}: ${omen?.summary ?? ''} · 권장 ${mutator.advice}`;
+      return `정찰: ${getWaveMutatorPreview(nextWave)} · 군단 ${this.game.infernalHost?.name ?? '미확인'} · 징조 ${omen?.name ?? '미확인'}: ${omen?.summary ?? ''} · 권장 ${mutator.advice}`;
     }
 
     const pMelee = this.countSpawners('player', 'melee');
@@ -154,7 +155,7 @@ export class WaveSystem {
       advice = '심판관';
     }
 
-    return `정찰: ${threat} · 징조 ${omen?.name ?? '미확인'}: ${omen?.summary ?? ''} · 권장 ${advice}${ascends ? ' · 각성 임박' : ''}`;
+    return `정찰: ${threat} · 군단 ${this.game.infernalHost?.name ?? '미확인'} · 징조 ${omen?.name ?? '미확인'}: ${omen?.summary ?? ''} · 권장 ${advice}${ascends ? ' · 각성 임박' : ''}`;
   }
 
   launchNextWaveEarly() {
@@ -344,7 +345,8 @@ export class WaveSystem {
           wave: this.aiWaveCount,
           playerCounts,
           enemyCounts,
-          enemyRosterSize: this.spawners.enemy.length
+          enemyRosterSize: this.spawners.enemy.length,
+          infernalHost: this.game.infernalHost
         });
         const preferredCost = UNIT_COSTS[priority.type];
         if (priority.saveForRole && this.aiMinerals < preferredCost) {
