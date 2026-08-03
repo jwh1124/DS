@@ -113,6 +113,8 @@ export function buildAfterActionReport({
   ultimates = 0,
   doctrineNames = [],
   boonNames = [],
+  infernalHostName = '미확인 군단',
+  battlefieldEventName = null,
   tacticalOrderLabel = '균형 전투',
   tacticalPerformanceSummary = '명령 성과 없음',
   bossPatternPerformance = {},
@@ -184,7 +186,9 @@ export function buildAfterActionReport({
       `보스 대응: ${bossPatternSummary}`,
       `최종 편성: ${getRosterSummary(roster)}`,
       `선택 교리: ${doctrineRecord}`,
-      `전장 보급: ${boonRecord}`
+      `전장 보급: ${boonRecord}`,
+      `적 군단: ${infernalHostName}`,
+      `전장 대응: ${battlefieldEventName ?? '전장 사건 이전에 원정 종료'}`
       , `원정 서약: ${mandateResult.mandate.name} · ${mandateResult.fulfilled ? `달성 +${mandateResult.scoreBonus}점` : '미달'}`
     ].join('\n'),
     recommendation,

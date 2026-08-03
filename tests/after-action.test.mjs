@@ -95,6 +95,22 @@ test('victory report includes grade, composition, and doctrine record', () => {
   assert.equal(report.recommendation.title, '보스 패턴 1회를 허용했습니다');
 });
 
+test('after action preserves the battlefield response that shaped the midgame', () => {
+  const report = buildAfterActionReport({
+    winner: 'player',
+    wave: 12,
+    maxWaves: 12,
+    playerIntegrity: 76,
+    enemyIntegrity: 0,
+    roster: fullRoster,
+    infernalHostName: '묘지의 성가대',
+    battlefieldEventName: '장례 기도'
+  });
+
+  assert.match(report.summary, /적 군단: 묘지의 성가대/);
+  assert.match(report.summary, /전장 대응: 장례 기도/);
+});
+
 test('a clean boss run points toward score optimization instead of generic survival advice', () => {
   const report = buildAfterActionReport({
     winner: 'player',

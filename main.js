@@ -92,6 +92,7 @@ class Game {
     this.selectedBoons = [];
     this.isBattlefieldEventChoosing = false;
     this.pendingBattlefieldEventChoices = [];
+    this.selectedBattlefieldEvent = null;
     this.doctrineBonuses = createDoctrineBonuses();
     this.screenShake = 0;
     this.shakeTime = 0;
@@ -301,6 +302,7 @@ class Game {
     this.selectedBoons = [];
     this.isBattlefieldEventChoosing = false;
     this.pendingBattlefieldEventChoices = [];
+    this.selectedBattlefieldEvent = null;
     this.applyCampaignRelic();
     const gameOverScreen = document.getElementById('game-over-screen');
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
@@ -323,6 +325,7 @@ class Game {
     this.selectedBoons = [];
     this.isBattlefieldEventChoosing = false;
     this.pendingBattlefieldEventChoices = [];
+    this.selectedBattlefieldEvent = null;
     this.doctrineBonuses = createDoctrineBonuses();
     this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
     this.loop.stop();
@@ -462,7 +465,9 @@ class Game {
         .filter(Boolean),
       boonNames: this.selectedBoons
         .map(id => getBoonById(id)?.title)
-        .filter(Boolean)
+        .filter(Boolean),
+      infernalHostName: this.infernalHost?.name,
+      battlefieldEventName: this.selectedBattlefieldEvent?.title
     });
     const recordResult = recordRunResult(window.localStorage, { difficulty: this.difficulty, report });
     const relicResult = awardCampaignRelic(window.localStorage, {
@@ -619,11 +624,13 @@ class Game {
     const screen = document.getElementById('boon-screen');
     const waveText = document.getElementById('boon-wave');
     const title = document.getElementById('boon-title');
+    const choiceHint = document.getElementById('boon-choice-hint');
     const choiceRoot = document.getElementById('boon-choices');
     if (!screen || !choiceRoot) return;
 
     if (waveText) waveText.textContent = `WAVE ${wave} 전장 보급`;
     if (title) title.textContent = '원정 보급 선택';
+    if (choiceHint) choiceHint.textContent = '[1] [2] [3] 키로도 선택할 수 있습니다.';
     choiceRoot.innerHTML = choices.map((boon, index) => `
       <button class="boon-card" type="button" data-boon="${boon.id}">
         <span class="doctrine-key">[${index + 1}]</span>
@@ -702,11 +709,13 @@ class Game {
     const screen = document.getElementById('boon-screen');
     const waveText = document.getElementById('boon-wave');
     const title = document.getElementById('boon-title');
+    const choiceHint = document.getElementById('boon-choice-hint');
     const choiceRoot = document.getElementById('boon-choices');
     if (!screen || !choiceRoot) return;
 
     if (waveText) waveText.textContent = `WAVE ${wave} 전장 사건 · ${this.infernalHost.name}`;
     if (title) title.textContent = '전장 대응 선택';
+    if (choiceHint) choiceHint.textContent = '[1] [2] 키로도 선택할 수 있습니다.';
     choiceRoot.innerHTML = choices.map((event, index) => `
       <button class="boon-card" type="button" data-battlefield-event="${event.id}">
         <span class="doctrine-key">[${index + 1}]</span>
@@ -728,6 +737,7 @@ class Game {
     const event = this.pendingBattlefieldEventChoices.find(choice => choice.id === eventId);
     if (!event) return;
     this.applyFieldEffect(event.effect);
+    this.selectedBattlefieldEvent = event;
     this.audio.playMagic();
     this.entityManager.addEntity(new FloatingText(
       this,
