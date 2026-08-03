@@ -49,6 +49,14 @@ import {
 import { getAutoFormationAction } from './src/autoFormation.js';
 import { getRunRecordSummary, recordRunResult } from './src/runRecords.js';
 import {
+  CAMPAIGN_RELICS,
+  awardCampaignRelic,
+  getCampaignRelicSummary,
+  getSelectedCampaignRelic,
+  loadCampaignRelics,
+  selectCampaignRelic
+} from './src/campaignRelics.js';
+import {
   getRunOmen,
   getRunOmenBriefing,
   getRunOmenDoctrineAdvice
@@ -80,6 +88,7 @@ class Game {
     this.autoSpend = false;
     this.tacticalOrder = 'balanced';
     this.runOmen = getRunOmen();
+    this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
     this.isDeveloperMode = new URLSearchParams(window.location.search).has('dev');
     this.runStats = this.createRunStats();
     
@@ -121,6 +130,7 @@ class Game {
     this.setupViewportPolicy();
     this.updateRunRecordSummary();
     this.updateRunOmenBriefing();
+    this.updateCampaignRelicArmory();
     document.body.classList.toggle('developer-mode', this.isDeveloperMode);
     
     document.getElementById('ui-layer').style.display = 'none';
@@ -142,6 +152,14 @@ class Game {
         return;
       }
       this.launchExpedition();
+    });
+
+    document.getElementById('campaign-relic-choices')?.addEventListener('click', event => {
+      const button = event.target.closest('[data-campaign-relic]');
+      if (!button || button.disabled) return;
+      selectCampaignRelic(window.localStorage, button.dataset.campaignRelic);
+      this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
+      this.updateCampaignRelicArmory();
     });
 
     document.getElementById('field-guide-start-btn')?.addEventListener('click', () => {
@@ -259,6 +277,7 @@ class Game {
     this.isBoonChoosing = false;
     this.pendingBoonChoices = [];
     this.selectedBoons = [];
+    this.applyCampaignRelic();
     const gameOverScreen = document.getElementById('game-over-screen');
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     document.getElementById('pause-screen')?.classList.add('hidden');
@@ -279,6 +298,7 @@ class Game {
     this.pendingBoonChoices = [];
     this.selectedBoons = [];
     this.doctrineBonuses = createDoctrineBonuses();
+    this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
     this.loop.stop();
     this.waveSystem.stop();
     this.economy.stop();
@@ -303,6 +323,7 @@ class Game {
     this.autoSpend = false;
     this.runOmen = getRunOmen();
     this.updateRunOmenBriefing();
+    this.updateCampaignRelicArmory();
     this.setTacticalOrder('balanced', false);
     this.runStats = this.createRunStats();
     
@@ -400,6 +421,10 @@ class Game {
         .filter(Boolean)
     });
     const recordResult = recordRunResult(window.localStorage, { difficulty: this.difficulty, report });
+    const relicResult = awardCampaignRelic(window.localStorage, {
+      difficulty: this.difficulty,
+      won: winner === 'player'
+    });
 
     if (kicker) kicker.textContent = report.kicker;
     if (summary) summary.textContent = report.summary;
@@ -419,11 +444,15 @@ class Game {
     if (adviceTitle) adviceTitle.textContent = report.recommendation.title;
     if (adviceText) adviceText.textContent = report.recommendation.text;
     if (recordText) {
-      recordText.textContent = recordResult.isPersonalBest
+      const recordLine = recordResult.isPersonalBest
         ? `새 ${recordResult.difficultyLabel} 최고 기록 · ${report.grade} · ${report.score}점`
         : getRunRecordSummary(window.localStorage, this.difficulty);
+      recordText.textContent = relicResult.unlockedRelic
+        ? `${recordLine} · 성물 해금: ${relicResult.unlockedRelic.name}`
+        : recordLine;
     }
     this.updateRunRecordSummary();
+    this.updateCampaignRelicArmory();
     if (gameOverScreen) gameOverScreen.classList.remove('hidden');
     requestAnimationFrame(() => document.getElementById('restart-btn')?.focus());
   }
@@ -627,6 +656,36 @@ class Game {
     if (title) title.textContent = briefing.title;
     if (detail) detail.textContent = briefing.detail;
     if (advice) advice.textContent = `권장: ${briefing.advice}`;
+  }
+
+  updateCampaignRelicArmory() {
+    const profile = loadCampaignRelics(window.localStorage);
+    const summary = document.getElementById('campaign-relic-summary');
+    const choices = document.getElementById('campaign-relic-choices');
+    if (summary) summary.textContent = getCampaignRelicSummary(window.localStorage);
+    if (!choices) return;
+
+    choices.innerHTML = Object.values(CAMPAIGN_RELICS).map(relic => {
+      const unlocked = profile.unlocked.includes(relic.id);
+      const selected = profile.selected === relic.id;
+      return `<button class="relic-choice${selected ? ' active' : ''}${unlocked ? '' : ' locked'}" type="button" data-campaign-relic="${relic.id}" ${unlocked ? '' : 'disabled'}>
+        <strong>${unlocked ? relic.name : '봉인된 성물'}</strong>
+        <span>${unlocked ? relic.short : `해금: ${relic.unlockDifficulty === 1 ? '시련' : relic.unlockDifficulty === 1.25 ? '연옥' : '지옥'} 정화`}</span>
+      </button>`;
+    }).join('');
+  }
+
+  applyCampaignRelic() {
+    const relic = this.campaignRelic;
+    if (!relic) return;
+    const effect = relic.effect;
+    if (effect.kind === 'frontlineHp') {
+      ['melee', 'crusader'].forEach(type => { this.doctrineBonuses.hpByType[type] *= effect.multiplier; });
+    } else if (effect.kind === 'startingMinerals') {
+      this.economy.minerals += effect.amount;
+    } else if (effect.kind === 'healing') {
+      this.doctrineBonuses.healingMultiplier *= effect.multiplier;
+    }
   }
 
   hideBossHud() {

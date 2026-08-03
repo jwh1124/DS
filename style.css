@@ -1382,6 +1382,59 @@ body.developer-mode .boss-hud {
   letter-spacing: 0.14em;
 }
 
+.relic-armory {
+  width: min(650px, calc(100% - 36px));
+  margin: 14px auto 0;
+  padding: 10px;
+  border: 1px solid rgba(183, 154, 103, 0.36);
+  border-radius: 8px;
+  background: rgba(12, 9, 12, 0.62);
+}
+
+.relic-armory-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 3px 8px;
+  color: #d6bc7b;
+  font: 700 11px 'Orbitron', sans-serif;
+}
+
+.relic-armory-heading small {
+  color: #a79a89;
+  font: 400 10px 'Noto Sans KR', sans-serif;
+}
+
+.relic-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.relic-choice {
+  min-height: 56px;
+  padding: 8px 7px;
+  border: 1px solid rgba(183, 154, 103, 0.28);
+  border-radius: 5px;
+  background: rgba(28, 22, 22, 0.88);
+  color: #cabfae;
+  cursor: pointer;
+  text-align: left;
+}
+
+.relic-choice strong,
+.relic-choice span { display: block; }
+.relic-choice strong { color: #e1cfaa; font-size: 11px; }
+.relic-choice span { margin-top: 4px; color: #a99f91; font-size: 9px; }
+.relic-choice.active { border-color: #c6a35c; background: rgba(78, 58, 29, 0.92); }
+.relic-choice.locked { cursor: default; opacity: 0.54; }
+
+@media (max-width: 620px) {
+  .relic-armory-heading { display: block; }
+  .relic-armory-heading small { display: block; margin-top: 4px; }
+  .relic-choices { grid-template-columns: 1fr; }
+}
+
 .field-guide-panel h2 {
   margin: 10px 0 8px;
   color: #ead7ac;
