@@ -48,7 +48,11 @@ import {
 } from './src/bossPatternPerformance.js';
 import { getAutoFormationAction } from './src/autoFormation.js';
 import { getRunRecordSummary, recordRunResult } from './src/runRecords.js';
-import { getRunOmen, getRunOmenBriefing } from './src/runOmens.js';
+import {
+  getRunOmen,
+  getRunOmenBriefing,
+  getRunOmenDoctrineAdvice
+} from './src/runOmens.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -424,9 +428,11 @@ class Game {
     if (!screen || !choiceRoot) return;
 
     if (waveText) waveText.textContent = `WAVE ${wave} 교단 회의`;
+    const recommendedDoctrineId = getRunOmenDoctrineAdvice(this.runOmen, wave);
     choiceRoot.innerHTML = choices.map((doctrine, index) => `
-      <button class="doctrine-card" type="button" data-doctrine="${doctrine.id}">
+      <button class="doctrine-card${doctrine.id === recommendedDoctrineId ? ' is-recommended' : ''}" type="button" data-doctrine="${doctrine.id}">
         <span class="doctrine-key">[${index + 1}]</span>
+        ${doctrine.id === recommendedDoctrineId ? '<span class="doctrine-recommendation">정찰 권장</span>' : ''}
         <span class="doctrine-icon" aria-hidden="true">${iconMarkup(doctrine.icon)}</span>
         <span class="doctrine-role">${doctrine.role}</span>
         <strong>${doctrine.title}</strong>

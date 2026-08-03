@@ -13,6 +13,12 @@ const RUN_OMENS = Object.freeze([
   })
 ]);
 
+const OMEN_DOCTRINE_ADVICE = Object.freeze({
+  bloodMoon: Object.freeze({ 3: 'shieldWall', 6: 'mercyHymn', 9: 'sanctuary' }),
+  ironCovenant: Object.freeze({ 3: 'silverRite', 6: 'heavenlyFire', 9: 'finalCrusade' }),
+  nightChoir: Object.freeze({ 3: 'silverRite', 6: 'mercyHymn', 9: 'sanctuary' })
+});
+
 export function getRunOmen(seed = Math.random()) {
   const normalized = Math.max(0, Math.min(0.999999, Number(seed) || 0));
   return RUN_OMENS[Math.floor(normalized * RUN_OMENS.length)];
@@ -27,6 +33,10 @@ export function getRunOmenBriefing(omen) {
     detail: '이번 원정 전체에 적용되는 지옥의 징조입니다.',
     advice: omen.advice
   };
+}
+
+export function getRunOmenDoctrineAdvice(omen, wave) {
+  return OMEN_DOCTRINE_ADVICE[omen?.id]?.[Math.floor(Number(wave) || 0)] ?? null;
 }
 
 export function applyRunOmen(unit, omen) {

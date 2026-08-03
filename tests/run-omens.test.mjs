@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyRunOmen, getRunOmen, getRunOmenBriefing } from '../src/runOmens.js';
+import {
+  applyRunOmen,
+  getRunOmen,
+  getRunOmenBriefing,
+  getRunOmenDoctrineAdvice
+} from '../src/runOmens.js';
 
 test('seeded run omens cover three distinct campaign threats', () => {
   assert.equal(getRunOmen(0).id, 'bloodMoon');
@@ -23,4 +28,10 @@ test('run omen briefing turns the modifier into a player-facing response', () =>
   const briefing = getRunOmenBriefing(getRunOmen(0.8));
   assert.equal(briefing.title, '밤의 합창 · 서큐버스·밴시 피해 +8%');
   assert.match(briefing.advice, /사제/);
+});
+
+test('each omen points the player at a doctrine that counters its threat', () => {
+  assert.equal(getRunOmenDoctrineAdvice(getRunOmen(0), 3), 'shieldWall');
+  assert.equal(getRunOmenDoctrineAdvice(getRunOmen(0.34), 6), 'heavenlyFire');
+  assert.equal(getRunOmenDoctrineAdvice(getRunOmen(0.8), 9), 'sanctuary');
 });
