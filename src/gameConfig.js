@@ -33,7 +33,7 @@ export const PLAYER_STARTING_INCOME = 90;
 export const AI_STARTING_INCOME = 50;
 // The battlefield is intentionally wide. At the old speeds, a victorious
 // squad spent the whole preparation window walking and never reached the gate.
-export const UNIT_MOVEMENT_SPEED_MULTIPLIER = 2;
+export const UNIT_MOVEMENT_SPEED_MULTIPLIER = 3;
 // Forty seconds is the maximum combat-to-combat cadence, not a forced idle
 // break. Once every enemy wave fighter is defeated, the remaining countdown
 // contracts to a short, readable preparation window.

@@ -108,6 +108,14 @@ body.developer-mode .developer-only {
   display: flex !important;
 }
 
+.url-developer-only {
+  display: none !important;
+}
+
+body.url-developer-mode .url-developer-only {
+  display: flex !important;
+}
+
 .cheat-title {
   font-size: 11px;
   font-weight: 700;
@@ -147,7 +155,7 @@ body.developer-mode .developer-only {
 /* Live Debugging Panel Styling */
 .debug-panel {
   position: absolute;
-  top: 80px;
+  top: 142px;
   right: 15px;
   width: 250px;
   background: rgba(18, 14, 14, 0.94);
@@ -252,30 +260,34 @@ body.developer-mode .developer-only {
   top: 15px;
   left: 15px;
   right: 15px;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 320px minmax(292px, 1fr) 320px;
+  column-gap: 16px;
   align-items: flex-start;
+  pointer-events: none;
+}
+
+.center-hud-stack {
+  grid-column: 2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
 }
 
 .utility-controls {
-  position: absolute;
-  left: 50%;
-  top: 122px;
-  transform: translateX(-50%);
   display: flex;
   gap: 6px;
-  z-index: 31;
+  min-height: 30px;
 }
 
 /* The developer strip occupies the top-centre only in ?dev=1. Keep the
    production HUD compact while giving the expanded wave briefing its own row
    during playtesting. */
-body.developer-mode .wave-timer {
+body.developer-mode .center-hud-stack {
   margin-top: 52px;
-}
-
-body.developer-mode .utility-controls {
-  top: 174px;
 }
 
 .utility-btn {
@@ -305,6 +317,7 @@ body.developer-mode .utility-controls {
   flex-direction: column;
   gap: 8px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  pointer-events: auto;
 }
 .base-health.left {
   background: rgba(40, 30, 10, 0.85);
@@ -313,6 +326,7 @@ body.developer-mode .utility-controls {
   backdrop-filter: blur(8px);
 }
 .base-health.right {
+  grid-column: 3;
   background: rgba(38, 17, 18, 0.9);
   border: 1px solid rgba(156, 93, 91, 0.64);
   border-radius: 10px;
@@ -466,7 +480,7 @@ body.developer-mode .utility-controls {
 
 .boss-hud {
   position: absolute;
-  top: 158px;
+  top: 220px;
   left: 50%;
   z-index: 30;
   width: min(500px, calc(100% - 420px));
@@ -482,7 +496,7 @@ body.developer-mode .utility-controls {
 }
 
 body.developer-mode .boss-hud {
-  top: 210px;
+  top: 272px;
 }
 
 .boss-heading {
@@ -618,7 +632,7 @@ body.developer-mode .boss-hud {
 /* Economy HUD */
 .hud-economy {
   position: absolute;
-  top: 90px;
+  top: 122px;
   left: 15px;
   display: flex;
   flex-direction: column;
@@ -806,7 +820,7 @@ body.developer-mode .boss-hud {
 .bottom-controls {
   position: absolute;
   bottom: 15px;
-  left: 245px;
+  left: 260px;
   right: 15px;
   display: flex;
   gap: 10px;

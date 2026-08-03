@@ -73,7 +73,7 @@ assert.equal(PLAYER_STARTING_MINERALS, 400);
 assert.equal(PLAYER_STARTING_INCOME, 90);
 assert.equal(AI_STARTING_MINERALS, 180);
 assert.equal(AI_STARTING_INCOME, 50);
-assert.equal(UNIT_MOVEMENT_SPEED_MULTIPLIER, 2);
+assert.equal(UNIT_MOVEMENT_SPEED_MULTIPLIER, 3);
 assert.equal(BASE_TECH_HP_GAIN, 2000);
 assert.equal(getUnitVsBaseDamageMultiplier('player'), 2);
 assert.equal(getUnitVsBaseDamageMultiplier('enemy'), 1);

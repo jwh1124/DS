@@ -160,8 +160,11 @@ export class HUD {
       this.eHealthBar.style.width = `${(eBase.hp / eBase.maxHp) * 100}%`;
       if (this.eDefenseStatus) {
         const sealWavesLeft = Math.max(0, MAX_WAVES - waveSystem.aiWaveCount);
-        this.eDefenseStatus.textContent = sealWavesLeft > 0
-          ? `봉인 ${sealWavesLeft}W 후 해제 · 포탑 Lv.${eBase.techLevel}`
+        const heldAtSealCore = sealWavesLeft > 0 && eBase.hp <= 1;
+        this.eDefenseStatus.textContent = heldAtSealCore
+          ? `봉인핵 1HP · ${sealWavesLeft}W`
+          : sealWavesLeft > 0
+            ? `봉인 ${sealWavesLeft}W · 포탑 Lv.${eBase.techLevel}`
           : `봉인 해제 · 포탑 Lv.${eBase.techLevel}`;
         this.eDefenseStatus.classList.toggle('unsealed', sealWavesLeft === 0);
       }

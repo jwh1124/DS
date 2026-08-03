@@ -70,13 +70,22 @@ test('infernal gate rejects stale damage while a living boss locks the objective
   assert.ok(unlocked.nextHp <= 0);
 });
 
-test('early infernal gate damage stops at the campaign seal floor', () => {
+test('early infernal gate damage preserves only the final seal core', () => {
   const result = resolveInfernalGateDamage({
     hp: 1800,
     maxHp: 14000,
     amount: 1000,
     wave: 11
   });
-  assert.equal(result.nextHp, 1680);
-  assert.equal(result.heldBySeal, true);
+  assert.equal(result.nextHp, 800);
+  assert.equal(result.heldBySeal, false);
+
+  const core = resolveInfernalGateDamage({
+    hp: result.nextHp,
+    maxHp: 14000,
+    amount: 1000,
+    wave: 11
+  });
+  assert.equal(core.nextHp, 1);
+  assert.equal(core.heldBySeal, true);
 });

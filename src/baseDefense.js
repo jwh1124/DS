@@ -17,7 +17,9 @@ export function resolveInfernalGateDamage({
     };
   }
 
-  const sealFloor = Math.ceil(safeMaxHp * 0.12);
+  // The campaign seal prevents an early ending, but it should not erase siege
+  // damage behind a misleading 12% health floor. Leave only the seal core.
+  const sealFloor = 1;
   const rawNextHp = safeHp - safeDamage;
   const heldBySeal = Number(wave) < 12 && rawNextHp <= sealFloor;
 

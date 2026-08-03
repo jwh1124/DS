@@ -131,15 +131,22 @@
             <span id="player-health-text" class="health-text">10000 / 10000</span>
           </div>
           
-          <div class="wave-timer">
-            <span id="wave-label" class="label">WAVE 1 · 악마 정찰</span>
-            <span id="timer-text" class="time">15.0</span>
-            <span id="wave-preview" class="wave-preview">정찰: 임프 돌격대</span>
-            <div id="wave-readiness" class="wave-readiness" data-level="caution">
-              <span id="wave-readiness-label">W1 준비 확인</span>
-              <span id="wave-readiness-action">전열과 사격 병종을 편성하십시오</span>
+          <div class="center-hud-stack">
+            <div class="wave-timer">
+              <span id="wave-label" class="label">WAVE 1 · 악마 정찰</span>
+              <span id="timer-text" class="time">15.0</span>
+              <span id="wave-preview" class="wave-preview">정찰: 임프 돌격대</span>
+              <div id="wave-readiness" class="wave-readiness" data-level="caution">
+                <span id="wave-readiness-label">W1 준비 확인</span>
+                <span id="wave-readiness-action">전열과 사격 병종을 편성하십시오</span>
+              </div>
+              <button id="launch-wave-btn" class="launch-wave-btn" type="button">[F] 조기 개시 · +20</button>
             </div>
-            <button id="launch-wave-btn" class="launch-wave-btn" type="button">[F] 조기 개시 · +20</button>
+            <div class="utility-controls" aria-label="전투 화면 조작">
+              <button id="sound-btn" class="utility-btn" data-audio-toggle data-compact-audio type="button" aria-label="사운드 끄기"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-volume"></use></svg></button>
+              <button id="frontline-btn" class="utility-btn active" type="button" aria-label="전선 자동 추적 끄기" aria-pressed="true" title="[Space] 전선 자동 추적"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-target"></use></svg></button>
+              <button id="pause-btn" class="utility-btn" type="button" aria-label="게임 일시정지">Ⅱ</button>
+            </div>
           </div>
           
           <div class="base-health right">
@@ -149,11 +156,6 @@
             </div>
             <span id="enemy-health-text" class="health-text">10000 / 10000</span>
             <span id="enemy-defense-status" class="base-defense-status">봉인 유지 · 포탑 Lv.1</span>
-          </div>
-          <div class="utility-controls">
-            <button id="sound-btn" class="utility-btn" data-audio-toggle data-compact-audio type="button" aria-label="사운드 끄기"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-volume"></use></svg></button>
-            <button id="frontline-btn" class="utility-btn active" type="button" aria-label="전선 자동 추적 끄기" aria-pressed="true" title="[Space] 전선 자동 추적"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-target"></use></svg></button>
-            <button id="pause-btn" class="utility-btn" type="button" aria-label="게임 일시정지">Ⅱ</button>
           </div>
         </div>
 
@@ -219,7 +221,7 @@
         </div>
 
         <!-- Live Real-Time Debugging Monitor (Right Side) -->
-        <div id="debug-monitor" class="debug-panel developer-only" aria-label="개발자 전투 정보">
+        <div id="debug-monitor" class="debug-panel url-developer-only" aria-label="개발자 전투 정보">
           <div class="debug-header"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-skull"></use></svg>악마 군단 정보</div>
           <div class="debug-row">
             <span class="lbl">악마 군단 사악한 힘:</span>

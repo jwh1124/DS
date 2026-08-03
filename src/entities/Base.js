@@ -119,14 +119,13 @@ export class Base {
       return;
     }
 
-    // Earlier waves wear down the gate, but only the twelfth wave can end the
-    // run. This protects the intended campaign arc from a lucky early snowball
-    // while preserving all damage already dealt.
+    // Earlier waves can reduce the gate to its final seal core. The last point
+    // remains until the final wave so the campaign cannot end before its boss.
     if (damageResult.heldBySeal) {
       if (!this.sealWarningShown) {
         this.sealWarningShown = true;
         this.game.entityManager.addEntity(new FloatingText(
-          this.game, '지옥문 봉인: 최후의 정화까지 버텨냅니다', this.x, this.y - 125, '#b66c68', 'emphasis'
+          this.game, '봉인핵 1 · 최후전에서 파괴', this.x, this.y - 125, '#b66c68', 'emphasis'
         ));
       }
       return;

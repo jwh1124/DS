@@ -107,6 +107,7 @@ class Game {
     this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
     this.expeditionMandate = getExpeditionMandate('bastionPledge');
     const searchParams = new URLSearchParams(window.location.search);
+    this.hasDeveloperQuery = searchParams.has('dev') && searchParams.get('dev') !== '0';
     const savedDeveloperMode = window.localStorage.getItem('exorcism-developer-mode') === '1';
     this.isDeveloperMode = searchParams.has('dev')
       ? searchParams.get('dev') !== '0'
@@ -222,6 +223,7 @@ class Game {
   setDeveloperMode(enabled, persist = true) {
     this.isDeveloperMode = Boolean(enabled);
     document.body.classList.toggle('developer-mode', this.isDeveloperMode);
+    document.body.classList.toggle('url-developer-mode', this.hasDeveloperQuery);
     const button = document.getElementById('developer-mode-btn');
     if (button) {
       button.setAttribute('aria-pressed', String(this.isDeveloperMode));
