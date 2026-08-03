@@ -18,6 +18,17 @@ export function getRunOmen(seed = Math.random()) {
   return RUN_OMENS[Math.floor(normalized * RUN_OMENS.length)];
 }
 
+export function getRunOmenBriefing(omen) {
+  if (!omen) {
+    return { title: '정찰 미확인', detail: '원정 시작 후 지옥문 정찰이 도착합니다.', advice: '균형 편성으로 첫 웨이브를 대비하십시오.' };
+  }
+  return {
+    title: `${omen.name} · ${omen.summary}`,
+    detail: '이번 원정 전체에 적용되는 지옥의 징조입니다.',
+    advice: omen.advice
+  };
+}
+
 export function applyRunOmen(unit, omen) {
   if (!unit || !omen || !omen.types.includes(unit.type)) return false;
   unit.maxHp = Math.round(unit.maxHp * (Number(omen.hpMultiplier) || 1));

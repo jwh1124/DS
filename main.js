@@ -48,7 +48,7 @@ import {
 } from './src/bossPatternPerformance.js';
 import { getAutoFormationAction } from './src/autoFormation.js';
 import { getRunRecordSummary, recordRunResult } from './src/runRecords.js';
-import { getRunOmen } from './src/runOmens.js';
+import { getRunOmen, getRunOmenBriefing } from './src/runOmens.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -116,6 +116,7 @@ class Game {
     this.setupInput();
     this.setupViewportPolicy();
     this.updateRunRecordSummary();
+    this.updateRunOmenBriefing();
     document.body.classList.toggle('developer-mode', this.isDeveloperMode);
     
     document.getElementById('ui-layer').style.display = 'none';
@@ -276,6 +277,7 @@ class Game {
     this.gameSpeed = 1;
     this.autoSpend = false;
     this.runOmen = getRunOmen();
+    this.updateRunOmenBriefing();
     this.setTacticalOrder('balanced', false);
     this.runStats = this.createRunStats();
     
@@ -588,6 +590,16 @@ class Game {
   updateRunRecordSummary() {
     const summary = document.getElementById('run-record-summary');
     if (summary) summary.textContent = getRunRecordSummary(window.localStorage, this.difficulty);
+  }
+
+  updateRunOmenBriefing() {
+    const briefing = getRunOmenBriefing(this.runOmen);
+    const title = document.getElementById('omen-briefing-title');
+    const detail = document.getElementById('omen-briefing-detail');
+    const advice = document.getElementById('omen-briefing-advice');
+    if (title) title.textContent = briefing.title;
+    if (detail) detail.textContent = briefing.detail;
+    if (advice) advice.textContent = `권장: ${briefing.advice}`;
   }
 
   hideBossHud() {

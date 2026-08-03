@@ -1199,6 +1199,48 @@ body.developer-mode .boss-hud {
   letter-spacing: 0.7px;
 }
 
+.omen-briefing {
+  width: min(450px, calc(100% - 44px));
+  margin: 4px 0 16px;
+  padding: 13px 17px;
+  border: 1px solid rgba(183, 154, 103, 0.42);
+  border-left: 3px solid #8f5650;
+  border-radius: 5px;
+  background: rgba(17, 12, 17, 0.74);
+  text-align: left;
+}
+
+.omen-briefing-kicker,
+.omen-briefing strong,
+.omen-briefing p,
+.omen-briefing small {
+  display: block;
+}
+
+.omen-briefing-kicker {
+  color: #a99672;
+  font: 700 9px 'Cinzel', 'Noto Sans KR', sans-serif;
+  letter-spacing: 1.3px;
+}
+
+.omen-briefing strong {
+  margin-top: 4px;
+  color: #d7c6a6;
+  font: 900 15px 'Cinzel', 'Noto Sans KR', sans-serif;
+}
+
+.omen-briefing p,
+.omen-briefing small {
+  margin-top: 4px;
+  color: #b9afa4;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.omen-briefing small {
+  color: #c9a77c;
+}
+
 .result-kicker {
   color: #a99672;
   font: 700 10px 'Cinzel', 'Noto Sans KR', sans-serif;

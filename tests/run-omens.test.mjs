@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyRunOmen, getRunOmen } from '../src/runOmens.js';
+import { applyRunOmen, getRunOmen, getRunOmenBriefing } from '../src/runOmens.js';
 
 test('seeded run omens cover three distinct campaign threats', () => {
   assert.equal(getRunOmen(0).id, 'bloodMoon');
@@ -17,4 +17,10 @@ test('a run omen changes only its authored enemy role', () => {
   assert.equal(imp.hp, 100);
   assert.equal(applyRunOmen(succubus, omen), false);
   assert.equal(succubus.speed, 170);
+});
+
+test('run omen briefing turns the modifier into a player-facing response', () => {
+  const briefing = getRunOmenBriefing(getRunOmen(0.8));
+  assert.equal(briefing.title, '밤의 합창 · 서큐버스·밴시 피해 +8%');
+  assert.match(briefing.advice, /사제/);
 });
