@@ -64,6 +64,7 @@ import {
 } from './src/runOmens.js';
 import { EXPEDITION_MANDATES, getExpeditionMandate } from './src/expeditionMandates.js';
 import { getMandateChronicleSummary, recordMandateClear } from './src/mandateChronicle.js';
+import { getInfernalChronicleSummary, recordInfernalClear } from './src/infernalChronicle.js';
 import {
   getInfernalHost,
   getInfernalHostBackgroundFit,
@@ -478,6 +479,11 @@ class Game {
       mandateResult: report.mandateResult,
       score: report.score
     });
+    const infernalChronicleResult = recordInfernalClear(window.localStorage, {
+      host: this.infernalHost,
+      won: winner === 'player',
+      score: report.score
+    });
 
     if (kicker) kicker.textContent = report.kicker;
     if (summary) summary.textContent = report.summary;
@@ -504,6 +510,8 @@ class Game {
       if (relicResult.unlockedRelic) rewardLines.push(`성물 해금: ${relicResult.unlockedRelic.name}`);
       if (mandateChronicleResult.firstClear) rewardLines.push(`서약 첫 달성: ${report.mandateResult.mandate.name}`);
       else if (report.mandateResult.fulfilled) rewardLines.push(`서약 기록: ${mandateChronicleResult.record.clears}회`);
+      if (infernalChronicleResult.firstClear) rewardLines.push(`지역 첫 정화: ${this.infernalHost.name}`);
+      else if (winner === 'player') rewardLines.push(`지역 기록: ${infernalChronicleResult.record.clears}회`);
       recordText.textContent = rewardLines.join(' · ');
     }
     this.updateRunRecordSummary();
@@ -782,7 +790,7 @@ class Game {
     const title = document.getElementById('infernal-host-title');
     const detail = document.getElementById('infernal-host-detail');
     if (title) title.textContent = briefing.title;
-    if (detail) detail.textContent = `권장: ${briefing.detail}`;
+    if (detail) detail.textContent = `권장: ${briefing.detail} · ${getInfernalChronicleSummary(window.localStorage, this.infernalHost)}`;
   }
 
   updateBattlefieldBackdrop() {
