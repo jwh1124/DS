@@ -701,6 +701,38 @@ body.developer-mode .boss-hud {
   font-size: 10px;
 }
 
+.expedition-mandate-status {
+  width: 170px;
+  margin-top: 9px;
+  padding: 8px 10px;
+  border-left: 3px solid #b79a67;
+  background: rgba(16, 12, 17, 0.86);
+  color: #a99672;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.expedition-mandate-status span,
+.expedition-mandate-status strong {
+  display: block;
+}
+
+.expedition-mandate-status span {
+  font: 700 9px 'Cinzel', 'Noto Sans KR', sans-serif;
+  letter-spacing: 0.7px;
+}
+
+.expedition-mandate-status strong {
+  margin-top: 3px;
+  color: #d9d0c1;
+  font-size: 10px;
+}
+
+.expedition-mandate-status[data-tone="complete"] { border-left-color: #78a98d; }
+.expedition-mandate-status[data-tone="at-risk"],
+.expedition-mandate-status[data-tone="failed"] { border-left-color: #b66c68; }
+.expedition-mandate-status[data-tone="waiting"] { border-left-color: #8e849a; }
+
 .tactical-orders {
   width: 190px;
   padding: 8px 10px 9px;

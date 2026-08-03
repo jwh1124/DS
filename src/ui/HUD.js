@@ -3,6 +3,7 @@ import { WAVE_PHASES } from '../wavePacing.js';
 import { getWaveReadiness } from '../waveReadiness.js';
 import { getTacticalPerformanceLiveText } from '../tacticalPerformance.js';
 import { getTacticalOrderDefinition } from '../tacticalOrders.js';
+import { getExpeditionMandateLiveStatus } from '../expeditionMandates.js';
 
 export class HUD {
   constructor(game) {
@@ -19,6 +20,9 @@ export class HUD {
     this.waveReadinessAction = document.getElementById('wave-readiness-action');
     this.launchWaveButton = document.getElementById('launch-wave-btn');
     this.tacticalOrderStats = document.getElementById('tactical-order-stats');
+    this.mandateStatus = document.getElementById('expedition-mandate-status');
+    this.mandateStatusText = document.getElementById('expedition-mandate-status-text');
+    this.lastMandateStatus = '';
     
     this.pHealthText = document.getElementById('player-health-text');
     this.pHealthBar = document.getElementById('player-health-bar');
@@ -136,6 +140,7 @@ export class HUD {
     }
 
     this.updateBossHud();
+    this.updateExpeditionMandateStatus();
     if (this.tacticalOrderStats) {
       this.tacticalOrderStats.textContent = getTacticalPerformanceLiveText(
         this.game.runStats?.tacticalPerformance,
@@ -159,6 +164,21 @@ export class HUD {
       btn.classList.toggle('locked-unit', isLocked);
       btn.disabled = isLocked || isMaxTech || isCoolingDown || currentMinerals < cost || (isUnit && queueIsFull);
     });
+  }
+
+  updateExpeditionMandateStatus() {
+    if (!this.mandateStatus || !this.mandateStatusText) return;
+    const playerBase = this.game.playerBase;
+    const live = getExpeditionMandateLiveStatus(this.game.expeditionMandate, {
+      playerIntegrity: playerBase ? (playerBase.hp / playerBase.maxHp) * 100 : 0,
+      earlyStarts: this.game.runStats?.earlyStarts,
+      bossPatternPerformance: this.game.runStats?.bossPatterns
+    });
+    const nextStatus = `${this.game.expeditionMandate?.name ?? '원정 서약'}|${live.tone}|${live.text}`;
+    if (nextStatus === this.lastMandateStatus) return;
+    this.lastMandateStatus = nextStatus;
+    this.mandateStatus.dataset.tone = live.tone;
+    this.mandateStatusText.textContent = live.text;
   }
 
   updateWaveReadiness(isFinale) {
