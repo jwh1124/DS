@@ -17,4 +17,7 @@ test('infernal scouting separates advice, chronicle, mastery, and bounty informa
   assert.match(css, /\.mandate-choice\.is-bounty/);
   assert.match(html, /<details class="result-log">/);
   assert.match(css, /\.result-log summary/);
+  assert.match(html, /role="group" aria-label="원정 난이도"/);
+  assert.match(source, /b\.setAttribute\('aria-pressed', 'false'\)/);
+  assert.match(source, /aria-label="\$\{mandate\.name\}/);
 });

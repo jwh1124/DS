@@ -156,8 +156,12 @@ class Game {
     
     document.querySelectorAll('.diff-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.diff-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         this.difficulty = parseFloat(btn.dataset.diff);
         this.updateRunRecordSummary();
       });
@@ -835,7 +839,7 @@ class Game {
     if (!choices) return;
     const bounty = getInfernalBounty(this.infernalHost);
     choices.innerHTML = Object.values(EXPEDITION_MANDATES).map(mandate => `
-      <button class="mandate-choice${this.expeditionMandate?.id === mandate.id ? ' active' : ''}${bounty?.mandateId === mandate.id ? ' is-bounty' : ''}" type="button" data-expedition-mandate="${mandate.id}">
+      <button class="mandate-choice${this.expeditionMandate?.id === mandate.id ? ' active' : ''}${bounty?.mandateId === mandate.id ? ' is-bounty' : ''}" type="button" data-expedition-mandate="${mandate.id}" aria-pressed="${this.expeditionMandate?.id === mandate.id}" aria-label="${mandate.name}${bounty?.mandateId === mandate.id ? `, 군단 특명 추가 ${bounty.scoreBonus}점` : ''}">
         ${bounty?.mandateId === mandate.id ? `<b class="mandate-bounty-label">군단 특명 +${bounty.scoreBonus}점</b>` : ''}
         <strong>${mandate.name}</strong><span>${mandate.description}</span><em>달성 +${mandate.scoreBonus}점</em><small>${getMandateChronicleSummary(window.localStorage, mandate.id)}</small>
       </button>`).join('');

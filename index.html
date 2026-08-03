@@ -26,11 +26,11 @@
         </div>
         
         <!-- 난이도 선택 -->
-        <div id="difficulty-selector" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-          <button class="diff-btn" data-diff="0.7"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-dove"></use></svg><span>은총 (EASY)</span></button>
-          <button class="diff-btn active" data-diff="1.0"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-cross"></use></svg><span>시련 (NORMAL)</span></button>
-          <button class="diff-btn" data-diff="1.25"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-flame"></use></svg><span>연옥 (HARD)</span></button>
-          <button class="diff-btn insane-btn" data-diff="1.5"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-skull"></use></svg><span>지옥 (INFERNO)</span></button>
+        <div id="difficulty-selector" role="group" aria-label="원정 난이도" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+          <button class="diff-btn" data-diff="0.7" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-dove"></use></svg><span>은총 (EASY)</span></button>
+          <button class="diff-btn active" data-diff="1.0" aria-pressed="true"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-cross"></use></svg><span>시련 (NORMAL)</span></button>
+          <button class="diff-btn" data-diff="1.25" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-flame"></use></svg><span>연옥 (HARD)</span></button>
+          <button class="diff-btn insane-btn" data-diff="1.5" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-skull"></use></svg><span>지옥 (INFERNO)</span></button>
         </div>
         
         <section class="omen-briefing" aria-labelledby="omen-briefing-title">
