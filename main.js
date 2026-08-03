@@ -62,6 +62,7 @@ import {
   getRunOmenDoctrineAdvice
 } from './src/runOmens.js';
 import { EXPEDITION_MANDATES, getExpeditionMandate } from './src/expeditionMandates.js';
+import { getMandateChronicleSummary, recordMandateClear } from './src/mandateChronicle.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -450,6 +451,10 @@ class Game {
       difficulty: this.difficulty,
       won: winner === 'player'
     });
+    const mandateChronicleResult = recordMandateClear(window.localStorage, {
+      mandateResult: report.mandateResult,
+      score: report.score
+    });
 
     if (kicker) kicker.textContent = report.kicker;
     if (summary) summary.textContent = report.summary;
@@ -472,12 +477,15 @@ class Game {
       const recordLine = recordResult.isPersonalBest
         ? `새 ${recordResult.difficultyLabel} 최고 기록 · ${report.grade} · ${report.score}점`
         : getRunRecordSummary(window.localStorage, this.difficulty);
-      recordText.textContent = relicResult.unlockedRelic
-        ? `${recordLine} · 성물 해금: ${relicResult.unlockedRelic.name}`
-        : recordLine;
+      const rewardLines = [recordLine];
+      if (relicResult.unlockedRelic) rewardLines.push(`성물 해금: ${relicResult.unlockedRelic.name}`);
+      if (mandateChronicleResult.firstClear) rewardLines.push(`서약 첫 달성: ${report.mandateResult.mandate.name}`);
+      else if (report.mandateResult.fulfilled) rewardLines.push(`서약 기록: ${mandateChronicleResult.record.clears}회`);
+      recordText.textContent = rewardLines.join(' · ');
     }
     this.updateRunRecordSummary();
     this.updateCampaignRelicArmory();
+    this.updateExpeditionMandateBoard();
     if (gameOverScreen) gameOverScreen.classList.remove('hidden');
     requestAnimationFrame(() => document.getElementById('restart-btn')?.focus());
   }
@@ -705,7 +713,7 @@ class Game {
     if (!choices) return;
     choices.innerHTML = Object.values(EXPEDITION_MANDATES).map(mandate => `
       <button class="mandate-choice${this.expeditionMandate?.id === mandate.id ? ' active' : ''}" type="button" data-expedition-mandate="${mandate.id}">
-        <strong>${mandate.name}</strong><span>${mandate.description}</span><em>달성 +${mandate.scoreBonus}점</em>
+        <strong>${mandate.name}</strong><span>${mandate.description}</span><em>달성 +${mandate.scoreBonus}점</em><small>${getMandateChronicleSummary(window.localStorage, mandate.id)}</small>
       </button>`).join('');
   }
 
