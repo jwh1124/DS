@@ -299,7 +299,7 @@ class Game {
     this.economy.start();
   }
   
-  resetGame() {
+  resetGame({ launch = true } = {}) {
     this.isRunning = false;
     this.isPaused = false;
     this.isDoctrineChoosing = false;
@@ -355,7 +355,7 @@ class Game {
       autoSpendBtn.classList.remove('active');
     }
     
-    // Hide game over screen & show UI
+    // Hide transient game screens before either restarting or returning to preparation.
     const gameOverScreen = document.getElementById('game-over-screen');
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     document.getElementById('pause-screen')?.classList.add('hidden');
@@ -364,10 +364,24 @@ class Game {
     this.hideBossHud();
     this.updateDoctrineSummary();
     
-    document.getElementById('title-screen').style.display = 'none';
-    document.getElementById('ui-layer').style.display = 'block';
-    
-    this.start();
+    const titleScreen = document.getElementById('title-screen');
+    if (launch) {
+      titleScreen.style.display = 'none';
+      document.getElementById('ui-layer').style.display = 'block';
+      this.start();
+      return;
+    }
+
+    document.getElementById('ui-layer').style.display = 'none';
+    titleScreen.style.display = 'flex';
+    requestAnimationFrame(() => {
+      titleScreen.style.opacity = '1';
+      document.getElementById('start-btn')?.focus();
+    });
+  }
+
+  returnToPreparation() {
+    this.resetGame({ launch: false });
   }
 
   stop(winner, endReason = 'baseDestroyed') {
@@ -1124,6 +1138,11 @@ class Game {
         this.resetGame();
       });
     }
+    document.getElementById('return-to-prep-btn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.returnToPreparation();
+    });
 
     document.getElementById('pause-btn')?.addEventListener('click', () => this.togglePause());
     document.getElementById('resume-btn')?.addEventListener('click', () => this.togglePause());

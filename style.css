@@ -1818,7 +1818,16 @@ button:focus-visible {
   letter-spacing: 0.55px;
 }
 
-#restart-btn {
+.result-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#restart-btn,
+.result-prep-btn {
   background: linear-gradient(135deg, #806638, #b79a67);
   color: #050208;
   border: none;
@@ -1832,9 +1841,18 @@ button:focus-visible {
   pointer-events: auto;
 }
 
-#restart-btn:hover {
+#restart-btn:hover,
+.result-prep-btn:hover {
   transform: scale(1.05);
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.55);
+}
+
+.result-prep-btn {
+  background: rgba(20, 15, 30, 0.88);
+  border: 1px solid rgba(183, 154, 103, 0.68);
+  color: #d8c28d;
+  font: 700 13px 'Noto Sans KR', sans-serif;
+  padding: 12px 20px;
 }
 
 @media (max-width: 899px), (max-height: 699px) {
