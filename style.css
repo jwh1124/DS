@@ -1539,6 +1539,14 @@ body.developer-mode .boss-hud {
 .mandate-choice em { margin-top: 5px; color: #bca05e; font-size: 9px; font-style: normal; }
 .mandate-choice small { margin-top: 3px; color: #8e857b; font-size: 8px; }
 .mandate-choice.active { border-color: #c6a35c; background: rgba(74, 54, 29, 0.9); }
+.mandate-choice.is-bounty { border-color: rgba(194, 167, 115, 0.72); }
+.mandate-bounty-label {
+  display: inline-block;
+  margin-bottom: 4px;
+  color: #d4b978;
+  font: 700 8px 'Cinzel', 'Noto Sans KR', sans-serif;
+  letter-spacing: 0.45px;
+}
 
 @media (max-width: 620px) {
   .relic-armory-heading { display: block; }

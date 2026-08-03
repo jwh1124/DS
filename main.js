@@ -833,8 +833,10 @@ class Game {
   updateExpeditionMandateBoard() {
     const choices = document.getElementById('expedition-mandate-choices');
     if (!choices) return;
+    const bounty = getInfernalBounty(this.infernalHost);
     choices.innerHTML = Object.values(EXPEDITION_MANDATES).map(mandate => `
-      <button class="mandate-choice${this.expeditionMandate?.id === mandate.id ? ' active' : ''}" type="button" data-expedition-mandate="${mandate.id}">
+      <button class="mandate-choice${this.expeditionMandate?.id === mandate.id ? ' active' : ''}${bounty?.mandateId === mandate.id ? ' is-bounty' : ''}" type="button" data-expedition-mandate="${mandate.id}">
+        ${bounty?.mandateId === mandate.id ? `<b class="mandate-bounty-label">군단 특명 +${bounty.scoreBonus}점</b>` : ''}
         <strong>${mandate.name}</strong><span>${mandate.description}</span><em>달성 +${mandate.scoreBonus}점</em><small>${getMandateChronicleSummary(window.localStorage, mandate.id)}</small>
       </button>`).join('');
   }

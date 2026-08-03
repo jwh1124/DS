@@ -13,4 +13,6 @@ test('infernal scouting separates advice, chronicle, mastery, and bounty informa
   }
   assert.match(source, /숙련 활성/);
   assert.match(css, /\.infernal-host-meta/);
+  assert.match(source, /mandate-bounty-label/);
+  assert.match(css, /\.mandate-choice\.is-bounty/);
 });
