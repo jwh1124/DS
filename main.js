@@ -24,6 +24,7 @@ import {
   getDoctrineById,
   getDoctrineChoices
 } from './src/doctrines.js';
+import { getBoonById, getBoonChoices } from './src/battlefieldBoons.js';
 import { iconMarkup, labeledIconMarkup } from './src/ui/icons.js';
 import {
   getCameraTargetX,
@@ -63,6 +64,9 @@ class Game {
     this.isPaused = false;
     this.isDoctrineChoosing = false;
     this.pendingDoctrineChoices = [];
+    this.isBoonChoosing = false;
+    this.pendingBoonChoices = [];
+    this.selectedBoons = [];
     this.doctrineBonuses = createDoctrineBonuses();
     this.screenShake = 0;
     this.shakeTime = 0;
@@ -221,10 +225,14 @@ class Game {
     this.isPaused = false;
     this.isDoctrineChoosing = false;
     this.pendingDoctrineChoices = [];
+    this.isBoonChoosing = false;
+    this.pendingBoonChoices = [];
+    this.selectedBoons = [];
     const gameOverScreen = document.getElementById('game-over-screen');
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     document.getElementById('pause-screen')?.classList.add('hidden');
     document.getElementById('doctrine-screen')?.classList.add('hidden');
+    document.getElementById('boon-screen')?.classList.add('hidden');
     this.hideBossHud();
     this.loop.start();
     this.waveSystem.start();
@@ -236,6 +244,9 @@ class Game {
     this.isPaused = false;
     this.isDoctrineChoosing = false;
     this.pendingDoctrineChoices = [];
+    this.isBoonChoosing = false;
+    this.pendingBoonChoices = [];
+    this.selectedBoons = [];
     this.doctrineBonuses = createDoctrineBonuses();
     this.loop.stop();
     this.waveSystem.stop();
@@ -285,6 +296,7 @@ class Game {
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
     document.getElementById('pause-screen')?.classList.add('hidden');
     document.getElementById('doctrine-screen')?.classList.add('hidden');
+    document.getElementById('boon-screen')?.classList.add('hidden');
     this.hideBossHud();
     this.updateDoctrineSummary();
     
@@ -299,10 +311,13 @@ class Game {
     this.isPaused = false;
     this.isDoctrineChoosing = false;
     this.pendingDoctrineChoices = [];
+    this.isBoonChoosing = false;
+    this.pendingBoonChoices = [];
     this.loop.stop();
     this.waveSystem.stop();
     this.economy.stop();
     document.getElementById('doctrine-screen')?.classList.add('hidden');
+    document.getElementById('boon-screen')?.classList.add('hidden');
     this.hideBossHud();
     
     const gameOverScreen = document.getElementById('game-over-screen');
@@ -345,6 +360,9 @@ class Game {
       bossPatternSummary: getBossPatternSummary(this.runStats.bossPatterns),
       doctrineNames: this.doctrineBonuses.selected
         .map(id => getDoctrineById(id)?.title)
+        .filter(Boolean),
+      boonNames: this.selectedBoons
+        .map(id => getBoonById(id)?.title)
         .filter(Boolean)
     });
 
@@ -370,7 +388,7 @@ class Game {
   }
 
   togglePause() {
-    if (!this.isRunning || this.isDoctrineChoosing) return;
+    if (!this.isRunning || this.isDoctrineChoosing || this.isBoonChoosing) return;
     this.isPaused = !this.isPaused;
     document.getElementById('pause-screen')?.classList.toggle('hidden', !this.isPaused);
   }
@@ -464,6 +482,84 @@ class Game {
     this.isPaused = false;
     document.getElementById('doctrine-screen')?.classList.add('hidden');
     this.updateDoctrineSummary();
+  }
+
+  offerBoonChoice(wave) {
+    const choices = getBoonChoices(wave)
+      .filter(boon => !this.selectedBoons.includes(boon.id));
+    if (!this.isRunning || choices.length === 0 || this.isDoctrineChoosing || this.isBoonChoosing) return;
+
+    this.pendingBoonChoices = choices.map(boon => boon.id);
+    this.isBoonChoosing = true;
+    this.isPaused = true;
+
+    const screen = document.getElementById('boon-screen');
+    const waveText = document.getElementById('boon-wave');
+    const choiceRoot = document.getElementById('boon-choices');
+    if (!screen || !choiceRoot) return;
+
+    if (waveText) waveText.textContent = `WAVE ${wave} 전장 보급`;
+    choiceRoot.innerHTML = choices.map((boon, index) => `
+      <button class="boon-card" type="button" data-boon="${boon.id}">
+        <span class="doctrine-key">[${index + 1}]</span>
+        <span class="doctrine-icon" aria-hidden="true">${iconMarkup(boon.icon)}</span>
+        <span class="doctrine-role">${boon.role}</span>
+        <strong>${boon.title}</strong>
+        <span class="doctrine-description">${boon.description}</span>
+      </button>
+    `).join('');
+
+    choiceRoot.querySelectorAll('.boon-card').forEach(button => {
+      button.addEventListener('click', () => this.selectBoon(button.dataset.boon));
+    });
+    screen.classList.remove('hidden');
+    requestAnimationFrame(() => choiceRoot.querySelector('.boon-card')?.focus());
+  }
+
+  selectBoon(boonId) {
+    if (!this.isBoonChoosing || !this.pendingBoonChoices.includes(boonId)) return;
+    const boon = getBoonById(boonId);
+    if (!boon) return;
+
+    const effect = boon.effect;
+    if (effect.kind === 'minerals') {
+      this.economy.minerals += effect.amount;
+    } else if (effect.kind === 'income') {
+      this.economy.increaseIncome(effect.amount);
+    } else if (effect.kind === 'baseFortify' && this.playerBase) {
+      this.playerBase.maxHp += effect.amount;
+      this.playerBase.hp = Math.min(this.playerBase.maxHp, this.playerBase.hp + effect.amount);
+    } else if (effect.kind === 'unitHeal' || effect.kind === 'unitDamage') {
+      this.entityManager.entities
+        .filter(entity => entity.team === 'player' && entity.type && entity.isAlive)
+        .forEach(unit => {
+          if (effect.kind === 'unitHeal') {
+            unit.hp = Math.min(unit.maxHp, Math.round(unit.hp + unit.maxHp * effect.amount));
+          } else if (unit.damage > 0) {
+            unit.damage = Math.round(unit.damage * effect.multiplier);
+          }
+        });
+    } else if (effect.kind === 'mixed') {
+      this.economy.minerals += effect.minerals;
+      if (this.playerBase) {
+        this.playerBase.hp = Math.min(this.playerBase.maxHp, this.playerBase.hp + effect.baseFortify);
+      }
+    }
+
+    this.selectedBoons.push(boonId);
+    this.audio.playMagic();
+    this.entityManager.addEntity(new FloatingText(
+      this,
+      `전장 보급 · ${boon.title}`,
+      this.playerBase.x,
+      this.playerBase.y - 120,
+      '#d8bf8a',
+      'emphasis'
+    ));
+    this.pendingBoonChoices = [];
+    this.isBoonChoosing = false;
+    this.isPaused = false;
+    document.getElementById('boon-screen')?.classList.add('hidden');
   }
 
   updateDoctrineSummary() {
@@ -941,6 +1037,15 @@ class Game {
         if (choiceIndex >= 0 && this.pendingDoctrineChoices[choiceIndex]) {
           e.preventDefault();
           this.selectDoctrine(this.pendingDoctrineChoices[choiceIndex]);
+        }
+        return;
+      }
+
+      if (this.isBoonChoosing) {
+        const choiceIndex = ['1', '2', '3'].indexOf(e.key);
+        if (choiceIndex >= 0 && this.pendingBoonChoices[choiceIndex]) {
+          e.preventDefault();
+          this.selectBoon(this.pendingBoonChoices[choiceIndex]);
         }
         return;
       }

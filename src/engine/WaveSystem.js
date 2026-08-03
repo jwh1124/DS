@@ -32,6 +32,11 @@ import {
   resolvePostCombatPhase,
   WAVE_PHASES
 } from '../wavePacing.js';
+import {
+  applyWaveMutator,
+  getWaveMutator,
+  getWaveMutatorPreview
+} from '../waveMutators.js';
 
 export class WaveSystem {
   constructor(game) {
@@ -113,6 +118,11 @@ export class WaveSystem {
     }
     if (nextWave === 6) {
       return '대악마: 심연의 집행관 · 대형 약점 · 권장 심판관 + 사제';
+    }
+
+    const mutator = getWaveMutator(nextWave);
+    if (mutator) {
+      return `정찰: ${getWaveMutatorPreview(nextWave)} · 권장 ${mutator.advice}`;
     }
 
     const pMelee = this.countSpawners('player', 'melee');
@@ -262,6 +272,7 @@ export class WaveSystem {
     this.finalWaveStarted = this.aiWaveCount === MAX_WAVES;
     this.phase = this.finalWaveStarted ? WAVE_PHASES.FINAL : WAVE_PHASES.COMBAT;
     this.timeUntilWave = 0;
+    const waveMutator = getWaveMutator(this.aiWaveCount);
     if (this.finalWaveStarted) {
       this.finalBattleTime = 0;
       this.finalReinforcementTimer = 5;
@@ -427,6 +438,7 @@ export class WaveSystem {
       unit.formationRow = slot.row;
       unit.spawnerId = contract.id;
       unit.isWaveFighter = true;
+      applyWaveMutator(unit, waveMutator);
       this.game.entityManager.addEntity(unit);
     });
     
@@ -443,6 +455,22 @@ export class WaveSystem {
       this.game.entityManager.addEntity(new FloatingText(
         this.game, `전열 교대 · 이전 분대 ${recalledCount}명 귀환`, WORLD_WIDTH / 2, 252, '#c9c1b6', false
       ));
+    }
+
+    if (waveMutator) {
+      this.lastActionLog = `[전장 변주]: ${waveMutator.name} · ${waveMutator.summary} · 권장 ${waveMutator.advice}`;
+      this.game.entityManager.addEntity(new FloatingText(
+        this.game,
+        `${waveMutator.name} · ${waveMutator.summary}`,
+        WORLD_WIDTH / 2,
+        228,
+        '#b97872',
+        'emphasis'
+      ));
+    }
+
+    if ([4, 8].includes(this.aiWaveCount) && this.game.offerBoonChoice) {
+      this.game.offerBoonChoice(this.aiWaveCount);
     }
 
     if ([3, 6, 9].includes(this.aiWaveCount) && this.game.offerDoctrineChoice) {

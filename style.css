@@ -1305,6 +1305,51 @@ body.developer-mode .boss-hud {
   backdrop-filter: blur(10px);
 }
 
+#boon-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 59;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: rgba(8, 7, 9, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.boon-panel {
+  border-color: rgba(173, 132, 78, 0.78);
+  background:
+    linear-gradient(145deg, rgba(39, 30, 22, 0.99), rgba(13, 10, 13, 0.99));
+}
+
+.boon-card {
+  position: relative;
+  min-height: 224px;
+  padding: 20px 18px;
+  border: 1px solid rgba(183, 154, 103, 0.42);
+  border-radius: 6px;
+  background: rgba(24, 19, 18, 0.94);
+  color: inherit;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 9px;
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
+.boon-card:hover,
+.boon-card:focus-visible {
+  transform: translateY(-4px);
+  border-color: #c2a773;
+  background: rgba(55, 42, 27, 0.96);
+}
+
+.boon-card:focus-visible {
+  outline: 2px solid #c2a773;
+  outline-offset: 2px;
+}
+
 .doctrine-panel {
   width: min(940px, 100%);
   padding: 30px;
@@ -1427,7 +1472,8 @@ body.developer-mode .boss-hud {
 @media (prefers-reduced-motion: reduce) {
   .boss-hud,
   .doctrine-panel,
-  .doctrine-card {
+  .doctrine-card,
+  .boon-card {
     animation: none;
     transition: none;
   }

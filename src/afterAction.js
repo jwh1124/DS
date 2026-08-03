@@ -105,6 +105,7 @@ export function buildAfterActionReport({
   incomeRites = 0,
   ultimates = 0,
   doctrineNames = [],
+  boonNames = [],
   tacticalOrderLabel = '균형 전투',
   tacticalPerformanceSummary = '명령 성과 없음',
   bossPatternPerformance = {},
@@ -130,6 +131,7 @@ export function buildAfterActionReport({
     : `${safeWave}/${maxWaves}웨이브에서 성당이 무너졌습니다.`;
 
   const doctrineRecord = doctrineNames.length ? doctrineNames.join(' · ') : '없음';
+  const boonRecord = boonNames.length ? boonNames.join(' · ') : '없음';
   const recommendation = getRecommendation({
     winner,
     wave: safeWave,
@@ -163,7 +165,8 @@ export function buildAfterActionReport({
       `명령 성과: ${tacticalPerformanceSummary}`,
       `보스 대응: ${bossPatternSummary}`,
       `최종 편성: ${getRosterSummary(roster)}`,
-      `선택 교리: ${doctrineRecord}`
+      `선택 교리: ${doctrineRecord}`,
+      `전장 보급: ${boonRecord}`
     ].join('\n'),
     recommendation
   };
