@@ -15,4 +15,6 @@ test('infernal scouting separates advice, chronicle, mastery, and bounty informa
   assert.match(css, /\.infernal-host-meta/);
   assert.match(source, /mandate-bounty-label/);
   assert.match(css, /\.mandate-choice\.is-bounty/);
+  assert.match(html, /<details class="result-log">/);
+  assert.match(css, /\.result-log summary/);
 });

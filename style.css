@@ -1893,11 +1893,30 @@ button:focus-visible {
 }
 
 #game-over-summary {
-  margin: 15px 0 18px;
+  margin: 9px 0 2px;
   color: #bdb6ac;
   font-size: 11px;
   line-height: 1.65;
   white-space: pre-line;
+}
+
+.result-log {
+  margin: 14px 0 12px;
+  padding: 9px 11px;
+  border: 1px solid rgba(183, 154, 103, 0.2);
+  border-radius: 5px;
+  background: rgba(8, 7, 10, 0.32);
+}
+
+.result-log summary {
+  color: #c9b998;
+  cursor: pointer;
+  font: 700 10px 'Cinzel', 'Noto Sans KR', sans-serif;
+  letter-spacing: 0.55px;
+}
+
+.result-log[open] summary {
+  color: #e1cfaa;
 }
 
 .result-record {
