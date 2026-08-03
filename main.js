@@ -63,7 +63,12 @@ import {
 } from './src/runOmens.js';
 import { EXPEDITION_MANDATES, getExpeditionMandate } from './src/expeditionMandates.js';
 import { getMandateChronicleSummary, recordMandateClear } from './src/mandateChronicle.js';
-import { getInfernalHost, getInfernalHostBriefing } from './src/infernalHosts.js';
+import {
+  getInfernalHost,
+  getInfernalHostBackgroundFit,
+  getInfernalHostBackgroundPath,
+  getInfernalHostBriefing
+} from './src/infernalHosts.js';
 
 export const WORLD_WIDTH = 2000;
 
@@ -112,7 +117,7 @@ class Game {
     this.entityManager.addEntity(this.enemyBase);
     
     this.bgImage = new Image();
-    this.bgImage.src = import.meta.env.BASE_URL + 'bg.jpg';
+    this.updateBattlefieldBackdrop();
     
     this.cameraX = 0;
     this.cameraSpeed = 650;
@@ -339,6 +344,7 @@ class Game {
     this.infernalHost = getInfernalHost();
     this.updateRunOmenBriefing();
     this.updateInfernalHostBriefing();
+    this.updateBattlefieldBackdrop();
     this.updateCampaignRelicArmory();
     this.setTacticalOrder('balanced', false);
     this.runStats = this.createRunStats();
@@ -704,6 +710,13 @@ class Game {
     if (detail) detail.textContent = `권장: ${briefing.detail}`;
   }
 
+  updateBattlefieldBackdrop() {
+    const source = import.meta.env.BASE_URL + getInfernalHostBackgroundPath(this.infernalHost);
+    if (this.bgImage?.src?.endsWith(source)) return;
+    this.bgImage = new Image();
+    this.bgImage.src = source;
+  }
+
   updateCampaignRelicArmory() {
     const profile = loadCampaignRelics(window.localStorage);
     const summary = document.getElementById('campaign-relic-summary');
@@ -917,8 +930,12 @@ class Game {
     this.ctx.translate(-Math.floor(this.cameraX) + shakeX, shakeY);
     
     if (this.bgImage.complete && this.bgImage.naturalWidth > 0) {
-      this.ctx.drawImage(this.bgImage, 0, 0, 1500, this.canvas.height);
-      this.ctx.drawImage(this.bgImage, 1500, 0, 1500, this.canvas.height);
+      if (getInfernalHostBackgroundFit(this.infernalHost) === 'stretch') {
+        this.ctx.drawImage(this.bgImage, 0, 0, WORLD_WIDTH, this.canvas.height);
+      } else {
+        this.ctx.drawImage(this.bgImage, 0, 0, 1500, this.canvas.height);
+        this.ctx.drawImage(this.bgImage, 1500, 0, 1500, this.canvas.height);
+      }
     } else {
       this.drawFallbackBackground();
     }

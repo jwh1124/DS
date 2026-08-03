@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getInfernalHost, getInfernalHostBriefing } from '../src/infernalHosts.js';
+import {
+  getInfernalHost,
+  getInfernalHostBackgroundFit,
+  getInfernalHostBackgroundPath,
+  getInfernalHostBriefing
+} from '../src/infernalHosts.js';
 import { getAiRecruitmentPriority } from '../src/aiStrategy.js';
 
 const playerCounts = { melee: 3, ranged: 2, medic: 1, sniper: 1, tank: 1, crusader: 1 };
@@ -11,6 +16,8 @@ test('seeded infernal hosts expose distinct enemy composition plans', () => {
   assert.equal(getInfernalHost(0.4).id, 'graveCoven');
   assert.equal(getInfernalHost(0.8).id, 'ironLegion');
   assert.match(getInfernalHostBriefing(getInfernalHost(0.4)).detail, /후열 처단/);
+  assert.match(getInfernalHostBackgroundPath(getInfernalHost(0.4)), /moonlit-cloister/);
+  assert.equal(getInfernalHostBackgroundFit(getInfernalHost(0.4)), 'stretch');
 });
 
 test('each infernal host changes only its authored recruitment timing', () => {
