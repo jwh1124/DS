@@ -491,6 +491,10 @@ export class WaveSystem {
       this.game.offerBoonChoice(this.aiWaveCount);
     }
 
+    if (this.aiWaveCount === 5 && this.game.offerBattlefieldEvent) {
+      this.game.offerBattlefieldEvent(this.aiWaveCount);
+    }
+
     if ([3, 6, 9].includes(this.aiWaveCount) && this.game.offerDoctrineChoice) {
       this.game.offerDoctrineChoice(this.aiWaveCount);
     }

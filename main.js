@@ -24,6 +24,7 @@ import {
   getDoctrineChoices
 } from './src/doctrines.js';
 import { getBoonById, getBoonChoices } from './src/battlefieldBoons.js';
+import { getBattlefieldEventChoices } from './src/battlefieldEvents.js';
 import { iconMarkup, labeledIconMarkup } from './src/ui/icons.js';
 import {
   getCameraTargetX,
@@ -89,6 +90,8 @@ class Game {
     this.isBoonChoosing = false;
     this.pendingBoonChoices = [];
     this.selectedBoons = [];
+    this.isBattlefieldEventChoosing = false;
+    this.pendingBattlefieldEventChoices = [];
     this.doctrineBonuses = createDoctrineBonuses();
     this.screenShake = 0;
     this.shakeTime = 0;
@@ -296,6 +299,8 @@ class Game {
     this.isBoonChoosing = false;
     this.pendingBoonChoices = [];
     this.selectedBoons = [];
+    this.isBattlefieldEventChoosing = false;
+    this.pendingBattlefieldEventChoices = [];
     this.applyCampaignRelic();
     const gameOverScreen = document.getElementById('game-over-screen');
     if (gameOverScreen) gameOverScreen.classList.add('hidden');
@@ -316,6 +321,8 @@ class Game {
     this.isBoonChoosing = false;
     this.pendingBoonChoices = [];
     this.selectedBoons = [];
+    this.isBattlefieldEventChoosing = false;
+    this.pendingBattlefieldEventChoices = [];
     this.doctrineBonuses = createDoctrineBonuses();
     this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
     this.loop.stop();
@@ -502,7 +509,7 @@ class Game {
   }
 
   togglePause() {
-    if (!this.isRunning || this.isDoctrineChoosing || this.isBoonChoosing) return;
+    if (!this.isRunning || this.isDoctrineChoosing || this.isBoonChoosing || this.isBattlefieldEventChoosing) return;
     this.isPaused = !this.isPaused;
     document.getElementById('pause-screen')?.classList.toggle('hidden', !this.isPaused);
   }
@@ -603,7 +610,7 @@ class Game {
   offerBoonChoice(wave) {
     const choices = getBoonChoices(wave)
       .filter(boon => !this.selectedBoons.includes(boon.id));
-    if (!this.isRunning || choices.length === 0 || this.isDoctrineChoosing || this.isBoonChoosing) return;
+    if (!this.isRunning || choices.length === 0 || this.isDoctrineChoosing || this.isBoonChoosing || this.isBattlefieldEventChoosing) return;
 
     this.pendingBoonChoices = choices.map(boon => boon.id);
     this.isBoonChoosing = true;
@@ -611,10 +618,12 @@ class Game {
 
     const screen = document.getElementById('boon-screen');
     const waveText = document.getElementById('boon-wave');
+    const title = document.getElementById('boon-title');
     const choiceRoot = document.getElementById('boon-choices');
     if (!screen || !choiceRoot) return;
 
     if (waveText) waveText.textContent = `WAVE ${wave} 전장 보급`;
+    if (title) title.textContent = '원정 보급 선택';
     choiceRoot.innerHTML = choices.map((boon, index) => `
       <button class="boon-card" type="button" data-boon="${boon.id}">
         <span class="doctrine-key">[${index + 1}]</span>
@@ -637,7 +646,25 @@ class Game {
     const boon = getBoonById(boonId);
     if (!boon) return;
 
-    const effect = boon.effect;
+    this.applyFieldEffect(boon.effect);
+
+    this.selectedBoons.push(boonId);
+    this.audio.playMagic();
+    this.entityManager.addEntity(new FloatingText(
+      this,
+      `전장 보급 · ${boon.title}`,
+      this.playerBase.x,
+      this.playerBase.y - 120,
+      '#d8bf8a',
+      'emphasis'
+    ));
+    this.pendingBoonChoices = [];
+    this.isBoonChoosing = false;
+    this.isPaused = false;
+    document.getElementById('boon-screen')?.classList.add('hidden');
+  }
+
+  applyFieldEffect(effect) {
     if (effect.kind === 'minerals') {
       this.economy.minerals += effect.amount;
     } else if (effect.kind === 'income') {
@@ -662,18 +689,56 @@ class Game {
       }
     }
 
-    this.selectedBoons.push(boonId);
+  }
+
+  offerBattlefieldEvent(wave) {
+    const choices = getBattlefieldEventChoices(this.infernalHost, wave);
+    if (!this.isRunning || choices.length === 0 || this.isDoctrineChoosing || this.isBoonChoosing || this.isBattlefieldEventChoosing) return;
+
+    this.pendingBattlefieldEventChoices = choices;
+    this.isBattlefieldEventChoosing = true;
+    this.isPaused = true;
+
+    const screen = document.getElementById('boon-screen');
+    const waveText = document.getElementById('boon-wave');
+    const title = document.getElementById('boon-title');
+    const choiceRoot = document.getElementById('boon-choices');
+    if (!screen || !choiceRoot) return;
+
+    if (waveText) waveText.textContent = `WAVE ${wave} 전장 사건 · ${this.infernalHost.name}`;
+    if (title) title.textContent = '전장 대응 선택';
+    choiceRoot.innerHTML = choices.map((event, index) => `
+      <button class="boon-card" type="button" data-battlefield-event="${event.id}">
+        <span class="doctrine-key">[${index + 1}]</span>
+        <span class="doctrine-icon" aria-hidden="true">${iconMarkup(event.icon)}</span>
+        <span class="doctrine-role">${event.role}</span>
+        <strong>${event.title}</strong>
+        <span class="doctrine-description">${event.description}</span>
+      </button>
+    `).join('');
+    choiceRoot.querySelectorAll('[data-battlefield-event]').forEach(button => {
+      button.addEventListener('click', () => this.selectBattlefieldEvent(button.dataset.battlefieldEvent));
+    });
+    screen.classList.remove('hidden');
+    requestAnimationFrame(() => choiceRoot.querySelector('[data-battlefield-event]')?.focus());
+  }
+
+  selectBattlefieldEvent(eventId) {
+    if (!this.isBattlefieldEventChoosing) return;
+    const event = this.pendingBattlefieldEventChoices.find(choice => choice.id === eventId);
+    if (!event) return;
+    this.applyFieldEffect(event.effect);
     this.audio.playMagic();
     this.entityManager.addEntity(new FloatingText(
       this,
-      `전장 보급 · ${boon.title}`,
+      `전장 대응 · ${event.title}`,
       this.playerBase.x,
       this.playerBase.y - 120,
       '#d8bf8a',
       'emphasis'
     ));
-    this.pendingBoonChoices = [];
-    this.isBoonChoosing = false;
+    this.pendingBattlefieldEventChoices = [];
+    this.isBattlefieldEventChoosing = false;
     this.isPaused = false;
     document.getElementById('boon-screen')?.classList.add('hidden');
   }
@@ -1251,6 +1316,16 @@ class Game {
         if (choiceIndex >= 0 && this.pendingBoonChoices[choiceIndex]) {
           e.preventDefault();
           this.selectBoon(this.pendingBoonChoices[choiceIndex]);
+        }
+        return;
+      }
+
+      if (this.isBattlefieldEventChoosing) {
+        const choiceIndex = ['1', '2'].indexOf(e.key);
+        const event = this.pendingBattlefieldEventChoices[choiceIndex];
+        if (event) {
+          e.preventDefault();
+          this.selectBattlefieldEvent(event.id);
         }
         return;
       }
