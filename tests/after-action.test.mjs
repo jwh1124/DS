@@ -133,3 +133,18 @@ test('a clean boss run points toward score optimization instead of generic survi
   assert.equal(report.recommendation.title, '모든 보스 패턴을 저지했습니다');
   assert.match(report.recommendation.text, /S등급/);
 });
+
+test('a final squad wipe is reported without pretending the cathedral collapsed', () => {
+  const report = buildAfterActionReport({
+    winner: 'enemy',
+    endReason: 'finalSquadDefeated',
+    wave: 12,
+    maxWaves: 12,
+    playerIntegrity: 72,
+    enemyIntegrity: 38,
+    roster: { melee: 4, ranged: 4, medic: 2, sniper: 2 }
+  });
+
+  assert.match(report.summary, /최종 성직자 분대가 전멸/);
+  assert.doesNotMatch(report.summary, /성당이 무너졌습니다/);
+});

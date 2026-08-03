@@ -16,8 +16,16 @@ test('infernal scouting separates advice, chronicle, mastery, and bounty informa
   assert.match(source, /mandate-bounty-label/);
   assert.match(css, /\.mandate-choice\.is-bounty/);
   assert.match(html, /<details class="result-log">/);
+  assert.match(html, /<details class="mission-details">/);
+  assert.match(html, /<details class="expedition-options">/);
+  assert.match(html, /id="developer-mode-btn"/);
+  assert.match(html, /편성 → 교전 → 공성 → 귀환·헌금 → 준비/);
+  assert.match(html, /헌금 \(귀환 후\)/);
   assert.match(css, /\.result-log summary/);
+  assert.match(css, /\.developer-mode-toggle/);
   assert.match(html, /role="group" aria-label="원정 난이도"/);
   assert.match(source, /b\.setAttribute\('aria-pressed', 'false'\)/);
   assert.match(source, /aria-label="\$\{mandate\.name\}/);
+  assert.match(source, /e\.key === 'F10'/);
+  assert.match(source, /exorcism-developer-mode/);
 });

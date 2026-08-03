@@ -16,6 +16,7 @@ import {
   UNIT_MOVEMENT_SPEED_MULTIPLIER,
   WAVE_ASSAULT_TIME,
   WAVE_PREP_TIME,
+  WAVE_WITHDRAWAL_TIME,
   UNIT_COSTS
 } from '../src/gameConfig.js';
 import {
@@ -65,7 +66,8 @@ assert.equal(getTechUpgradeCost(2), 400);
 assert.equal(getTechUpgradeCost(3), Infinity);
 assert.equal(MAX_WAVES, 12);
 assert.equal(MAX_SPAWNERS, 16);
-assert.equal(WAVE_ASSAULT_TIME, 8);
+assert.equal(WAVE_ASSAULT_TIME, 12);
+assert.equal(WAVE_WITHDRAWAL_TIME, 3);
 assert.equal(WAVE_PREP_TIME, 10);
 assert.equal(PLAYER_STARTING_MINERALS, 400);
 assert.equal(PLAYER_STARTING_INCOME, 90);
@@ -88,7 +90,7 @@ const clearedWaveAssault = resolvePostCombatPhase({
 assert.deepEqual(clearedWaveAssault, {
   phase: WAVE_PHASES.ASSAULT,
   timeRemaining: WAVE_ASSAULT_TIME,
-  shouldWithdraw: false
+  siegeTeam: 'player'
 });
 assert.deepEqual(resolvePostCombatPhase({
   currentPhase: WAVE_PHASES.COMBAT,
@@ -97,11 +99,24 @@ assert.deepEqual(resolvePostCombatPhase({
   hasActiveEnemyWave: false,
   hasActivePlayerWave: false,
   assaultTime: WAVE_ASSAULT_TIME,
-  prepTime: WAVE_PREP_TIME
+  withdrawalTime: WAVE_WITHDRAWAL_TIME
 }), {
-  phase: WAVE_PHASES.PREPARE,
-  timeRemaining: WAVE_PREP_TIME,
-  shouldWithdraw: false
+  phase: WAVE_PHASES.WITHDRAWAL,
+  timeRemaining: WAVE_WITHDRAWAL_TIME,
+  withdrawTeam: 'both'
+});
+assert.deepEqual(resolvePostCombatPhase({
+  currentPhase: WAVE_PHASES.COMBAT,
+  wave: 1,
+  maxWaves: MAX_WAVES,
+  hasActiveEnemyWave: true,
+  hasActivePlayerWave: false,
+  assaultTime: WAVE_ASSAULT_TIME,
+  withdrawalTime: WAVE_WITHDRAWAL_TIME
+}), {
+  phase: WAVE_PHASES.BREACH,
+  timeRemaining: WAVE_ASSAULT_TIME,
+  siegeTeam: 'enemy'
 });
 assert.equal(resolvePostCombatPhase({
   currentPhase: WAVE_PHASES.COMBAT,
@@ -123,12 +138,30 @@ assert.equal(resolvePostCombatPhase({
 }), null);
 assert.deepEqual(resolveExpiredPhase({
   phase: WAVE_PHASES.ASSAULT,
-  prepTime: WAVE_PREP_TIME
+  prepTime: WAVE_PREP_TIME,
+  withdrawalTime: WAVE_WITHDRAWAL_TIME
+}), {
+  phase: WAVE_PHASES.WITHDRAWAL,
+  timeRemaining: WAVE_WITHDRAWAL_TIME,
+  withdrawTeam: 'player'
+});
+assert.deepEqual(resolveExpiredPhase({
+  phase: WAVE_PHASES.BREACH,
+  prepTime: WAVE_PREP_TIME,
+  withdrawalTime: WAVE_WITHDRAWAL_TIME
+}), {
+  phase: WAVE_PHASES.WITHDRAWAL,
+  timeRemaining: WAVE_WITHDRAWAL_TIME,
+  withdrawTeam: 'enemy'
+});
+assert.deepEqual(resolveExpiredPhase({
+  phase: WAVE_PHASES.WITHDRAWAL,
+  prepTime: WAVE_PREP_TIME,
+  withdrawalTime: WAVE_WITHDRAWAL_TIME
 }), {
   phase: WAVE_PHASES.PREPARE,
   timeRemaining: WAVE_PREP_TIME,
-  shouldWithdraw: true,
-  shouldSpawnWave: false
+  shouldStartPreparation: true
 });
 assert.deepEqual(resolveExpiredPhase({
   phase: WAVE_PHASES.PREPARE,
@@ -136,7 +169,6 @@ assert.deepEqual(resolveExpiredPhase({
 }), {
   phase: WAVE_PHASES.PREPARE,
   timeRemaining: 0,
-  shouldWithdraw: false,
   shouldSpawnWave: true
 });
 assert.equal(canLaunchNextWaveEarly({

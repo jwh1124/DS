@@ -23,6 +23,7 @@ export class Projectile {
     this.speed = isHeavy ? 520 : 420;
     this.radius = isHeavy ? 10 : 6;
     this.isAlive = true;
+    this.isProjectile = true;
     this.animTime = 0;
   }
 

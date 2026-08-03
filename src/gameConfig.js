@@ -40,7 +40,11 @@ export const UNIT_MOVEMENT_SPEED_MULTIPLIER = 2;
 export const FIRST_WAVE_DELAY = 15;
 // A victorious squad gets a short, explicit chance to damage the opposing
 // fortress before withdrawing. Preparation starts only after that assault.
-export const WAVE_ASSAULT_TIME = 8;
+// The siege clock starts only after the surviving army reaches the fortress.
+// Twelve full seconds gives melee units time to contribute after ranged units
+// open the assault, and the same window is used by both factions.
+export const WAVE_ASSAULT_TIME = 12;
+export const WAVE_WITHDRAWAL_TIME = 3;
 export const WAVE_PREP_TIME = 10;
 export const BASE_TECH_HP_GAIN = 2000;
 

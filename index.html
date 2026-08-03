@@ -34,54 +34,61 @@
         </div>
         
         <section class="omen-briefing" aria-labelledby="omen-briefing-title">
-          <span class="omen-briefing-kicker">이번 원정 정찰</span>
+          <span class="omen-briefing-kicker">이번 원정</span>
           <strong id="omen-briefing-title">정찰 확인 중</strong>
-          <p id="omen-briefing-detail"></p>
+          <p id="infernal-host-title">군단 편성 확인 중</p>
           <small id="omen-briefing-advice"></small>
-          <div class="infernal-host-briefing">
-            <strong id="infernal-host-title">군단 편성 확인 중</strong>
-            <small id="infernal-host-detail"></small>
-            <div class="infernal-host-meta" aria-label="군단 정화 기록">
-              <span id="infernal-host-chronicle"></span>
-              <span id="infernal-host-mastery"></span>
+          <details class="mission-details">
+            <summary>상세 정찰</summary>
+            <p id="omen-briefing-detail"></p>
+            <div class="infernal-host-briefing">
+              <small id="infernal-host-detail"></small>
+              <div class="infernal-host-meta" aria-label="군단 정화 기록">
+                <span id="infernal-host-chronicle"></span>
+                <span id="infernal-host-mastery"></span>
+              </div>
+              <small id="infernal-host-bounty" class="infernal-host-bounty"></small>
             </div>
-            <small id="infernal-host-bounty" class="infernal-host-bounty"></small>
-          </div>
+          </details>
         </section>
-        <section class="relic-armory" aria-labelledby="relic-armory-title">
-          <div class="relic-armory-heading">
-            <span>원정 성물</span>
-            <small id="campaign-relic-summary"></small>
-          </div>
-          <div id="campaign-relic-choices" class="relic-choices"></div>
-        </section>
-        <section class="mandate-board" aria-labelledby="mandate-board-title">
-          <div class="relic-armory-heading"><span id="mandate-board-title">원정 서약 · 달성 시 점수 보너스</span></div>
-          <div id="expedition-mandate-choices" class="mandate-choices"></div>
-        </section>
+        <details class="expedition-options">
+          <summary>성물·서약 설정 <small>선택 사항</small></summary>
+          <section class="relic-armory" aria-labelledby="relic-armory-title">
+            <div class="relic-armory-heading">
+              <span id="relic-armory-title">원정 성물</span>
+              <small id="campaign-relic-summary"></small>
+            </div>
+            <div id="campaign-relic-choices" class="relic-choices"></div>
+          </section>
+          <section class="mandate-board" aria-labelledby="mandate-board-title">
+            <div class="relic-armory-heading"><span id="mandate-board-title">원정 서약</span></div>
+            <div id="expedition-mandate-choices" class="mandate-choices"></div>
+          </section>
+        </details>
         <button id="start-btn" class="glow-btn"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-cathedral"></use></svg><span>엑소시즘 개시</span></button>
         <p id="run-record-summary" class="run-record-summary" aria-live="polite"></p>
-        <p class="start-hint">12웨이브 정화전 · 첫 웨이브까지 15초 · [1]~[6] 편성 · [7]~[9] 전술 명령 · [Q] 헌금 · [W] 계시 · [F] 조기 개시 · [Space] 전선 추적</p>
+        <p class="start-hint">12웨이브 · [1]~[6] 편성 · [F] 진군 · [Space] 전선 추적</p>
+        <button id="developer-mode-btn" class="developer-mode-toggle" type="button" aria-pressed="false">개발자 옵션: 끔 (F10)</button>
         <div class="credits">개발: Antigravity</div>
       </div>
 
       <div id="field-guide-screen" class="hidden" role="dialog" aria-modal="true" aria-labelledby="field-guide-title">
         <section class="field-guide-panel">
-          <span class="field-guide-kicker">FIRST EXPEDITION · 45초 안내</span>
-          <h2 id="field-guide-title">전장은 기다리는 곳이 아닙니다</h2>
-          <p class="field-guide-lead">교전이 끝나면 부대가 지옥문을 공성하고, 그 뒤에만 다음 웨이브 준비 시간이 돌아옵니다.</p>
+          <span class="field-guide-kicker">첫 원정</span>
+          <h2 id="field-guide-title">세 가지만 기억하세요</h2>
+          <p class="field-guide-lead">편성 → 교전 → 공성 → 귀환·헌금 → 준비</p>
           <div class="field-guide-steps">
             <article>
               <strong>1 · 첫 편성</strong>
-              <p>[1] 수도승 2명 + [2] 엑소시스트 1명으로 시작하세요. 준비 확인이 다음 투자 우선순위를 알려줍니다.</p>
+              <p>수도승 2 + 엑소시스트 1</p>
             </article>
             <article>
-              <strong>2 · 돈 쓰는 순서</strong>
-              <p>초반은 무작정 뽑지 말고 [W] 계시 Lv.2를 먼저 확보하세요. 사제와 심판관은 그 다음입니다.</p>
+              <strong>2 · 지원 해금</strong>
+              <p>[W] Lv.2 → 사제·심판관</p>
             </article>
             <article>
-              <strong>3 · 보스 대응</strong>
-              <p>‘왕좌 의식’이 보이면 [8]로 시종부터 제거하고, 패턴이 끊긴 뒤 [9]로 보스를 마무리하세요.</p>
+              <strong>3 · 전술 명령</strong>
+              <p>[8] 후열 · [9] 보스</p>
             </article>
           </div>
           <button id="field-guide-start-btn" class="field-guide-start" type="button">알겠습니다 · 출정</button>
@@ -184,12 +191,10 @@
             </div>
           </div>
           <div class="resource-box income-box">
-            <span class="label">헌금 (웨이브당)</span>
+            <span class="label">헌금 (귀환 후)</span>
             <span id="income-text" class="value">+60</span>
           </div>
-          <div class="hero-instruction">
-            우클릭: 계약 해지 · 출전 중인 분대는 이번 웨이브까지 전투 (50% 환급)
-          </div>
+          <div class="hero-instruction">우클릭: 다음 웨이브부터 계약 해지 · 50% 환급</div>
           <div class="doctrine-summary">
             <span>채택 교리</span>
             <strong id="doctrine-summary">아직 선택하지 않음</strong>
@@ -255,7 +260,7 @@
         <div class="bottom-controls">
           <!-- Building Menu with High-Quality Custom Unit Illustrations -->
           <div class="panel build-menu">
-            <div class="menu-title"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-cross"></use></svg>성직자 편성 (매 웨이브 파견 | 우클릭: 다음 웨이브부터 계약 해지·50% 환급)</div>
+            <div class="menu-title"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-cross"></use></svg>성직자 편성 · 우클릭 계약 해지</div>
             <div class="build-buttons">
               <button class="build-btn unit-card-btn" data-type="melee" data-cost="50">
                 <span class="hotkey-badge">[1]</span>
@@ -404,7 +409,6 @@
 
       <div id="pause-screen" class="hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title">
         <h1 id="pause-title">일시정지</h1>
-        <p>전장은 멈췄습니다. 준비가 되면 전투를 재개하세요.</p>
         <div class="pause-actions">
           <button id="resume-btn" class="glow-btn" type="button">전투 재개</button>
           <button id="pause-restart-btn" class="secondary-btn" type="button">처음부터 다시</button>
@@ -415,7 +419,7 @@
         <section class="doctrine-panel">
           <span id="doctrine-wave" class="doctrine-kicker">WAVE 3 교단 회의</span>
           <h1 id="doctrine-title">교단 교리 선택</h1>
-          <p>이번 원정의 방향을 정하십시오. 선택은 즉시 현재 분대와 이후 편성에 적용됩니다.</p>
+          <p>하나를 선택하면 즉시 적용됩니다.</p>
           <div id="doctrine-choices" class="doctrine-grid"></div>
           <small id="boon-choice-hint">[1] [2] [3] 키로도 선택할 수 있습니다.</small>
         </section>
@@ -425,7 +429,7 @@
         <section class="doctrine-panel boon-panel">
           <span id="boon-wave" class="doctrine-kicker">WAVE 4 전장 보급</span>
           <h1 id="boon-title">원정 보급 선택</h1>
-          <p>정찰한 적 편성에 맞춰 이번 원정의 보급 우선순위를 정하십시오.</p>
+          <p>하나를 선택하세요.</p>
           <div id="boon-choices" class="doctrine-grid"></div>
           <small>[1] [2] [3] 키로도 선택할 수 있습니다.</small>
         </section>

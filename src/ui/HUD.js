@@ -54,14 +54,17 @@ export class HUD {
   update() {
     // Update economy
     this.mineralsText.textContent = Math.floor(this.game.economy.minerals);
-    this.incomeText.textContent = `+${Math.floor(this.game.economy.income)} / wave`;
+    this.incomeText.textContent = `+${Math.floor(this.game.economy.income)} / 귀환`;
     
     // Update timer
     const waveSystem = this.game.waveSystem;
     const phase = waveSystem.phase;
     const isFinale = phase === WAVE_PHASES.FINAL;
     const isAssault = phase === WAVE_PHASES.ASSAULT;
-    const isPrepare = phase === WAVE_PHASES.PREPARE || phase === WAVE_PHASES.SCOUT;
+    const isBreach = phase === WAVE_PHASES.BREACH;
+    const isWithdrawal = phase === WAVE_PHASES.WITHDRAWAL;
+    const isScout = phase === WAVE_PHASES.SCOUT;
+    const isPrepare = phase === WAVE_PHASES.PREPARE || isScout;
     const activeBoss = waveSystem.getActiveBoss?.();
     const bossGateLocked = waveSystem.isBossGateLocked?.() ?? false;
     const activeEnemyWave = waveSystem.hasActiveEnemyWave?.() ?? false;
@@ -69,8 +72,12 @@ export class HUD {
       ? (activeBoss ? '결전' : activeEnemyWave ? '잔당' : '공성')
       : bossGateLocked || phase === WAVE_PHASES.COMBAT
         ? '교전'
-        : isAssault
-          ? `공성 ${Math.ceil(waveSystem.timeUntilWave)}`
+        : isAssault || isBreach
+          ? waveSystem.siegeEngaged
+            ? `${isAssault ? '공성' : '방어'} ${Math.ceil(waveSystem.timeUntilWave)}`
+            : '진군'
+          : isWithdrawal
+            ? '귀환'
           : Math.max(0, waveSystem.timeUntilWave).toFixed(1);
     if (this.waveLabel) {
       this.waveLabel.textContent = isFinale
@@ -85,35 +92,55 @@ export class HUD {
             ? `WAVE ${waveSystem.aiWaveCount}/${MAX_WAVES} · 악마 교전`
             : isAssault
               ? `WAVE ${waveSystem.aiWaveCount}/${MAX_WAVES} · 공성 기회`
-              : `WAVE ${waveSystem.aiWaveCount + 1}/${MAX_WAVES} · 전장 정비`;
+              : isBreach
+                ? `WAVE ${waveSystem.aiWaveCount}/${MAX_WAVES} · 성당 방어`
+                : isWithdrawal
+                  ? `WAVE ${waveSystem.aiWaveCount}/${MAX_WAVES} · 부대 귀환`
+              : isScout
+                ? `WAVE 1/${MAX_WAVES} · 출정 준비`
+                : `WAVE ${waveSystem.aiWaveCount + 1}/${MAX_WAVES} · 전장 정비`;
     }
     if (this.wavePreview) {
       this.wavePreview.textContent = isFinale
         ? activeBoss
-          ? `${activeBoss.bossName}과 호위대를 처치한 뒤 지옥문을 파괴하십시오`
+          ? `${activeBoss.bossName}과 호위대를 모두 격퇴하십시오`
           : activeEnemyWave
-            ? '잔존 악마를 격퇴하십시오 · 제한 시간 없음'
-            : '봉인이 해제되었습니다 · 지옥문을 파괴하면 승리합니다'
+            ? '잔존 악마를 격퇴하면 승리합니다'
+            : '최후의 정화 완료'
         : bossGateLocked && activeBoss
           ? `${activeBoss.bossName} 격퇴 후 공성 · ${activeBoss.bossCounterHint}`
           : phase === WAVE_PHASES.COMBAT
             ? `현재 악마 부대를 격퇴하십시오 · 다음 ${waveSystem.getUpcomingWavePreview()}`
             : isAssault
-              ? `생존 부대가 지옥문을 공격합니다 · ${Math.ceil(waveSystem.timeUntilWave)}초 후 귀환`
-              : `편성·강화 시간 · ${waveSystem.getUpcomingWavePreview()}`;
+              ? waveSystem.siegeEngaged
+                ? `지옥문 공격 · ${Math.ceil(waveSystem.timeUntilWave)}초`
+                : '지옥문으로 진군 중 · 타격 후 12초 공성'
+              : isBreach
+                ? waveSystem.siegeEngaged
+                  ? `성당 방어 · ${Math.ceil(waveSystem.timeUntilWave)}초`
+                  : '악마가 성당으로 접근 중'
+                : isWithdrawal
+                  ? '부대 귀환 후 헌금이 지급됩니다'
+              : isScout
+                ? `첫 편성 시간 · ${waveSystem.getUpcomingWavePreview()}`
+                : `편성·강화 시간 · ${waveSystem.getUpcomingWavePreview()}`;
     }
     this.updateWaveReadiness(isFinale);
     if (this.launchWaveButton) {
       const canLaunchEarly = waveSystem.canLaunchNextWaveEarly?.() ?? false;
       this.launchWaveButton.disabled = isFinale || !canLaunchEarly;
       this.launchWaveButton.textContent = isFinale
-        ? '지옥문 파괴 시 승리'
+        ? '지옥 군단 전멸 시 승리'
         : bossGateLocked
           ? '대악마 격퇴 필요'
           : phase === WAVE_PHASES.COMBAT
             ? '악마 교전 중'
             : isAssault
               ? '공성 진행 중'
+              : isBreach
+                ? '성당 방어 중'
+                : isWithdrawal
+                  ? '부대 귀환 중'
               : isPrepare
                 ? '[F] 즉시 진군 · +20'
                 : '[F] 조기 개시 · +20';

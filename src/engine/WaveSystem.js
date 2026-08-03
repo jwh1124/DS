@@ -25,8 +25,10 @@ import {
   MAX_WAVES,
   UNIT_COSTS,
   WAVE_ASSAULT_TIME,
-  WAVE_PREP_TIME
+  WAVE_PREP_TIME,
+  WAVE_WITHDRAWAL_TIME
 } from '../gameConfig.js';
+import { getAttackRangeAgainst, getCombatDistance } from '../combatMath.js';
 import {
   canLaunchNextWaveEarly,
   resolveExpiredPhase,
@@ -57,9 +59,8 @@ export class WaveSystem {
     this.aiIncome = AI_STARTING_INCOME;
     this.aiUltimateCooldown = 0;
     this.finalWaveStarted = false;
-    this.finalBattleTime = 0;
-    this.finalReinforcementTimer = 5;
     this.bossGateActive = false;
+    this.siegeEngaged = false;
     this.phase = WAVE_PHASES.SCOUT;
     this.lastActionLog = '[교단]: 첫 악마 웨이브에 대비하십시오.';
   }
@@ -115,19 +116,18 @@ export class WaveSystem {
 
     const nextWave = this.aiWaveCount + 1;
     if (nextWave > MAX_WAVES) {
-      return '최후의 정화 진행 중 — 지옥문을 무너뜨리십시오';
+      return '최후의 정화 진행 중';
     }
     if (nextWave === MAX_WAVES) {
-      return '최후 보스: 지옥 군주 · 봉인 해제 · 권장 심판관 + 사제';
+      return '지옥 군주 · 권장 심판관 + 사제';
     }
     if (nextWave === 6) {
-      return '대악마: 심연의 집행관 · 대형 약점 · 권장 심판관 + 사제';
+      return '심연의 집행관 · 권장 심판관 + 사제';
     }
 
     const mutator = getWaveMutator(nextWave);
-    const omen = this.game.runOmen;
     if (mutator) {
-      return `정찰: ${getWaveMutatorPreview(nextWave)} · 군단 ${this.game.infernalHost?.name ?? '미확인'} · 징조 ${omen?.name ?? '미확인'}: ${omen?.summary ?? ''} · 권장 ${mutator.advice}`;
+      return `${getWaveMutatorPreview(nextWave)} · ${mutator.advice}`;
     }
 
     const pMelee = this.countSpawners('player', 'melee');
@@ -156,7 +156,7 @@ export class WaveSystem {
       advice = '심판관';
     }
 
-    return `정찰: ${threat} · 군단 ${this.game.infernalHost?.name ?? '미확인'} · 징조 ${omen?.name ?? '미확인'}: ${omen?.summary ?? ''} · 권장 ${advice}${ascends ? ' · 각성 임박' : ''}`;
+    return `${threat} · 권장 ${advice}${ascends ? ' · 각성 임박' : ''}`;
   }
 
   launchNextWaveEarly() {
@@ -201,7 +201,30 @@ export class WaveSystem {
   }
 
   isAssaultWindow() {
-    return this.phase === WAVE_PHASES.ASSAULT;
+    return this.phase === WAVE_PHASES.ASSAULT || this.phase === WAVE_PHASES.BREACH;
+  }
+
+  hasActiveAttackers(team) {
+    return this.game.entityManager.entities.some(entity =>
+      entity.isWaveFighter
+      && entity.team === team
+      && entity.isAlive
+      && entity.type !== 'medic'
+      && !entity.isRitualAnchor
+      && entity.damage > 0
+    );
+  }
+
+  hasFortressContact(team) {
+    const targetBase = team === 'player' ? this.game.enemyBase : this.game.playerBase;
+    if (!targetBase?.isAlive) return false;
+    return this.game.entityManager.entities.some(entity =>
+      entity.isWaveFighter
+      && entity.team === team
+      && entity.isAlive
+      && entity.type !== 'medic'
+      && getCombatDistance(entity, targetBase) <= getAttackRangeAgainst(entity, targetBase)
+    );
   }
 
   update(dt) {
@@ -216,58 +239,125 @@ export class WaveSystem {
       return;
     }
 
-    const bossGate = resolveBossGate(this.bossGateActive, Boolean(this.getActiveBoss()));
-    if (bossGate.locked) {
-      this.phase = WAVE_PHASES.COMBAT;
+    if (this.phase === WAVE_PHASES.ASSAULT || this.phase === WAVE_PHASES.BREACH) {
+      this.updateSiegeWindow(dt);
       return;
     }
+
+    if (this.phase === WAVE_PHASES.WITHDRAWAL) {
+      this.updateWithdrawal(dt);
+      return;
+    }
+
+    const bossGate = resolveBossGate(this.bossGateActive, Boolean(this.getActiveBoss()));
     if (bossGate.completed) {
       this.bossGateActive = false;
     }
 
     const activeEnemyWave = this.hasActiveEnemyWave();
-    if (activeEnemyWave) {
-      this.phase = WAVE_PHASES.COMBAT;
-      return;
-    }
-
     const postCombat = resolvePostCombatPhase({
       currentPhase: this.phase,
       wave: this.aiWaveCount,
       maxWaves: MAX_WAVES,
       hasActiveEnemyWave: activeEnemyWave,
       hasActivePlayerWave: this.hasActivePlayerWave(),
+      hasActiveEnemyAttackers: this.hasActiveAttackers('enemy'),
+      hasActivePlayerAttackers: this.hasActiveAttackers('player'),
       assaultTime: WAVE_ASSAULT_TIME,
-      prepTime: WAVE_PREP_TIME
+      withdrawalTime: WAVE_WITHDRAWAL_TIME
     });
     if (postCombat) {
-      this.phase = postCombat.phase;
-      this.timeUntilWave = postCombat.timeRemaining;
-      this.lastActionLog = this.phase === WAVE_PHASES.ASSAULT
-        ? `[공성]: 생존 성직자 진군 · ${WAVE_ASSAULT_TIME}초간 지옥문 공격`
-        : `[정비]: 생존 분대 없음 · ${WAVE_PREP_TIME}초 후 다음 웨이브`;
+      if (postCombat.phase === WAVE_PHASES.WITHDRAWAL) {
+        this.enterWithdrawal(postCombat.withdrawTeam);
+      } else {
+        this.phase = postCombat.phase;
+        this.timeUntilWave = postCombat.timeRemaining;
+        this.siegeEngaged = false;
+        this.lastActionLog = this.phase === WAVE_PHASES.ASSAULT
+          ? `[진군]: 성직자 생존 분대가 지옥문으로 접근 중`
+          : `[침공]: 악마 생존 분대가 성당으로 접근 중`;
+      }
       return;
     }
+
+    if (this.phase === WAVE_PHASES.COMBAT) return;
 
     this.timeUntilWave -= dt;
     if (this.timeUntilWave > 0) return;
 
     const expired = resolveExpiredPhase({
       phase: this.phase,
-      prepTime: WAVE_PREP_TIME
+      prepTime: WAVE_PREP_TIME,
+      withdrawalTime: WAVE_WITHDRAWAL_TIME
     });
     if (!expired) return;
 
-    if (expired.shouldWithdraw) {
-      const withdrawing = this.beginPlayerWithdrawal();
-      this.phase = expired.phase;
-      this.timeUntilWave = expired.timeRemaining;
-      this.lastActionLog = `[귀환]: 생존 성직자 ${withdrawing}명 철수 · ${WAVE_PREP_TIME}초 재편성`;
+    if (expired.shouldSpawnWave) {
+      this.spawnWave();
+    }
+  }
+
+  updateSiegeWindow(dt) {
+    const siegeTeam = this.phase === WAVE_PHASES.ASSAULT ? 'player' : 'enemy';
+    if (!this.hasActiveAttackers(siegeTeam)) {
+      this.enterWithdrawal(siegeTeam);
       return;
     }
 
-    if (expired.shouldSpawnWave) {
-      this.spawnWave();
+    if (!this.siegeEngaged) {
+      this.siegeEngaged = this.hasFortressContact(siegeTeam);
+      if (!this.siegeEngaged) return;
+      this.lastActionLog = siegeTeam === 'player'
+        ? `[공성]: 지옥문 타격 개시 · ${WAVE_ASSAULT_TIME}초`
+        : `[방어]: 성당 방어 개시 · ${WAVE_ASSAULT_TIME}초`;
+    }
+
+    this.timeUntilWave -= dt;
+    if (this.timeUntilWave <= 0) this.enterWithdrawal(siegeTeam);
+  }
+
+  enterWithdrawal(team) {
+    const teams = team === 'both' ? ['player', 'enemy'] : [team];
+    teams.forEach(currentTeam => this.cancelTeamProjectiles(currentTeam));
+    const withdrawing = teams.reduce((total, currentTeam) => total + this.beginTeamWithdrawal(currentTeam), 0);
+    this.bossGateActive = false;
+    this.phase = WAVE_PHASES.WITHDRAWAL;
+    this.timeUntilWave = WAVE_WITHDRAWAL_TIME;
+    this.lastActionLog = `[귀환]: 생존 부대 ${withdrawing}명 철수 중`;
+    if (withdrawing === 0) this.enterPreparation();
+  }
+
+  cancelTeamProjectiles(team) {
+    for (const entity of this.game.entityManager.entities) {
+      if (entity.isProjectile && entity.team === team) entity.isAlive = false;
+    }
+  }
+
+  updateWithdrawal(dt) {
+    this.timeUntilWave -= dt;
+    if (!this.hasActivePlayerWave() && !this.hasActiveEnemyWave()) {
+      this.enterPreparation();
+      return;
+    }
+    if (this.timeUntilWave <= 0) {
+      this.retirePreviousWave();
+      this.enterPreparation();
+    }
+  }
+
+  enterPreparation() {
+    this.phase = WAVE_PHASES.PREPARE;
+    this.timeUntilWave = WAVE_PREP_TIME;
+    this.game.economy.triggerIncome();
+    this.aiMinerals += this.aiIncome;
+    this.aiTechReserve += AI_TECH_RESERVE_PER_WAVE;
+    const incomeAmt = this.game.economy.income;
+    this.lastActionLog = `[정비]: 귀환 완료 · 헌금 +${incomeAmt} · ${WAVE_PREP_TIME}초 재편성`;
+    if (this.game.playerBase) {
+      this.game.entityManager.addEntity(new FloatingText(
+        this.game, `귀환 완료 · 신앙심 +${incomeAmt}`,
+        this.game.playerBase.x, this.game.playerBase.y - 80, '#d8bf8a', 'emphasis'
+      ));
     }
   }
 
@@ -278,14 +368,6 @@ export class WaveSystem {
     this.phase = this.finalWaveStarted ? WAVE_PHASES.FINAL : WAVE_PHASES.COMBAT;
     this.timeUntilWave = 0;
     const waveMutator = getWaveMutator(this.aiWaveCount);
-    if (this.finalWaveStarted) {
-      this.finalBattleTime = 0;
-      this.finalReinforcementTimer = 5;
-    }
-    
-    // AI Income addition
-    this.aiMinerals += this.aiIncome;
-    this.aiTechReserve += AI_TECH_RESERVE_PER_WAVE;
     
     const unitNames = { melee: '임프', ranged: '서큐버스', medic: '리치', sniper: '밴시', tank: '발록', crusader: '핏로드' };
     
@@ -450,15 +532,6 @@ export class WaveSystem {
       this.game.entityManager.addEntity(unit);
     });
     
-    // Trigger player income
-    this.game.economy.triggerIncome();
-    if (this.game.playerBase) {
-      const incomeAmt = this.game.economy.income;
-      this.game.entityManager.addEntity(new FloatingText(
-        this.game, `신앙심 +${incomeAmt}`, this.game.playerBase.x, this.game.playerBase.y - 80, '#d8bf8a', 'emphasis'
-      ));
-    }
-
     if (recalledCount > 0) {
       this.game.entityManager.addEntity(new FloatingText(
         this.game, `전열 교대 · 이전 분대 ${recalledCount}명 귀환`, WORLD_WIDTH / 2, 252, '#c9c1b6', false
@@ -513,58 +586,18 @@ export class WaveSystem {
     return recalledCount;
   }
 
-  beginPlayerWithdrawal() {
+  beginTeamWithdrawal(team) {
     let withdrawing = 0;
     for (const entity of this.game.entityManager.entities) {
       if (
         entity.isWaveFighter
-        && entity.team === 'player'
+        && entity.team === team
         && entity.isAlive
-        && !entity.isBoss
       ) {
-        entity.beginWithdrawal?.();
-        withdrawing++;
+        if (entity.beginWithdrawal?.()) withdrawing++;
       }
     }
     return withdrawing;
-  }
-
-  deployFinalReinforcements() {
-    const baseY = this.game.canvas.height / 2;
-    this.spawners.player.forEach((contract, index) => {
-      const slot = getWaveFormationSlot(150, baseY, index, 'player');
-      const unit = new Unit(this.game, slot.x, slot.y, 'player', contract.type);
-      unit.formationRow = slot.row;
-      unit.spawnerId = contract.id;
-      unit.isWaveFighter = true;
-      this.game.entityManager.addEntity(unit);
-    });
-
-    const finalProfile = getBossProfileForWave(MAX_WAVES);
-    const hostBossTactics = getInfernalHostBossTactics(this.game.infernalHost);
-    const enemyContracts = selectBossEscortContracts(
-      this.spawners.enemy,
-      finalProfile?.escortCap ?? this.spawners.enemy.length,
-      hostBossTactics.priorityTypes
-    );
-    enemyContracts.forEach((contract, index) => {
-      const slot = getWaveFormationSlot(WORLD_WIDTH - 200, baseY, index, 'enemy');
-      const unit = new Unit(this.game, slot.x, slot.y, 'enemy', contract.type);
-      unit.formationRow = slot.row;
-      unit.spawnerId = contract.id;
-      unit.isWaveFighter = true;
-      this.game.entityManager.addEntity(unit);
-    });
-
-    this.lastActionLog = '[최종 증원]: 양 진영 잔존 계약 부대 재투입';
-    this.game.entityManager.addEntity(new FloatingText(
-      this.game,
-      '최종 증원 도착',
-      WORLD_WIDTH / 2,
-      230,
-      '#d8bf8a',
-      'emphasis'
-    ));
   }
 
   updateFinalBattle(dt) {
@@ -572,22 +605,18 @@ export class WaveSystem {
     const enemyBase = this.game.enemyBase;
     if (!playerBase?.isAlive || !enemyBase?.isAlive) return;
 
-    this.finalBattleTime += dt;
     if (!this.getActiveBoss()) this.bossGateActive = false;
 
     const hasHolyFighters = this.hasActivePlayerWave();
     const hasDemonFighters = this.hasActiveEnemyWave();
-    if (hasHolyFighters || hasDemonFighters) {
-      this.finalReinforcementTimer = 5;
+    if (!hasDemonFighters) {
+      this.lastActionLog = '[최후의 정화]: 지옥 군주와 잔당 격퇴 · 지옥문 붕괴';
+      enemyBase.takeDamage(enemyBase.hp + enemyBase.maxHp);
       return;
     }
-
-    // A simultaneous wipe should not produce a silent soft-lock. The final
-    // objective remains fortress destruction, so both contract rosters return.
-    this.finalReinforcementTimer -= dt;
-    if (this.finalReinforcementTimer <= 0) {
-      this.deployFinalReinforcements();
-      this.finalReinforcementTimer = 5;
+    if (!hasHolyFighters) {
+      this.lastActionLog = '[최후의 정화]: 최종 성직자 분대 전멸';
+      this.game.stop('enemy', 'finalSquadDefeated');
     }
   }
 

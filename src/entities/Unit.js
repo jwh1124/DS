@@ -27,6 +27,7 @@ import {
   MEDIC_HEAL_RANGE,
   selectCombatTarget
 } from '../targeting.js';
+import { getMedicSupportPoint, isMedicFormationGuard } from '../healerFormation.js';
 import { getDifficultyProfile } from '../difficultyProfiles.js';
 
 const UNIT_STATS = {
@@ -268,7 +269,11 @@ export class Unit {
   }
 
   beginWithdrawal() {
-    if (!this.isAlive || this.isBoss) return false;
+    if (!this.isAlive || this.isRitualAnchor) return false;
+    if (this.isBoss) {
+      this.getRitualAnchors().forEach(anchor => { anchor.isAlive = false; });
+      if (this.bossAbilityState) this.bossAbilityState.status = 'idle';
+    }
     this.isWithdrawing = true;
     this.isTargetable = false;
     this.withdrawalElapsed = 0;
@@ -643,6 +648,28 @@ export class Unit {
     
     const { target, distance } = this.findTarget();
     this.target = target;
+
+    if (this.type === 'medic') {
+      const allies = this.game.entityManager.getEntitiesByTeam(this.team)
+        .filter(unit => unit !== this && isMedicFormationGuard(unit));
+      const supportPoint = getMedicSupportPoint(this, allies, target);
+
+      if (target && distance <= getAttackRangeAgainst(this, target)) {
+        this.state = 'attacking';
+        if (this.attackCooldown <= 0) {
+          this.performAttack(target);
+          this.attackCooldown = currentAttackSpeed;
+          this.recoil = 1.0;
+        }
+      } else if (supportPoint) {
+        this.state = 'supporting';
+        this.moveTowards(supportPoint.x, supportPoint.y, dt, currentSpeed);
+      } else {
+        this.state = 'holding';
+      }
+      this.hasAura = false;
+      return;
+    }
     
     if (target) {
       const attackRange = getAttackRangeAgainst(this, target);

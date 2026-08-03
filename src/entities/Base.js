@@ -6,12 +6,13 @@ import { getPointToTargetDistance } from '../combatMath.js';
 import { selectCombatTarget } from '../targeting.js';
 import { resolveInfernalGateDamage } from '../baseDefense.js';
 
+const baseUrl = import.meta.env?.BASE_URL || './';
 const BASE_ART = {
-  player: `${import.meta.env.BASE_URL}bases/holy-cathedral-v2.png`,
-  enemy: `${import.meta.env.BASE_URL}bases/infernal-gate-v2.png`,
+  player: `${baseUrl}bases/holy-cathedral-v2.png`,
+  enemy: `${baseUrl}bases/infernal-gate-v2.png`,
 };
-const HOLY_TURRET_ART = `${import.meta.env.BASE_URL}sprites/holy-reliquary-cannon-v1.png`;
-const INFERNAL_TURRET_ART = `${import.meta.env.BASE_URL}sprites/infernal-gate-cannon-v1.png`;
+const HOLY_TURRET_ART = `${baseUrl}sprites/holy-reliquary-cannon-v1.png`;
+const INFERNAL_TURRET_ART = `${baseUrl}sprites/infernal-gate-cannon-v1.png`;
 
 export class Base {
   constructor(game, x, y, team, maxHp = 10000) {

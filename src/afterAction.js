@@ -102,6 +102,7 @@ function getRecommendation({
 
 export function buildAfterActionReport({
   winner,
+  endReason = 'baseDestroyed',
   wave,
   maxWaves,
   playerIntegrity,
@@ -150,7 +151,9 @@ export function buildAfterActionReport({
 
   const outcome = isVictory
     ? `${safeWave}웨이브에서 지옥문을 직접 정화했습니다.`
-    : `${safeWave}/${maxWaves}웨이브에서 성당이 무너졌습니다.`;
+    : endReason === 'finalSquadDefeated'
+      ? `${safeWave}/${maxWaves}웨이브에서 최종 성직자 분대가 전멸했습니다.`
+      : `${safeWave}/${maxWaves}웨이브에서 성당이 무너졌습니다.`;
 
   const doctrineRecord = doctrineNames.length ? doctrineNames.join(' · ') : '없음';
   const boonRecord = boonNames.length ? boonNames.join(' · ') : '없음';

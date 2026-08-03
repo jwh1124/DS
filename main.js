@@ -106,7 +106,11 @@ class Game {
     this.infernalHost = getInfernalHost();
     this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
     this.expeditionMandate = getExpeditionMandate('bastionPledge');
-    this.isDeveloperMode = new URLSearchParams(window.location.search).has('dev');
+    const searchParams = new URLSearchParams(window.location.search);
+    const savedDeveloperMode = window.localStorage.getItem('exorcism-developer-mode') === '1';
+    this.isDeveloperMode = searchParams.has('dev')
+      ? searchParams.get('dev') !== '0'
+      : savedDeveloperMode;
     this.runStats = this.createRunStats();
     
     this.audio = new AudioEngine();
@@ -150,7 +154,7 @@ class Game {
     this.updateInfernalHostBriefing();
     this.updateCampaignRelicArmory();
     this.updateExpeditionMandateBoard();
-    document.body.classList.toggle('developer-mode', this.isDeveloperMode);
+    this.setDeveloperMode(this.isDeveloperMode, false);
     
     document.getElementById('ui-layer').style.display = 'none';
     
@@ -213,6 +217,19 @@ class Game {
       this.start();
       this.audio.startBGM();
     }, 1000);
+  }
+
+  setDeveloperMode(enabled, persist = true) {
+    this.isDeveloperMode = Boolean(enabled);
+    document.body.classList.toggle('developer-mode', this.isDeveloperMode);
+    const button = document.getElementById('developer-mode-btn');
+    if (button) {
+      button.setAttribute('aria-pressed', String(this.isDeveloperMode));
+      button.textContent = `개발자 옵션: ${this.isDeveloperMode ? '켬' : '끔'} (F10)`;
+    }
+    if (persist) {
+      window.localStorage.setItem('exorcism-developer-mode', this.isDeveloperMode ? '1' : '0');
+    }
   }
   
   addScreenShake(intensity) {
@@ -1305,6 +1322,9 @@ class Game {
     document.getElementById('frontline-btn')?.addEventListener('click', () => {
       this.setFrontlineFollow(!this.followFrontline);
     });
+    document.getElementById('developer-mode-btn')?.addEventListener('click', () => {
+      this.setDeveloperMode(!this.isDeveloperMode);
+    });
     document.querySelectorAll('[data-tactical-order]').forEach(button => {
       button.addEventListener('click', () => this.setTacticalOrder(button.dataset.tacticalOrder));
     });
@@ -1353,6 +1373,11 @@ class Game {
     }
     
     window.addEventListener('keydown', (e) => {
+      if (e.key === 'F10') {
+        e.preventDefault();
+        this.setDeveloperMode(!this.isDeveloperMode);
+        return;
+      }
       if (this.isDoctrineChoosing) {
         const choiceIndex = ['1', '2', '3'].indexOf(e.key);
         if (choiceIndex >= 0 && this.pendingDoctrineChoices[choiceIndex]) {

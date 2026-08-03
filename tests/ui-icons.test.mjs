@@ -46,7 +46,7 @@ test('contract cancellation messaging keeps deployed units in the current wave',
     readFile(new URL('../main.js', import.meta.url), 'utf8')
   ]);
 
-  assert.match(indexHtml, /출전 중인 분대는 이번 웨이브까지 전투/);
+  assert.match(indexHtml, /다음 웨이브부터 계약 해지 · 50% 환급/);
   assert.match(mainJs, /다음 웨이브부터 제외/);
   assert.doesNotMatch(mainJs, /recalledUnits\.forEach\(unit => \{ unit\.isAlive = false; \}\)/);
 });
