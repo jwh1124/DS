@@ -7,6 +7,8 @@ import {
   createTacticalPerformance,
   recordTacticalDamage
 } from '../src/tacticalPerformance.js';
+import { selectBossEscortContracts } from '../src/bosses.js';
+import { getInfernalHostBossTactics } from '../src/infernalHosts.js';
 
 globalThis.Image = class {
   constructor() {
@@ -166,6 +168,67 @@ test('recommended normal roster defeats the wave-six mini-boss without base arti
     assert.ok(outcome.holySurvivors >= 2, JSON.stringify(outcome));
     assert.ok(outcome.elapsed < 55, JSON.stringify(outcome));
   }
+});
+
+function runFinalBossBattle(seed, infernalHost) {
+  const previousRandom = Math.random;
+  Math.random = seededRandom(seed);
+  try {
+    const entityManager = new TestEntityManager();
+    const playerBase = createTestBase('player', 100);
+    const enemyBase = createTestBase('enemy', 1900);
+    const patternEvents = [];
+    const game = {
+      canvas: { height: 720 }, difficulty: 1, entityManager, playerBase, enemyBase,
+      doctrineBonuses: applyDoctrineToBonuses(createDoctrineBonuses(), 'mercyHymn'),
+      tacticalOrder: 'rear', infernalHost, economy: { minerals: 0 },
+      waveSystem: { aiMinerals: 0, aiWaveCount: 12, lastActionLog: '' },
+      audio: { playBossAlarm() {}, playExplosion() {}, playHit() {}, playMagic() {}, playShoot() {} },
+      addScreenShake() {}, stop() {}, recordBossPatternEvent(event) { patternEvents.push(event); }
+    };
+    entityManager.addEntity(playerBase);
+    entityManager.addEntity(enemyBase);
+    const playerRoster = ['melee', 'melee', 'melee', 'melee', 'ranged', 'ranged', 'ranged', 'ranged', 'medic', 'medic', 'medic', 'sniper', 'sniper', 'sniper', 'tank', 'crusader'];
+    playerRoster.forEach((type, index) => {
+      const slot = getWaveFormationSlot(150, 360, index, 'player');
+      const unit = new Unit(game, slot.x, slot.y, 'player', type);
+      unit.formationRow = slot.row;
+      unit.isWaveFighter = true;
+      entityManager.addEntity(unit);
+    });
+    const boss = new Unit(game, 1650, 520, 'enemy', 'tank');
+    boss.makeBoss('sovereign');
+    boss.isWaveFighter = true;
+    entityManager.addEntity(boss);
+    const contracts = ['melee', 'melee', 'melee', 'ranged', 'ranged', 'ranged', 'medic', 'sniper', 'tank', 'crusader', 'ranged', 'melee']
+      .map((type, index) => ({ id: `${type}-${index}`, type }));
+    const escorts = selectBossEscortContracts(contracts, 10, getInfernalHostBossTactics(infernalHost).priorityTypes);
+    escorts.forEach((contract, index) => {
+      const slot = getWaveFormationSlot(1800, 360, index, 'enemy');
+      const unit = new Unit(game, slot.x, slot.y, 'enemy', contract.type);
+      unit.formationRow = slot.row;
+      unit.isWaveFighter = true;
+      entityManager.addEntity(unit);
+    });
+    let elapsed = 0;
+    while (elapsed < 110 && boss.isAlive && playerBase.isAlive) {
+      entityManager.update(1 / 60);
+      elapsed += 1 / 60;
+    }
+    return { bossAlive: boss.isAlive, cathedralHp: Math.round(playerBase.hp), elapsed, patternEvents };
+  } finally {
+    Math.random = previousRandom;
+  }
+}
+
+test('finale roster survives each host escort plan and interrupts the sovereign rite', () => {
+  const hosts = ['cinderVanguard', 'graveCoven', 'ironLegion'].map(id => ({ id }));
+  hosts.forEach((host, index) => {
+    const outcome = runFinalBossBattle(211 + index * 97, host);
+    assert.ok(outcome.patternEvents.includes('started'), JSON.stringify({ host, ...outcome }));
+    assert.ok(outcome.patternEvents.includes('interrupted'), JSON.stringify({ host, ...outcome }));
+    assert.ok(outcome.cathedralHp >= 9000, JSON.stringify({ host, ...outcome }));
+  });
 });
 
 test('final boss rite creates targetable rear anchors and breaks when they fall', () => {

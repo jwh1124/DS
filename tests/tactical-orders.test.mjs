@@ -14,6 +14,7 @@ const enemyMedic = { team: 'enemy', type: 'medic' };
 const enemyHeavy = { team: 'enemy', type: 'tank' };
 const enemyBoss = { team: 'enemy', type: 'tank', isBoss: true };
 const enemyBase = { team: 'enemy', techLevel: 2 };
+const ritualAnchor = { team: 'enemy', type: 'medic', isRitualAnchor: true };
 
 test('tactical order definitions are stable and unknown input falls back to balanced', () => {
   assert.deepEqual(TACTICAL_ORDERS.map(order => order.id), ['balanced', 'rear', 'boss']);
@@ -28,6 +29,8 @@ test('rear order redirects holy ranged attackers without overriding medic protec
   assert.equal(getTacticalOrderTargetBonus('rear', rangedHoly, enemyHeavy), 0);
   assert.equal(getTacticalOrderTargetBonus('rear', rangedHoly, enemyBase), 0);
   assert.equal(getTacticalOrderHitLabel('rear', rangedHoly, enemyRear), '후열 집중');
+  assert.equal(getTacticalOrderTargetBonus('rear', rangedHoly, ritualAnchor), 620);
+  assert.equal(getTacticalOrderHitLabel('rear', rangedHoly, ritualAnchor), '의식 시종 집중');
   assert.equal(getTacticalOrderHitLabel('rear', rangedHoly, enemyMedic), '');
 });
 

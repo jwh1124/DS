@@ -36,7 +36,11 @@ export function getTacticalOrderTargetBonus(orderId, attacker, target) {
 
   if (orderId === 'rear') {
     const canReachRearLine = (attacker.range ?? 0) >= 150;
-    return canReachRearLine && REAR_TARGET_TYPES.has(target.type) ? 170 : 0;
+    if (!canReachRearLine) return 0;
+    // A sovereign rite is a real response window, not merely a HUD hint.
+    // Ranged holy units must abandon nearby escorts long enough to break its anchors.
+    if (target.isRitualAnchor) return 620;
+    return REAR_TARGET_TYPES.has(target.type) ? 170 : 0;
   }
 
   if (orderId === 'boss') {
@@ -51,5 +55,6 @@ export function getTacticalOrderTargetBonus(orderId, attacker, target) {
 
 export function getTacticalOrderHitLabel(orderId, attacker, target) {
   if (getTacticalOrderTargetBonus(orderId, attacker, target) <= 0) return '';
-  return orderId === 'rear' ? '후열 집중' : orderId === 'boss' ? '대악마 집중' : '';
+  if (orderId === 'rear') return target?.isRitualAnchor ? '의식 시종 집중' : '후열 집중';
+  return orderId === 'boss' ? '대악마 집중' : '';
 }
