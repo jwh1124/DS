@@ -136,14 +136,35 @@ class Game {
     
     document.getElementById('start-btn').addEventListener('click', () => {
       this.audio.ensureRunning();
-      document.getElementById('title-screen').style.opacity = '0';
-      setTimeout(() => {
-        document.getElementById('title-screen').style.display = 'none';
-        document.getElementById('ui-layer').style.display = 'block';
-        this.start();
-        this.audio.startBGM();
-      }, 1000);
+      if (!window.localStorage.getItem('exorcism-field-guide-seen')) {
+        document.getElementById('field-guide-screen')?.classList.remove('hidden');
+        document.getElementById('field-guide-start-btn')?.focus();
+        return;
+      }
+      this.launchExpedition();
     });
+
+    document.getElementById('field-guide-start-btn')?.addEventListener('click', () => {
+      window.localStorage.setItem('exorcism-field-guide-seen', '1');
+      document.getElementById('field-guide-screen')?.classList.add('hidden');
+      this.launchExpedition();
+    });
+
+    document.getElementById('field-guide-skip-btn')?.addEventListener('click', () => {
+      window.localStorage.setItem('exorcism-field-guide-seen', '1');
+      document.getElementById('field-guide-screen')?.classList.add('hidden');
+      this.launchExpedition();
+    });
+  }
+
+  launchExpedition() {
+    document.getElementById('title-screen').style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('title-screen').style.display = 'none';
+      document.getElementById('ui-layer').style.display = 'block';
+      this.start();
+      this.audio.startBGM();
+    }, 1000);
   }
   
   addScreenShake(intensity) {
