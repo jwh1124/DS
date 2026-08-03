@@ -1296,6 +1296,30 @@ body.developer-mode .boss-hud {
   line-height: 1.4;
 }
 
+.infernal-host-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 6px;
+}
+
+.infernal-host-meta span {
+  color: #b9afa4;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.infernal-host-meta span + span {
+  color: #c9a77c;
+}
+
+.infernal-host-bounty {
+  margin-top: 6px !important;
+  padding-top: 5px;
+  border-top: 1px solid rgba(183, 154, 103, 0.16);
+  color: #d0bd9a !important;
+}
+
 .result-kicker {
   color: #a99672;
   font: 700 10px 'Cinzel', 'Noto Sans KR', sans-serif;

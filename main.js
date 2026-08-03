@@ -794,10 +794,16 @@ class Game {
     const briefing = getInfernalHostBriefing(this.infernalHost);
     const title = document.getElementById('infernal-host-title');
     const detail = document.getElementById('infernal-host-detail');
+    const chronicle = document.getElementById('infernal-host-chronicle');
+    const masteryText = document.getElementById('infernal-host-mastery');
+    const bountyText = document.getElementById('infernal-host-bounty');
     if (title) title.textContent = briefing.title;
     const mastery = getInfernalMasteryBonus(window.localStorage, this.infernalHost);
     const bounty = getInfernalBounty(this.infernalHost);
-    if (detail) detail.textContent = `권장: ${briefing.detail} · ${getInfernalChronicleSummary(window.localStorage, this.infernalHost)}${mastery ? ` · 숙련: ${mastery.name} (${mastery.short})` : ''}${bounty ? ` · 특명: ${bounty.name} (${bounty.description})` : ''}`;
+    if (detail) detail.textContent = `권장: ${briefing.detail}`;
+    if (chronicle) chronicle.textContent = getInfernalChronicleSummary(window.localStorage, this.infernalHost);
+    if (masteryText) masteryText.textContent = mastery ? `숙련 활성 · ${mastery.name} (${mastery.short})` : '숙련 봉인 · 첫 정화로 해금';
+    if (bountyText) bountyText.textContent = bounty ? `군단 특명 · ${bounty.name}: ${bounty.description} (+${bounty.scoreBonus}점)` : '';
   }
 
   updateBattlefieldBackdrop() {
