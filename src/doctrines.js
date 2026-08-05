@@ -102,7 +102,8 @@ export function createDoctrineBonuses() {
     hpByType: createTypeMultiplierMap(),
     damageByType: createTypeMultiplierMap(),
     healingMultiplier: 1,
-    baseDamageMultiplier: 1
+    baseDamageMultiplier: 1,
+    tacticalFocusDamageMultiplier: 1
   };
 }
 

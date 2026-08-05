@@ -1,7 +1,10 @@
-const INFERNAL_HOSTS = Object.freeze([
+export const INFERNAL_HOSTS = Object.freeze([
   Object.freeze({
     id: 'cinderVanguard',
     name: '재의 선봉대',
+    region: '잿빛 회랑',
+    threat: '초반 압박',
+    icon: 'flame',
     backgroundPath: 'bg.jpg',
     backgroundFit: 'repeat',
     bossTactics: Object.freeze({ priorityTypes: Object.freeze(['ranged', 'melee']), advice: '보스 호위의 사격대를 먼저 정리한 뒤 대악마에 집중하십시오.' }),
@@ -11,6 +14,9 @@ const INFERNAL_HOSTS = Object.freeze([
   Object.freeze({
     id: 'graveCoven',
     name: '묘지의 성가대',
+    region: '달빛 수도원',
+    threat: '치유·후열',
+    icon: 'skull',
     backgroundPath: 'backgrounds/moonlit-cloister-v1.png',
     backgroundFit: 'stretch',
     bossTactics: Object.freeze({ priorityTypes: Object.freeze(['medic', 'sniper']), advice: '의식 시종과 리치 호위를 후열 명령으로 함께 끊으십시오.' }),
@@ -20,6 +26,9 @@ const INFERNAL_HOSTS = Object.freeze([
   Object.freeze({
     id: 'ironLegion',
     name: '흑철 군단',
+    region: '흑철 대로',
+    threat: '중장 갑옷',
+    icon: 'shield',
     backgroundPath: 'backgrounds/black-iron-causeway-v1.png',
     backgroundFit: 'stretch',
     bossTactics: Object.freeze({ priorityTypes: Object.freeze(['tank', 'crusader']), advice: '중장 호위가 뭉치기 전 전열을 세우고 대형 집중으로 전환하십시오.' }),
@@ -31,6 +40,10 @@ const INFERNAL_HOSTS = Object.freeze([
 export function getInfernalHost(seed = Math.random()) {
   const normalized = Math.max(0, Math.min(0.999999, Number(seed) || 0));
   return INFERNAL_HOSTS[Math.floor(normalized * INFERNAL_HOSTS.length)];
+}
+
+export function getInfernalHostById(id) {
+  return INFERNAL_HOSTS.find(host => host.id === id) ?? INFERNAL_HOSTS[0];
 }
 
 export function getInfernalHostBriefing(host) {

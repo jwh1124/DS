@@ -66,12 +66,19 @@ import { EXPEDITION_MANDATES, getExpeditionMandate } from './src/expeditionManda
 import { getMandateChronicleSummary, recordMandateClear } from './src/mandateChronicle.js';
 import { getInfernalChronicleSummary, getInfernalMasteryBonus, recordInfernalClear } from './src/infernalChronicle.js';
 import { getInfernalBounty } from './src/infernalBounties.js';
+import { COMMANDERS, applyCommanderToBonuses, getCommander } from './src/commanders.js';
 import {
-  getInfernalHost,
+  loadCampaignProfile,
+  selectCampaignCommander,
+  selectCampaignRegion
+} from './src/campaignProfile.js';
+import {
+  INFERNAL_HOSTS,
   getInfernalHostBackgroundFit,
   getInfernalHostBossTactics,
   getInfernalHostBackgroundPath,
-  getInfernalHostBriefing
+  getInfernalHostBriefing,
+  getInfernalHostById
 } from './src/infernalHosts.js';
 
 export const WORLD_WIDTH = 2000;
@@ -102,8 +109,10 @@ class Game {
     this.ultimateCooldown = 0;
     this.autoSpend = false;
     this.tacticalOrder = 'balanced';
+    this.campaignProfile = loadCampaignProfile(window.localStorage);
+    this.commander = getCommander(this.campaignProfile.commanderId);
     this.runOmen = getRunOmen();
-    this.infernalHost = getInfernalHost();
+    this.infernalHost = getInfernalHostById(this.campaignProfile.regionId);
     this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
     this.expeditionMandate = getExpeditionMandate('bastionPledge');
     const searchParams = new URLSearchParams(window.location.search);
@@ -151,6 +160,8 @@ class Game {
     this.setupInput();
     this.setupViewportPolicy();
     this.updateRunRecordSummary();
+    this.updateCommanderBoard();
+    this.updateCampaignRegionMap();
     this.updateRunOmenBriefing();
     this.updateInfernalHostBriefing();
     this.updateCampaignRelicArmory();
@@ -188,6 +199,31 @@ class Game {
       selectCampaignRelic(window.localStorage, button.dataset.campaignRelic);
       this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
       this.updateCampaignRelicArmory();
+    });
+
+    document.getElementById('commander-choices')?.addEventListener('click', event => {
+      const button = event.target.closest('[data-commander]');
+      if (!button) return;
+      this.campaignProfile = selectCampaignCommander(window.localStorage, button.dataset.commander);
+      this.commander = getCommander(this.campaignProfile.commanderId);
+      this.updateCommanderBoard();
+      this.updateRunRecordSummary();
+      this.audio.playClick();
+    });
+
+    document.getElementById('campaign-region-map')?.addEventListener('click', event => {
+      const button = event.target.closest('[data-region]');
+      if (!button) return;
+      this.campaignProfile = selectCampaignRegion(window.localStorage, button.dataset.region);
+      this.infernalHost = getInfernalHostById(this.campaignProfile.regionId);
+      this.runOmen = getRunOmen();
+      this.updateCampaignRegionMap();
+      this.updateRunOmenBriefing();
+      this.updateInfernalHostBriefing();
+      this.updateExpeditionMandateBoard();
+      this.updateBattlefieldBackdrop();
+      this.updateRunRecordSummary();
+      this.audio.playClick();
     });
 
     document.getElementById('expedition-mandate-choices')?.addEventListener('click', event => {
@@ -329,6 +365,7 @@ class Game {
     this.isBattlefieldEventChoosing = false;
     this.pendingBattlefieldEventChoices = [];
     this.selectedBattlefieldEvent = null;
+    this.applyCommander();
     this.applyCampaignRelic();
     this.applyInfernalMastery();
     const gameOverScreen = document.getElementById('game-over-screen');
@@ -342,7 +379,9 @@ class Game {
     this.economy.start();
   }
   
-  resetGame({ launch = true } = {}) {
+  resetGame(options = {}) {
+    const launch = options.launch ?? true;
+    const refreshMission = options.refreshMission ?? !launch;
     this.isRunning = false;
     this.isPaused = false;
     this.isDoctrineChoosing = false;
@@ -354,6 +393,9 @@ class Game {
     this.pendingBattlefieldEventChoices = [];
     this.selectedBattlefieldEvent = null;
     this.doctrineBonuses = createDoctrineBonuses();
+    this.campaignProfile = loadCampaignProfile(window.localStorage);
+    this.commander = getCommander(this.campaignProfile.commanderId);
+    this.infernalHost = getInfernalHostById(this.campaignProfile.regionId);
     this.campaignRelic = getSelectedCampaignRelic(window.localStorage);
     this.loop.stop();
     this.waveSystem.stop();
@@ -377,8 +419,9 @@ class Game {
     this.setFrontlineFollow(true);
     this.gameSpeed = 1;
     this.autoSpend = false;
-    this.runOmen = getRunOmen();
-    this.infernalHost = getInfernalHost();
+    if (refreshMission) this.runOmen = getRunOmen();
+    this.updateCommanderBoard();
+    this.updateCampaignRegionMap();
     this.updateRunOmenBriefing();
     this.updateInfernalHostBriefing();
     this.updateBattlefieldBackdrop();
@@ -494,6 +537,7 @@ class Game {
         .map(id => getBoonById(id)?.title)
         .filter(Boolean),
       infernalHostName: this.infernalHost?.name,
+      commanderName: this.commander?.name,
       infernalBounty: getInfernalBounty(this.infernalHost),
       infernalBossAdvice: getInfernalHostBossTactics(this.infernalHost).advice,
       battlefieldEventName: this.selectedBattlefieldEvent?.title
@@ -543,6 +587,8 @@ class Game {
       recordText.textContent = rewardLines.join(' · ');
     }
     this.updateRunRecordSummary();
+    this.updateCommanderBoard();
+    this.updateCampaignRegionMap();
     this.updateCampaignRelicArmory();
     this.updateExpeditionMandateBoard();
     if (gameOverScreen) gameOverScreen.classList.remove('hidden');
@@ -795,12 +841,36 @@ class Game {
     const names = this.doctrineBonuses.selected
       .map(id => getDoctrineById(id)?.title)
       .filter(Boolean);
-    summary.textContent = names.length ? names.join(' · ') : '아직 선택하지 않음';
+    summary.textContent = names.length
+      ? `${this.commander?.name ?? '교단장'} · ${names.join(' · ')}`
+      : `${this.commander?.name ?? '교단장'} · 교리 대기`;
   }
 
   updateRunRecordSummary() {
     const summary = document.getElementById('run-record-summary');
-    if (summary) summary.textContent = getRunRecordSummary(window.localStorage, this.difficulty);
+    if (summary) {
+      summary.textContent = `${this.commander?.name ?? '교단장'} · ${this.infernalHost?.region ?? '미지의 지역'} · ${getRunRecordSummary(window.localStorage, this.difficulty)}`;
+    }
+  }
+
+  updateCommanderBoard() {
+    const choices = document.getElementById('commander-choices');
+    if (!choices) return;
+    choices.innerHTML = Object.values(COMMANDERS).map(commander => `
+      <button class="commander-choice${this.commander?.id === commander.id ? ' active' : ''}" type="button" data-commander="${commander.id}" aria-pressed="${this.commander?.id === commander.id}">
+        <span class="campaign-card-icon" aria-hidden="true">${iconMarkup(commander.icon)}</span>
+        <span class="campaign-card-copy"><b>${commander.name}</b><em>${commander.role}</em><small>${commander.short}</small></span>
+      </button>`).join('');
+  }
+
+  updateCampaignRegionMap() {
+    const map = document.getElementById('campaign-region-map');
+    if (!map) return;
+    map.innerHTML = INFERNAL_HOSTS.map(host => `
+      <button class="region-node${this.infernalHost?.id === host.id ? ' active' : ''}" type="button" data-region="${host.id}" aria-pressed="${this.infernalHost?.id === host.id}">
+        <span class="campaign-card-icon" aria-hidden="true">${iconMarkup(host.icon)}</span>
+        <span class="campaign-card-copy"><b>${host.region}</b><em>${host.name} · ${host.threat}</em><small>${getInfernalChronicleSummary(window.localStorage, host)}</small></span>
+      </button>`).join('');
   }
 
   updateRunOmenBriefing() {
@@ -862,6 +932,14 @@ class Game {
         ${bounty?.mandateId === mandate.id ? `<b class="mandate-bounty-label">군단 특명 +${bounty.scoreBonus}점</b>` : ''}
         <strong>${mandate.name}</strong><span>${mandate.description}</span><em>달성 +${mandate.scoreBonus}점</em><small>${getMandateChronicleSummary(window.localStorage, mandate.id)}</small>
       </button>`).join('');
+  }
+
+  applyCommander() {
+    const result = applyCommanderToBonuses(this.doctrineBonuses, this.commander);
+    this.doctrineBonuses = result.bonuses;
+    if (result.incomeBonus > 0) this.economy.increaseIncome(result.incomeBonus);
+    this.commander = result.commander;
+    this.updateDoctrineSummary();
   }
 
   applyCampaignRelic() {

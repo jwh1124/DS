@@ -26,15 +26,32 @@
         </div>
         
         <!-- 난이도 선택 -->
-        <div id="difficulty-selector" role="group" aria-label="원정 난이도" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+        <div id="difficulty-selector" role="group" aria-label="원정 난이도">
           <button class="diff-btn" data-diff="0.7" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-dove"></use></svg><span>은총 (EASY)</span></button>
           <button class="diff-btn active" data-diff="1.0" aria-pressed="true"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-cross"></use></svg><span>시련 (NORMAL)</span></button>
           <button class="diff-btn" data-diff="1.25" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-flame"></use></svg><span>연옥 (HARD)</span></button>
           <button class="diff-btn insane-btn" data-diff="1.5" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="./icons.svg#ui-skull"></use></svg><span>지옥 (INFERNO)</span></button>
         </div>
+
+        <div class="campaign-planning" aria-label="원정 지휘 선택">
+          <section class="campaign-choice-panel" aria-labelledby="commander-title">
+            <div class="campaign-panel-heading">
+              <span id="commander-title">교단장 선택</span>
+              <small>플레이 방식</small>
+            </div>
+            <div id="commander-choices" class="commander-choices" role="group" aria-label="교단장"></div>
+          </section>
+          <section class="campaign-choice-panel infernal-region-panel" aria-labelledby="region-map-title">
+            <div class="campaign-panel-heading">
+              <span id="region-map-title">정화 지역 선택</span>
+              <small>악마 군단</small>
+            </div>
+            <div id="campaign-region-map" class="campaign-region-map" role="group" aria-label="악마 지역"></div>
+          </section>
+        </div>
         
         <section class="omen-briefing" aria-labelledby="omen-briefing-title">
-          <span class="omen-briefing-kicker">이번 원정</span>
+          <span class="omen-briefing-kicker">선택 원정 정찰</span>
           <strong id="omen-briefing-title">정찰 확인 중</strong>
           <p id="infernal-host-title">군단 편성 확인 중</p>
           <small id="omen-briefing-advice"></small>
@@ -198,8 +215,8 @@
           </div>
           <div class="hero-instruction">우클릭: 다음 웨이브부터 계약 해지 · 50% 환급</div>
           <div class="doctrine-summary">
-            <span>채택 교리</span>
-            <strong id="doctrine-summary">아직 선택하지 않음</strong>
+            <span>교단장 · 채택 교리</span>
+            <strong id="doctrine-summary">교단장 확인 중</strong>
           </div>
           <div id="expedition-mandate-status" class="expedition-mandate-status" data-tone="on-track" aria-live="polite">
             <span>원정 서약</span>

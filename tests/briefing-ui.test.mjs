@@ -24,6 +24,11 @@ test('infernal scouting separates advice, chronicle, mastery, and bounty informa
   assert.match(css, /\.result-log summary/);
   assert.match(css, /\.developer-mode-toggle/);
   assert.match(html, /role="group" aria-label="원정 난이도"/);
+  assert.match(html, /id="commander-choices"/);
+  assert.match(html, /id="campaign-region-map"/);
+  assert.match(source, /selectCampaignCommander/);
+  assert.match(source, /selectCampaignRegion/);
+  assert.match(css, /\.campaign-planning/);
   assert.match(source, /b\.setAttribute\('aria-pressed', 'false'\)/);
   assert.match(source, /aria-label="\$\{mandate\.name\}/);
   assert.match(source, /e\.key === 'F10'/);

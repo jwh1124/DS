@@ -756,6 +756,9 @@ export class Unit {
     let currentDamage = (this.hasAura ? this.damage * 1.4 : this.damage) * counterProfile.multiplier;
     const tacticalHitLabel = getTacticalOrderHitLabel(this.game.tacticalOrder, this, target);
     const isTacticalFocus = Boolean(tacticalHitLabel);
+    if (this.team === 'player' && isTacticalFocus) {
+      currentDamage *= this.game.doctrineBonuses?.tacticalFocusDamageMultiplier ?? 1;
+    }
     const hitTag = tacticalHitLabel || counterProfile.label;
     const projectileProfile = {
       hitTag,
